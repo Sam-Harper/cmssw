@@ -60,9 +60,7 @@
 
       /// MC Truth
       std::vector< edm::Ptr< SimTrack > > getSimTrackPtrs() const;
-      std::vector< uint32_t >             getEventIds() const;
       void                                addSimTrack( const edm::Ptr< SimTrack > &trk) { theSimTracks.push_back(trk);}
-      void                                addEventId( const uint32_t anId ) { theEventIds.push_back(anId); }
       bool                                isGenuine() const;
       bool                                isCombinatoric() const;
       bool                                isUnknown() const;
@@ -87,7 +85,6 @@
       DetId                               theDetId;
       unsigned int                        theStackMember;
       std::vector< edm::Ptr< SimTrack > > theSimTracks;
-      std::vector< uint32_t >             theEventIds;
 
   }; /// Close class
 
@@ -155,18 +152,8 @@
   std::vector< edm::Ptr< SimTrack > > L1TkCluster< T >::getSimTrackPtrs() const { return theSimTracks; }
 
   template< typename T >
-  std::vector< uint32_t > L1TkCluster< T >::getEventIds() const { return theEventIds; }
-
-  template< typename T >
   bool L1TkCluster< T >::isGenuine() const
   {
-    /// Check how many event ID's
-    std::vector< uint32_t > tempVecEvId = theEventIds;
-    tempVecEvId.erase( std::unique( tempVecEvId.begin(), tempVecEvId.end() ), tempVecEvId.end() );
-    if ( tempVecEvId.size() > 1 )
-      return false;
-
-    /// If all SimTracks are from the same event/BX ...
     /// GENUINE means that ALL hits could be associated to a
     /// SimTrack stored in the corresponding collection, AND
     /// all of these SimTracks are actually the same
@@ -183,9 +170,7 @@
         if ( theSimTracks.size() > 1 )
         {
           if ( prevTrack < 0 )
-          {
             prevTrack = curSimTrackPtr->trackId();
-          }
 
           if ( prevTrack != (int)curSimTrackPtr->trackId() )
             /// Two different known SimTracks means false
@@ -202,13 +187,6 @@
   template< typename T >
   bool L1TkCluster< T >::isCombinatoric() const
   {
-    /// Check how many event ID's
-    std::vector< uint32_t > tempVecEvId = theEventIds;
-    tempVecEvId.erase( std::unique( tempVecEvId.begin(), tempVecEvId.end() ), tempVecEvId.end() );
-    if ( tempVecEvId.size() > 1 )
-      return true;
-
-    /// If all SimTracks are from the same event/BX ...
     /// COMBINATORIC means that different SimTracks contribute
     /// to the cluster, which means that both a mixture of NULL
     /// pointers and good ones are present, or that all are
@@ -249,20 +227,12 @@
       return false;
 
     /// If not true, then it is false
-    /// This includes if ( theSimTracks.size() == 0 )
     return false;
   }
 
   template< typename T >
   bool L1TkCluster< T >::isUnknown() const
   {
-    /// Check how many event ID's
-    std::vector< uint32_t > tempVecEvId = theEventIds;
-    tempVecEvId.erase( std::unique( tempVecEvId.begin(), tempVecEvId.end() ), tempVecEvId.end() );
-    if ( tempVecEvId.size() > 1 )
-      return false;
-
-    /// If all SimTracks are from the same event/BX ...
     /// UNKNOWN means that all SimTracks pointers are NULL
     for ( unsigned int k = 0; k < theSimTracks.size(); k++ )
     {
@@ -271,9 +241,7 @@
         /// A known SimTrack means false
         return false;
     }
-
     /// If not false, then it is true
-    /// This includes if ( theSimTracks.size() == 0 )
     return true;
   }
 

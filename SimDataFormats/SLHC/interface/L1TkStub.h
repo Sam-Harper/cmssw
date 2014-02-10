@@ -49,7 +49,7 @@
       /// Helper methods: findABC( ... )
 
       /// Clusters composing the Stub
-      std::vector< edm::Ptr< L1TkCluster< T > > > getClusterPtrs() const { return theClusters; }
+      std::vector< edm::Ptr< L1TkCluster< T > > > getClusterPtrs() const;
       const edm::Ptr< L1TkCluster< T > >&         getClusterPtr( unsigned int hitIdentifier ) const;
       void                                        addClusterPtr( edm::Ptr< L1TkCluster< T > > aL1TkCluster );
 
@@ -58,18 +58,17 @@
       /// HitMatching Algorithms
 
       /// Detector element
-      DetId getDetId() const { return theDetId; }
+      DetId getDetId() const;
       void  setDetId( DetId aDetId );
 
       /// Trigger information
-      double getTriggerDisplacement() const;              /// In FULL-STRIP units! (hence, not implemented herein)
+      double getTriggerDisplacement() const; /// In FULL-STRIP units!
       void   setTriggerDisplacement( int aDisplacement ); /// In HALF-STRIP units!
-      double getTriggerOffset() const;         /// In FULL-STRIP units! (hence, not implemented herein)
+      double getTriggerOffset() const; /// In FULL-STRIP units!
       void   setTriggerOffset( int anOffset ); /// In HALF-STRIP units!
 
       /// MC truth
-      edm::Ptr< SimTrack > getSimTrackPtr() const { return theSimTrack; }
-      uint32_t             getEventId() const { return theEventId; }
+      edm::Ptr< SimTrack > getSimTrackPtr() const;
       bool                 isGenuine() const;
       bool                 isCombinatoric() const;
       bool                 isUnknown() const;
@@ -87,7 +86,6 @@
       DetId                                       theDetId;
       std::vector< edm::Ptr< L1TkCluster< T > > > theClusters;
       edm::Ptr< SimTrack >                        theSimTrack;
-      uint32_t                                    theEventId;
       int                                         theDisplacement;
       int                                         theOffset;
 
@@ -108,8 +106,6 @@
     theClusters.clear();
     theDisplacement = 999999;
     theOffset = 0;
-    /// theSimTrack is NULL by default
-    theEventId = 0xFFFF;
   }
 
   /// Another Constructor
@@ -121,13 +117,15 @@
     theClusters.clear();
     theDisplacement = 999999;
     theOffset = 0;
-    /// theSimTrack is NULL by default
-    theEventId = 0xFFFF;
   }
 
   /// Destructor
   template< typename T >
   L1TkStub< T >::~L1TkStub(){}
+
+  /// Get the Pointers to the Clusters composing the Stub
+  template< typename T >
+  std::vector< edm::Ptr< L1TkCluster< T > > > L1TkStub< T >::getClusterPtrs() const { return theClusters; }
 
   /// Get the Pointer to a Cluster
   template< typename T >
@@ -160,6 +158,9 @@
 
   /// Detector element
   template< typename T >
+  DetId L1TkStub< T >::getDetId() const { return theDetId; }
+
+  template< typename T >
   void L1TkStub< T >::setDetId( DetId aDetId ) { theDetId = aDetId; }
 
   /// Trigger info
@@ -176,6 +177,9 @@
   void L1TkStub< T >::setTriggerOffset( int anOffset ) { theOffset = anOffset; }
 
   /// MC truth
+  template< typename T >
+  edm::Ptr< SimTrack > L1TkStub< T >::getSimTrackPtr() const { return theSimTrack; }
+
   template< typename T >
   bool L1TkStub< T >::isGenuine() const
   {
@@ -210,12 +214,12 @@
         for ( unsigned int i = 0; i < innerSimTracks.size(); i++ )
         {
           /// Skip NULL pointers
-          if ( innerSimTracks.at(i).isNull() )
+          if ( innerSimTracks.at(i).isNull() );
             continue;
           for ( unsigned int j = 0; j < outerSimTracks.size(); j++ )
           {
             /// Skip NULL pointers
-            if ( outerSimTracks.at(j).isNull() )
+            if ( outerSimTracks.at(j).isNull() );
               continue;
 
             if ( innerSimTracks.at(i)->trackId() == outerSimTracks.at(j)->trackId() )
@@ -260,7 +264,6 @@
     if ( this->isGenuine() )
       return false;
 
-    /*
     /// COMBINATORIC means that the same MC truth content
     /// cannot be found in the pair of clusters that compose
     /// the stub, and at leask one of them is not unknown
@@ -295,12 +298,12 @@
         for ( unsigned int i = 0; i < innerSimTracks.size(); i++ )
         {
           /// Skip NULL pointers
-          if ( innerSimTracks.at(i).isNull() )
+          if ( innerSimTracks.at(i).isNull() );
             continue;
           for ( unsigned int j = 0; j < outerSimTracks.size(); j++ )
           {
             /// Skip NULL pointers
-            if ( outerSimTracks.at(j).isNull() )
+            if ( outerSimTracks.at(j).isNull() );
               continue;
 
             if ( innerSimTracks.at(i)->trackId() == outerSimTracks.at(j)->trackId() )
@@ -330,28 +333,14 @@
     /// Default
     /// Should never get here
     std::cerr << "W A R N I N G! L1TkStub::isCombinatoric() \t we should never get here" << std::endl;
-    return false;
-    */
-
-    if ( this->isUnknown() )
-      return false;
-
-    return true;
+    return false; 
   }
 
   template< typename T >
   bool L1TkStub< T >::isUnknown() const
   {
     /// UNKNOWN means that both clusters are unknown
-    /// ... but if they are both unknown and from different EventId, this is COMBINATORIC!
-    if ( theClusters.at(0)->isUnknown() && theClusters.at(1)->isUnknown() )
-    {
-      if ( theClusters.at(0)->getEventIds().at(0) == theClusters.at(1)->getEventIds().at(0) )
-        return true; /// both UNKNOWN from the same EventId
-    }
-
-    /// If either one is known OR both unknown from different Event Id's
-    return false;
+    return ( theClusters.at(0)->isUnknown() && theClusters.at(1)->isUnknown() );
   }
 
   template< typename T >
@@ -393,10 +382,6 @@
       /// they must be compared to each other
       if ( theClusters.at(0)->isGenuine() && theClusters.at(1)->isGenuine() )
       {
-        /// The clusters must be associated to the same event
-        if ( theClusters.at(0)->getEventIds().at(0) != theClusters.at(1)->getEventIds().at(0) )
-          return;
-
         if ( theClusters.at(0)->findSimTrackId() == theClusters.at(1)->findSimTrackId() )
         {
           /// Two genuine clusters with same SimTrack content mean genuine
@@ -406,7 +391,6 @@
             if ( curSimTracks.at(k).isNull() == false )
             {
               theSimTrack = curSimTracks.at(k);
-              theEventId = theClusters.at(0)->getEventIds().at(0);
               return;
             }
           }
@@ -421,23 +405,15 @@
         unsigned int whichSimTrack = 0;
         std::vector< edm::Ptr< SimTrack > > innerSimTracks = theClusters.at(0)->getSimTrackPtrs();
         std::vector< edm::Ptr< SimTrack > > outerSimTracks = theClusters.at(1)->getSimTrackPtrs();
-        std::vector< uint32_t >             innerEventIds = theClusters.at(0)->getEventIds();
-        std::vector< uint32_t >             outerEventIds = theClusters.at(1)->getEventIds();
-
         for ( unsigned int i = 0; i < innerSimTracks.size(); i++ )
         {
           /// Skip NULL pointers
-          if ( innerSimTracks.at(i).isNull() )
+          if ( innerSimTracks.at(i).isNull() );
             continue;
-
           for ( unsigned int j = 0; j < outerSimTracks.size(); j++ )
           {
             /// Skip NULL pointers
-            if ( outerSimTracks.at(j).isNull() )
-              continue;
-
-            /// Skip pairs from different EventId
-            if ( innerEventIds.at(i) != outerEventIds.at(j) )
+            if ( outerSimTracks.at(j).isNull() );
               continue;
 
             if ( innerSimTracks.at(i)->trackId() == outerSimTracks.at(j)->trackId() )
@@ -465,7 +441,6 @@
           /// this means there is only one track that participates in
           /// both clusters, hence the stub is genuine
           theSimTrack = outerSimTracks.at(whichSimTrack);
-          theEventId = outerEventIds.at(whichSimTrack); /// Same indexing!
       }
     }
   }

@@ -70,8 +70,8 @@ public:
   void setideltarphi(int ideltarphi) {ideltarphi_=ideltarphi;}
   void setideltazi(int ideltaz) {ideltaz_=ideltaz;}
 
-  double sigmax() {return sigmax_;}
-  double sigmaz() {return sigmaz_;}
+  double sigmax() const {return sigmax_;}
+  double sigmaz() const {return sigmaz_;}
 
 private:
 
