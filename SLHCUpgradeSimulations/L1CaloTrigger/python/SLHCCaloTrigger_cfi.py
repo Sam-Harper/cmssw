@@ -1,5 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
+
 L1CaloTriggerSetupSource = cms.ESSource("EmptyESSource",
                                         recordName = cms.string('L1CaloTriggerSetupRcd'),
                                         firstValid = cms.vuint32(1),
@@ -10,11 +11,22 @@ L1CaloTriggerSetup = cms.ESProducer("L1CaloTriggerSetupProducer",
                                     InputXMLFile = cms.FileInPath('SLHCUpgradeSimulations/L1CaloTrigger/data/setup.xml')
                                     )
 
+
+#----------------------------------------------------------------------------------------------------
+# Test Pattern Producer - Preliminary
+#----------------------------------------------------------------------------------------------------
+#L1TestPatternCaloTowerProducer = cms.EDProducer("L1TestPatternCaloTowerProducer",
+#    TestPatternFile  = cms.FileInPath('SLHCUpgradeSimulations/L1CaloTrigger/data/testPattern.txt'),
+#)
+#----------------------------------------------------------------------------------------------------
+
+
 #UNCOMMENT HERE TO RUN ON DATA - IO
 L1CaloTowerProducer = cms.EDProducer("L1CaloTowerProducer",
-    ECALDigis = cms.InputTag("ecalDigis:EcalTriggerPrimitives"),
-    HCALDigis =  cms.InputTag("hcalDigis"),
-    UseUpgradeHCAL = cms.bool(False) 
+    ECALDigis      = cms.InputTag("ecalDigis:EcalTriggerPrimitives"),
+    HCALDigis      = cms.InputTag("hcalDigis"),
+    UseUpgradeHCAL = cms.bool(False),
+
 )
 
 #COMMENT OUT FOLLOWING LINES TO RUN ON DATA  (Data is more useful than simulations anyways)- IO
@@ -31,20 +43,40 @@ L1RingSubtractionProducer = cms.EDProducer("L1RingSubtractionProducer",
 
 
 L1CaloRegionProducer = cms.EDProducer("L1CaloRegionProducer",
-                                      src = cms.InputTag("L1CaloTowerProducer")
+    src = cms.InputTag("L1CaloTowerProducer")
 )                                      
 
 L1CaloClusterProducer = cms.EDProducer("L1CaloClusterProducer",
     src = cms.InputTag("L1CaloTowerProducer")
 )
 
+#currently taus and e/gamma have diverged, this is for taus
 L1CaloClusterFilter = cms.EDProducer("L1CaloClusterFilter",
-    src = cms.InputTag("L1CaloClusterProducer")
+    src = cms.InputTag("L1CaloClusterProducer"),
+    etMode = cms.int32(3)
 )
 
+#currently taus and e/gamma have diverged, this is for taus
 L1CaloClusterIsolator = cms.EDProducer("L1CaloClusterIsolator",
     src = cms.InputTag("L1CaloClusterFilter")
 )
+
+
+#currently taus and e/gamma have diverged, this is for eles
+L1CaloClusterEGFilter = cms.EDProducer("L1CaloClusterFilter",
+    src = cms.InputTag("L1CaloClusterProducer"),
+    etMode = cms.int32(1)
+)
+
+#currently taus and e/gamma have diverged, this is for eles
+L1CaloClusterEGIsolator = cms.EDProducer("L1CaloClusterEGIsolator",
+                                         caloClustersTag = cms.InputTag("L1CaloClusterFilter"),
+                                         caloTowersTag = cms.InputTag("L1CaloTowerProducer"),
+                                         rhoTag = cms.InputTag("L1RhoProducer"),
+                                         maxTowerIEta=cms.int32(27), #HF is 29 and up, currently excluding tower 28 as well
+                                         isolEtCut=cms.int32(-1) # isolEt<=X (goes negative due to PU subtraction)
+)
+
 
 L1CaloJetProducer = cms.EDProducer("L1CaloJetProducer",
     src = cms.InputTag("L1CaloRegionProducer")
@@ -59,36 +91,69 @@ L1CaloJetExpander = cms.EDProducer("L1CaloJetExpander",
 )
 
 L1TowerJetProducer = cms.EDProducer("L1TowerJetProducer",
+
+    # UNCOMMENT TO RUN ON RINGSUBTRACTED CALOTOWERS
+    #src = cms.InputTag("L1RingSubtractionProducer"),
+    # UNCOMMENT TO RUN ON UN-RINGSUBTRACTED CALOTOWERS
     src = cms.InputTag("L1CaloTowerProducer"),
+
+#	JetDiameter = cms.uint32(12),                                    
 	JetDiameter = cms.uint32(8),
-	JetShape = cms.string("circle") # "circle" or "square"
+	JetShape    = cms.string("circle"), # "circle" or "square"
+
+        # Jet Pt (GeV) threshold and the seed threshold requirement (require that at least one TT
+        # posses E greater than threshold) for the constructed jets to be retained 
+        JetPtThreshold       = cms.double(0.1),
+        SeedEnergyThreshold  = cms.double(0),
+        #SeedEnergyThreshold  = cms.double(5),                            
+
 )
 
      
 L1TowerJetFilter1D = cms.EDProducer("L1TowerJetFilter1D",
     src = cms.InputTag("L1TowerJetProducer"),
 	ComparisonDirection = cms.string("eta"), # "eta" or "phi"
-	NumOfOutputJets = cms.uint32(4)
+        # Old arbitrary jet 1D limit 
+        #NumOfOutputJets = cms.uint32(4)
+        NumOfOutputJets = cms.uint32(999)
 )
 
 L1TowerJetFilter2D = cms.EDProducer("L1TowerJetFilter2D",
     src = cms.InputTag("L1TowerJetFilter1D"),
 	ComparisonDirection = cms.string("phi"), # "eta" or "phi"
-	NumOfOutputJets = cms.uint32(12)
+        # Old arbitrary jet event limit 
+        #NumOfOutputJets = cms.uint32(12)
+        NumOfOutputJets = cms.uint32(999)                            
 )
 L1TowerJetPUEstimator = cms.EDProducer("L1TowerJetPUEstimator",
-    inRhodata_file = cms.FileInPath('SLHCUpgradeSimulations/L1CaloTrigger/data/rho_lookup.txt'),
+    inRhodata_file  = cms.FileInPath('SLHCUpgradeSimulations/L1CaloTrigger/data/rho_lookup.txt'),
     FilteredCircle8 = cms.InputTag("L1TowerJetFilter2D"),
+    # Choose whether to calibrate rho to offline rho                                   
+    UseRhoCalibration  = cms.bool(False),
+    # number of jets, from the start of the ordered jet collection, to exclude from the median calculation of rho
+    # numberOfSkippedJets = 1    =>   Skip leading jet only
+    numberOfSkippedJets = cms.uint32(1)
+                                       
 )
 
 L1TowerJetPUSubtractedProducer =  cms.EDProducer("L1TowerJetPUSubtractedProducer",
     FilteredCircle8 = cms.InputTag("L1TowerJetFilter2D"),
     CalibratedL1Rho = cms.InputTag("L1TowerJetPUEstimator", "Rho"),
+
+    # Energy (GeV) threshold of the jets that are to be retained after PU subtraction
+    JetPtPUSubThreshold  = cms.double(0.1),                                             
 )
 
 L1CalibFilterTowerJetProducer = cms.EDProducer("L1CalibFilterTowerJetProducer",
-    inMVA_weights_file = cms.FileInPath('SLHCUpgradeSimulations/L1CaloTrigger/data/TMVARegression_BDT.weights.xml'),
-    PUSubtractedCentralJets = cms.InputTag("L1TowerJetPUSubtractedProducer","PUSubCenJets"),
+    inMVA_weights_file         = cms.FileInPath('SLHCUpgradeSimulations/L1CaloTrigger/data/TMVARegression_BDT.weights.xml'),
+    PUSubtractedCentralJets    = cms.InputTag("L1TowerJetPUSubtractedProducer","PUSubCenJets"),
+    PrePUSubtractedCentralJets = cms.InputTag("L1TowerJetPUSubtractedProducer","PrePUSubCenJets"),
+                                               
+    # Energy (GeV) threshold of jets to be used in the calculation of Ht and mHt                                               
+    JetPtThreshold          = cms.double(15),
+    # Determine whether to calibrate jet energies to offline energies
+    UseJetPtCalibration     = cms.bool(False),
+#    UseJetPtCalibration     = cms.bool(True),                                          
 )
 
 
@@ -97,28 +162,33 @@ L1CalibFilterTowerJetProducer = cms.EDProducer("L1CalibFilterTowerJetProducer",
 
 L1TowerFwdJetProducer = cms.EDProducer("L1TowerFwdJetProducer",
     src = cms.InputTag("L1CaloTowerProducer"),
-	JetDiameter = cms.uint32(8),
+
+        JetDiameter = cms.uint32(8),
 	JetShape = cms.string("circle") # "circle" or "square"
 )    
    
 L1TowerFwdJetFilter1D = cms.EDProducer("L1TowerJetFilter1D",
     src = cms.InputTag("L1TowerFwdJetProducer"),
 	ComparisonDirection = cms.string("eta"), # "eta" or "phi"
-	NumOfOutputJets = cms.uint32(4)
+	NumOfOutputJets = cms.uint32(999)
 )
 
 L1TowerFwdJetFilter2D = cms.EDProducer("L1TowerJetFilter2D",
     src = cms.InputTag("L1TowerFwdJetFilter1D"),
 	ComparisonDirection = cms.string("phi"), # "eta" or "phi"
-	NumOfOutputJets = cms.uint32(12)
+	NumOfOutputJets = cms.uint32(999)
 )
 
+
+
+
 rawSLHCL1ExtraParticles = cms.EDProducer("L1ExtraTranslator",
-                                  Clusters = cms.InputTag("L1CaloClusterIsolator"),
-                                  Jets = cms.InputTag("L1CaloJetExpander"),
-                                  Towers = cms.InputTag("L1CaloTowerProducer"),                                         
-                                  NParticles = cms.uint32(8),
-                                  NJets      = cms.uint32(12),
+                                  EGClusters   = cms.InputTag("L1CaloClusterEGIsolator"),
+                                  TauClusters   = cms.InputTag("L1CaloClusterIsolator"),
+                                  Jets       = cms.InputTag("L1CaloJetExpander"),
+                                  Towers     = cms.InputTag("L1CaloTowerProducer"),                                         
+                                  NParticles = cms.uint32(999),
+                                  NJets      = cms.uint32(999),
                                   maxJetTowerEta = cms.double(3.0)
                               
 )
@@ -159,12 +229,20 @@ SLHCL1ExtraParticles = cms.EDProducer("L1ExtraCalibrator",
                                       
                                       #Calibration good for 30GeV threshold
                                       eGammaBinCorr = cms.vdouble( 0.980478 , 0.977497 , 0.991688 , 0.974088 , 0.957387 , 0.958428 , 0.946692 , 1.010764 , 1.000194 , 0.876818 , 0.859533 , 0.766770 , 0.852342),
-                                      tauBinCorr=cms.vdouble( 0.966896, 0.968547, 0.981441, 0.993066, 1.003556, 1.036209, 1.043883, 1.089409, 1.051449, 0.968977, 0.962960, 0.875468, 0.944211)
+                                      tauBinCorr=cms.vdouble( 0.966896, 0.968547, 0.981441, 0.993066, 1.003556, 1.036209, 1.043883, 1.089409, 1.051449, 0.968977, 0.962960, 0.875468, 0.944211),
                                       
                                       #eGammaBinCorr = cms.vdouble( 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0),
                                       #tauBinCorr = cms.vdouble( 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
-                                      
+
+                                      ## June 2013
+                                      ## New calibration. Corrections computed in bins of |eta| + linear interpolation
+                                      ## Only for e/g
+                                      applyNewCalib = cms.bool(True), # switch between old and new calibration
+                                      eGammaEtaPoints = cms.vdouble(0.125, 0.375, 0.625, 0.875, 1.125, 1.3645, 1.6145, 1.875, 2.125, 2.375),
+                                      eGammaNewCorr = cms.vdouble(0.0952467, 0.101389, 0.10598, 0.12605, 0.162749, 0.193123, 0.249227, 0.2800289, 0.271548, 0.27855), 
                                       )
+
+
 
 l1extraParticlesCalibrated = cms.EDProducer("L1ExtraCalibrator",
                                             eGamma = cms.InputTag("l1extraParticles","NonIsolated"),
@@ -202,9 +280,15 @@ l1extraParticlesCalibrated = cms.EDProducer("L1ExtraCalibrator",
                                             
                                             #Calibration good for 30 GeV threshold.
                                             eGammaBinCorr = cms.vdouble( 1.044700, 1.000000, 1.045531, 1.000000, 1.025850, 1.000000, 0.994333, 1.000238, 1.000000, 0.984849, 1.000000, 1.000000, 0.988361),
-                                            tauBinCorr=cms.vdouble( 0.908360, 1.000000, 0.904475, 1.000000, 0.913780, 1.000000, 0.927715, 0.969766, 1.000000, 0.953172, 1.000000, 1.000000, 0.900906)
+                                            tauBinCorr=cms.vdouble( 0.908360, 1.000000, 0.904475, 1.000000, 0.913780, 1.000000, 0.927715, 0.969766, 1.000000, 0.953172, 1.000000, 1.000000, 0.900906),
                                                                                 
                                             #eGammaBinCorr = cms.vdouble( 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0 , 1.0),
                                             #tauBinCorr = cms.vdouble( 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
-                                                                                        
+                                                                                                                         ## June 2013
+                                            ## New calibration. Corrections computed in bins of |eta| + linear interpolation
+                                            ## Only for e/g
+                                            applyNewCalib = cms.bool(False), # switch between old and new calibration
+					    # These numbers are for SLHC, don't use them here
+                                            eGammaEtaPoints = cms.vdouble(0.125, 0.375, 0.625, 0.875, 1.125, 1.3645, 1.6145, 1.875, 2.125, 2.375),
+                                            eGammaNewCorr = cms.vdouble(0.0952467, 0.101389, 0.10598, 0.12605, 0.162749, 0.193123, 0.249227, 0.2800289, 0.271548, 0.27855)
                                             )

@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <vector>
 #include <map>
+#include <ext/hash_set>
 #include <math.h>
 #include <assert.h>
 
@@ -22,8 +23,8 @@ static int nz=80;
 
 static double two_pi=8*atan(1.0);
 
-static double x_offset=0.199196;
-static double y_offset=0.299922;
+static double x_offset=0.199196*0.0;
+static double y_offset=0.299922*0.0;
 
 
 
@@ -433,6 +434,20 @@ public:
   int sensorlayer() {return sensorlayer_;}
   int ladder() {return ladder_;}
   int module() {return module_;}
+  double r() {return sqrt(x_*x_+y_*y_);}
+  double z() {return z_;}
+
+  bool operator==(const Digi& anotherdigi) const {
+    if (irphi_!=anotherdigi.irphi_) return false;
+    if (iz_!=anotherdigi.iz_) return false;
+    if (layer_!=anotherdigi.layer_) return false;
+    if (ladder_!=anotherdigi.ladder_) return false;
+    return module_==anotherdigi.module_;    
+  }
+
+  int hash() const {
+    return irphi_+iz_*1009+layer_*10000003+ladder_*1000003+module_*10007;
+  }
 
   int nsimtrack() {return simtrackids_.size();}
   int simtrackid(int isim) {return simtrackids_[isim];}
@@ -451,6 +466,18 @@ private:
 
   vector<int> simtrackids_;
 
+};
+
+struct HashOp {
+  int operator()(const Digi &a) const {
+    return a.hash();
+  }
+};
+ 
+struct HashEqual {
+  bool operator()(const Digi &a, const Digi &b) const {
+    return a == b;
+  }
 };
 
 
@@ -886,6 +913,7 @@ public:
   double x() const { return x_; }
   double y() const { return y_; }
   double z() const { return z_; }
+  double r() const { return sqrt(x_*x_+y_*y_); }
 
 private:
 
@@ -951,6 +979,7 @@ public:
     }    
   
     digis_.push_back(digi);
+    digihash_.insert(digi);
 
   }
 
@@ -1079,6 +1108,7 @@ public:
 	in >> tmp;
       }      
       digis_.push_back(digi);
+      digihash_.insert(digi);
     }
 
     cout << "Read "<<digis_.size()<<" digis"<<endl;
@@ -1143,7 +1173,20 @@ public:
 	//cout << "Here004:"<<tmp<<endl;
       }   
       //cout << "tmp="<<tmp<<endl;
-      stubs_.push_back(stub);
+
+      bool foundclose=false;
+
+      for (unsigned int i=0;i<stubs_.size();i++) {
+	if (fabs(stubs_[i].x()-stub.x())<0.2&&
+	    fabs(stubs_[i].y()-stub.y())<0.2&&
+	    fabs(stubs_[i].z()-stub.z())<2.0) {
+	  foundclose=true;
+	}
+      }
+
+      if (!foundclose) {
+	stubs_.push_back(stub);
+      }
     }
     cout << "Read "<<stubs_.size()<<" stubs"<<endl;
     //for (int i=0;i<10;i++) {
@@ -1552,211 +1595,75 @@ public:
 
     int layer=stub.layer()+1;
 
-    //cout << "Stub layer="<<layer<<endl;
 
     vector<pair<int,int> > innerdigis=stub.innerdigis();
     vector<pair<int,int> > outerdigis=stub.outerdigis();
     vector<pair<int,int> > innerdigisladdermodule=stub.innerdigisladdermodule();
     vector<pair<int,int> > outerdigisladdermodule=stub.outerdigisladdermodule();
 
-    //cout << "innerdigis.size() outerdigis.size() :"
-    // << innerdigis.size()<<" "<<outerdigis.size()<<endl;
+    vector<pair<int,int> > alldigis=stub.innerdigis();
+    alldigis.insert(alldigis.end(),outerdigis.begin(),outerdigis.end());
+    vector<pair<int,int> > alldigisladdermodule=stub.innerdigisladdermodule();
+    alldigisladdermodule.insert(alldigisladdermodule.end(),
+				outerdigisladdermodule.begin(),
+				outerdigisladdermodule.end());
 
-    unsigned int nmatchinner=0;
-    unsigned int nmatchouter=0;
 
-    int icount=0;
-
-    int ladder=-1;
-    int module=-1;
 
     if (layer<1000) {
 
-      for (unsigned int i=0;i<digis_.size();i++){
-	Digi adigi=digis_[i];
-	int digilayer=adigi.layer();
-	int digiladder=adigi.ladder();
-	//int digimodule=adigi.module();
-	//int digisensorlayer=adigi.sensorlayer();
-	int digiirphi=adigi.irphi();
-	int digiiz=adigi.iz();
-	
-	//cout << "layer digilayer: "<<layer<<" "<<digilayer<<endl;
-	
-	if (layer!=digilayer) continue;
-	
-	icount++;
-      
-	for (unsigned int k=0;k<innerdigis.size()+outerdigis.size();k++){
-
-	  bool useinner=false;
-	  
-	  if (k<innerdigis.size()) {
-	    useinner=true;
+      for (unsigned int k=0;k<alldigis.size();k++){
+	int irphi=alldigis[k].first;
+	int iz=alldigis[k].second;
+	int ladder=alldigisladdermodule[k].first;
+	int module=alldigisladdermodule[k].second;
+	Digi tmp(layer,irphi,iz,-1,ladder,module,0.0,0.0,0.0);
+	__gnu_cxx::hash_set<Digi,HashOp,HashEqual>::const_iterator it=digihash_.find(tmp);
+	if(it==digihash_.end()){
+	  static int count=0;
+	  count++;
+	  if (count<5) {
+	    cout << "Warning did not find digi"<<endl;
+	  } 
+ 	}
+	else{
+	  Digi adigi=*it;
+	  for(int idigi=0;idigi<adigi.nsimtrack();idigi++){
+	    simtrackids.push_back(adigi.simtrackid(idigi));
 	  }
-
-
-	  int irphi;
-	  int iz;
-	
-	  if (useinner){
-	    irphi=innerdigis[k].first;
-	    iz=innerdigis[k].second;
-	    assert(k<innerdigisladdermodule.size());
-	    ladder=innerdigisladdermodule[k].first;
-	    module=innerdigisladdermodule[k].second;
-	  }
-	  else{
-	    irphi=outerdigis[k-innerdigis.size()].first;
-	    iz=outerdigis[k-innerdigis.size()].second;
-	    assert(k-innerdigis.size()<outerdigisladdermodule.size());
-	    ladder=outerdigisladdermodule[k-innerdigis.size()].first;
-	    module=outerdigisladdermodule[k-innerdigis.size()].second;
-	  }
-	  
-	  //cout << "ladder digiladder :"<<ladder<<" "<<digiladder<<endl;
-	  
-	  if (ladder==digiladder&&
-	      irphi==digiirphi&&
-	      iz==digiiz) {
-	    if (useinner) {
-	      nmatchinner++;
-	    }
-	    else{
-	      nmatchouter++;
-	    }
-	    for(int idigi=0;idigi<adigi.nsimtrack();idigi++){
-	      simtrackids.push_back(adigi.simtrackid(idigi));
-	    }
-	    //cout << "Found match!"<< endl;
-	  }
-
-	}
-
-	//cout << " digi:layer ladder module: "<<digilayer<<" "
-	// 	   <<digiladder<<" "
-	//	   <<digimodule<<" "
-	//   <<digiirphi<<" "
-	//   <<digiiz<<endl;
-
-	
-     
-      }
-
-      //cout << "nmatchinner nmatchouter:"<<nmatchinner<<" "<<nmatchouter<<endl;
-
-      if (nmatchinner!=innerdigis.size()||nmatchouter!=outerdigis.size()) {
-	//cout << "FFailed "<<ladder+1<<" "<<layer<<endl;
+	}	
       }
     }
 
     else{
 
-      for (unsigned int i=0;i<digis_.size();i++){
-	Digi adigi=digis_[i];
-	int digilayer=adigi.layer()%1000;
-	//int digiladder=adigi.ladder();
-	int digimodule=adigi.module();
-	//int digisensorlayer=adigi.sensorlayer();
-	int digiirphi=adigi.irphi();
-	int digiiz=adigi.iz();
-
-
-	//cout << "iz digilayer: "<<stub.module()<<" "<<digilayer<<endl;
-	
-	if (stub.module()!=digilayer) continue;
-	
-	icount++;
-      
-	for (unsigned int k=0;k<innerdigis.size()+outerdigis.size();k++){
-
-	  bool useinner=false;
-	  
-	  if (k<innerdigis.size()) {
-	    useinner=true;
+      for (unsigned int k=0;k<alldigis.size();k++){
+	int irphi=alldigis[k].first;
+	int iz=alldigis[k].second;
+	//int ladder=alldigisladdermodule[k].first;
+	int module=alldigisladdermodule[k].second;
+	int offset=1000;
+	if (stub.z()<0.0) offset=2000;
+	//cout << "Looking for: "<<stub.module()+offset<<" "<<irphi<<" "
+	//     <<iz<<" "<<1<<" "<<module<<endl;
+	Digi tmp(stub.module()+offset,irphi,iz,-1,1,module,0.0,0.0,0.0);
+	__gnu_cxx::hash_set<Digi,HashOp,HashEqual>::const_iterator it=digihash_.find(tmp);
+	if(it==digihash_.end()){
+	  static int count=0;
+	  count++;
+	  if (count < 5) {
+	    cout << "Warning did not find digi in disks"<<endl;
 	  }
-
-
-	  int irphi;
-	  int iz;
-	
-	  if (useinner){
-	    irphi=innerdigis[k].first;
-	    iz=innerdigis[k].second;
-	    assert(k<innerdigisladdermodule.size());
-	    ladder=innerdigisladdermodule[k].first;
-	    module=innerdigisladdermodule[k].second;
-	  }
-	  else{
-	    irphi=outerdigis[k-innerdigis.size()].first;
-	    iz=outerdigis[k-innerdigis.size()].second;
-	    assert(k-innerdigis.size()<outerdigisladdermodule.size());
-	    ladder=outerdigisladdermodule[k-innerdigis.size()].first;
-	    module=outerdigisladdermodule[k-innerdigis.size()].second;
-	  }
-	  
-	  //cout << "ladder digiladder :"<<ladder<<" "<<digiladder<<endl;
-	  
-	  if (module==digimodule&&
-	      irphi==digiirphi&&
-	      iz==digiiz) {
-	    if (useinner) {
-	      nmatchinner++;
-	    }
-	    else{
-	      nmatchouter++;
-	    }
-	    for(int idigi=0;idigi<adigi.nsimtrack();idigi++){
-	      simtrackids.push_back(adigi.simtrackid(idigi));
-	    }
-	    //cout << "Found match!"<< endl;
-	  }
-
 	}
-
-	//cout << " digi:layer ladder module: "<<digilayer<<" "
-	// 	   <<digiladder<<" "
-	//	   <<digimodule<<" "
-	//   <<digiirphi<<" "
-	//   <<digiiz<<endl;
-
-	
-     
+	else{
+	  //cout << "Warning found digi in disks"<<endl;
+	  Digi adigi=*it;
+	  for(int idigi=0;idigi<adigi.nsimtrack();idigi++){
+	    simtrackids.push_back(adigi.simtrackid(idigi));
+	  }
+	}	
       }
-
-      //cout << "nmatchinner nmatchouter:"<<nmatchinner<<" "<<nmatchouter<<endl;
-
-      if (nmatchinner!=innerdigis.size()||nmatchouter!=outerdigis.size()) {
-	//cout << "FFailed "<<ladder+1<<" "<<layer<<endl;
-      }
-
     }
-
-    //if (nmatchinner==innerdigis.size()&&nmatchouter==outerdigis.size()) {
-    //  cout << "OOK "<<ladder+1<<" "<<layer<<endl;
-    //}
-
-
-    //if (nmatchinner!=innerdigis.size()) {
-    //  cout << "Failed to find all inner matches "<<nmatchinner<<endl;
-    //}
-    //else {
-    //  cout << "Found all inner matches "<<endl;;
-    //}
-
-
-    //if (nmatchouter!=outerdigis.size()) {
-    //  cout << "Failed to find all outer matches "<<nmatchouter<<endl;
-    // }
-    //else {
-    //  cout << "Found all outer matches "<<endl;
-    // }
-
-    //cout << "layer ladder module: "<<layer<<" "
-    //	 <<ladder<<" "
-    //	 <<module<<endl;
-
-    //cout << "returning simtrackids:"<<simtrackids.size()<<endl;
 
     return simtrackids;
 
@@ -1821,6 +1728,7 @@ private:
   int eventnum_;
   vector<L1SimTrack> simtracks_;
   vector<Digi> digis_;
+  __gnu_cxx::hash_set<Digi,HashOp,HashEqual> digihash_;
   vector<ChipDigi> chipdigis_;
   vector<Stub> stubs_;
 
