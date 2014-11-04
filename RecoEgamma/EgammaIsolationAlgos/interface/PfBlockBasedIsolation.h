@@ -53,7 +53,7 @@ class PfBlockBasedIsolation{
 		 const edm::Handle<reco::PFCandidateCollection> pfCandidateHandle);
 
   
- 
+  static bool correctElementTypeToMatch(const reco::PFCandidate& cand,const reco::PFCandidate::ElementInBlock& elem);
  private:
 
  double coneSize_;

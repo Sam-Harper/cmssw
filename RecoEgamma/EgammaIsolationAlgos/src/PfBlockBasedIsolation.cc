@@ -69,48 +69,37 @@ std::vector<reco::PFCandidateRef>  PfBlockBasedIsolation::calculate(math::XYZTLo
     bool elementFound=false;
     for (reco::PFCandidate::ElementsInBlocks::const_iterator ipf = theElementsInPFcand.begin(); ipf<theElementsInPFcand.end(); ++ipf) {
  
-     if ( ipf->first == egblock && !elementFound ) {
+      if ( ipf->first == egblock && !elementFound ) {
+	for (ieg = theElementsInpfEGcand.begin(); ieg<theElementsInpfEGcand.end(); ++ieg) {
+	  if ( ipf->second == ieg->second && !elementFound  ) {
+	    if(correctElementTypeToMatch(*pfCandRef,*ipf)){
+	      elementFound=true;
+	      myVec.push_back(pfCandRef);    
+	    }//end correct type check
+	  }//end match of element
+	}//end loop over all EG elements
+      }//end check that PFBlock is same as e/gamma
+    }//end loop over all elements of PF candidate
 
-	  for (ieg = theElementsInpfEGcand.begin(); ieg<theElementsInpfEGcand.end(); ++ieg) {
-
-	    
-	    if ( ipf->second == ieg->second && !elementFound  ) {
-
-	      
-	      reco::PFCandidate::ParticleType pfType = pfCandRef->particleId();
-	      const reco::PFBlockElement* elem = ipf->second<egblock->elements().size() ? &egblock->elements()[ipf->second] : nullptr;
-	    
-	      reco::PFBlockElement::Type elemType = elem ? elem->type() : reco::PFBlockElement::NONE;
-
-	      bool correctType=false; //PF photons must be matched by SC / ECAL elements to the electron, not sufficient to share a track
-	      if(pfType==reco::PFCandidate::gamma){
-		if(elemType==reco::PFBlockElement::ECAL || elemType==reco::PFBlockElement::SC) correctType=true;
-	      }else correctType=true;
-
-	      if(correctType){ 
-		elementFound=true;
-		myVec.push_back(pfCandRef);    
-	      }
-	    }
-	  }
-	
-	
-	
-      }
-    }
-
-    
-
-  }
-  
-
+  }//end loop over all pf candidates
 
   return myVec;
+  
+}
 
 
-
- }
-
-
-
+bool PfBlockBasedIsolation::correctElementTypeToMatch(const reco::PFCandidate& cand,const reco::PFCandidate::ElementInBlock& elemInBlock)
+{
+  
+  reco::PFCandidate::ParticleType pfType = cand.particleId();
+  const reco::PFBlockElement* elem = elemInBlock.second<elemInBlock.first->elements().size() ? &elemInBlock.first->elements()[elemInBlock.second] : nullptr;
+  
+  reco::PFBlockElement::Type elemType = elem ? elem->type() : reco::PFBlockElement::NONE;
+  
+  //PF photons must be matched by SC / ECAL elements to the electron, not sufficient to share a track
+  if(pfType==reco::PFCandidate::gamma){
+    if(elemType==reco::PFBlockElement::ECAL || elemType==reco::PFBlockElement::SC) return true;
+    else return false;
+  }else return true;
+}
 
