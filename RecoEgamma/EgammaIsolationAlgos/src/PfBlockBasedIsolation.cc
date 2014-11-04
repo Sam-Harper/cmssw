@@ -15,7 +15,8 @@
 #include "TrackingTools/IPTools/interface/IPTools.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlockFwd.h"
-
+#include "DataFormats/ParticleFlowReco/interface/PFBlock.h"
+#include "DataFormats/ParticleFlowReco/interface/PFBlockElement.h"
 
 //--------------------------------------------------------------------------------------------------
 
@@ -71,10 +72,25 @@ std::vector<reco::PFCandidateRef>  PfBlockBasedIsolation::calculate(math::XYZTLo
      if ( ipf->first == egblock && !elementFound ) {
 
 	  for (ieg = theElementsInpfEGcand.begin(); ieg<theElementsInpfEGcand.end(); ++ieg) {
+
+	    
 	    if ( ipf->second == ieg->second && !elementFound  ) {
-	      elementFound=true;
-	      myVec.push_back(pfCandRef);    
-	       
+
+	      
+	      reco::PFCandidate::ParticleType pfType = pfCandRef->particleId();
+	      const reco::PFBlockElement* elem = ipf->second<egblock->elements().size() ? &egblock->elements()[ipf->second] : nullptr;
+	    
+	      reco::PFBlockElement::Type elemType = elem ? elem->type() : reco::PFBlockElement::NONE;
+
+	      bool correctType=false; //PF photons must be matched by SC / ECAL elements to the electron, not sufficient to share a track
+	      if(pfType==reco::PFCandidate::gamma){
+		if(elemType==reco::PFBlockElement::ECAL || elemType==reco::PFBlockElement::SC) correctType=true;
+	      }else correctType=true;
+
+	      if(correctType){ 
+		elementFound=true;
+		myVec.push_back(pfCandRef);    
+	      }
 	    }
 	  }
 	
