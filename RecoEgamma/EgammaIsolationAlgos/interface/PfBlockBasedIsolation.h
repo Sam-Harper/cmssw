@@ -54,6 +54,12 @@ class PfBlockBasedIsolation{
 
   
   static bool correctElementTypeToMatch(const reco::PFCandidate& cand,const reco::PFCandidate::ElementInBlock& elem);
+  bool chargedHadronMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
+  bool neutralHadronMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
+  bool photonMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
+
+  
+
  private:
 
  double coneSize_;

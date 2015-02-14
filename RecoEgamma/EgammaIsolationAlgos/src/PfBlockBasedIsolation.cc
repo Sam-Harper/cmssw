@@ -17,6 +17,7 @@
 #include "DataFormats/ParticleFlowReco/interface/PFBlockFwd.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlock.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlockElement.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidateEGammaExtra.h"
 
 //--------------------------------------------------------------------------------------------------
 
@@ -40,6 +41,38 @@ void  PfBlockBasedIsolation::setup ( const edm::ParameterSet& conf ) {
 
 }
 
+bool PfBlockBasedIsolation::chargedHadronMatch(const reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
+{
+  const reco::PFCandidateEGammaExtraRef pfEGCandExtra = pfEGCand->egammaExtraRef();
+
+  const reco::TrackRef& pfCandTrackRef = pfCand->trackRef();
+
+  if(pfCandTrackRef==pfEGCand->trackRef()) return true;
+
+  for(const auto& trackElem : pfEGCandExtra->extraNonConvTracks()){
+    const reco::PFBlock& block = *(trackElem.first);
+    const reco::PFBlockElement& track = block.elements()[trackElem.second];
+    if(track.type()==reco::PFBlockElement::TRACK){
+      const reco::TrackRef trackRef = track.trackRef();
+      if(trackRef==pfCandTrackRef) return true;
+
+    }
+  }
+  return false;
+}
+
+bool PfBlockBasedIsolation::neutralHadronMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
+{
+  return false;
+}
+
+bool PfBlockBasedIsolation::photonMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
+{
+  return false; //for now
+
+}
+
+
 
 std::vector<reco::PFCandidateRef>  PfBlockBasedIsolation::calculate(math::XYZTLorentzVectorD p4, const reco::PFCandidateRef pfEGCand, const edm::Handle<reco::PFCandidateCollection> pfCandidateHandle) {
   
@@ -52,7 +85,7 @@ std::vector<reco::PFCandidateRef>  PfBlockBasedIsolation::calculate(math::XYZTLo
   reco::PFCandidate::ElementsInBlocks::const_iterator ieg = theElementsInpfEGcand.begin();
   const reco::PFBlockRef egblock = ieg->first;
 
-
+  
   unsigned nObj = pfCandidateHandle->size();
   for(unsigned int lCand=0; lCand < nObj; lCand++) {
 
@@ -66,16 +99,23 @@ std::vector<reco::PFCandidateRef>  PfBlockBasedIsolation::calculate(math::XYZTLo
 
     const reco::PFCandidate::ElementsInBlocks& theElementsInPFcand = pfCandRef->elementsInBlocks();
 
+
+    // std::cout <<"start looping over elements "<<std::endl;
+
     bool elementFound=false;
     for (reco::PFCandidate::ElementsInBlocks::const_iterator ipf = theElementsInPFcand.begin(); ipf<theElementsInPFcand.end(); ++ipf) {
  
       if ( ipf->first == egblock && !elementFound ) {
 	for (ieg = theElementsInpfEGcand.begin(); ieg<theElementsInpfEGcand.end(); ++ieg) {
 	  if ( ipf->second == ieg->second && !elementFound  ) {
-	    if(correctElementTypeToMatch(*pfCandRef,*ipf)){
+	    //   const reco::PFBlockElement* elem = ipf->second<ipf->first->elements().size() ? &ipf->first->elements()[ipf->second] : nullptr;
+	    //  if(elem){
+	    //  std::cout <<" type "<<pfCandRef->particleId()<<" elem "<< elem->isPrimary()<<" elem type "<<elem->type()<<std::endl;
+	    // }
+	    //if(correctElementTypeToMatch(*pfCandRef,*ipf)){
 	      elementFound=true;
 	      myVec.push_back(pfCandRef);    
-	    }//end correct type check
+	      // }//end correct type check
 	  }//end match of element
 	}//end loop over all EG elements
       }//end check that PFBlock is same as e/gamma
