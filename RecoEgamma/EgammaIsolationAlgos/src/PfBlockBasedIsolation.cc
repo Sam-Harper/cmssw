@@ -16,8 +16,8 @@
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlockFwd.h"
 #include "DataFormats/ParticleFlowReco/interface/PFBlock.h"
-#include "DataFormats/ParticleFlowReco/interface/PFBlockElement.h"
-#include "DataFormats/ParticleFlowCandidate/interface/PFCandidateEGammaExtra.h"
+#include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
+#include "DataFormats/ParticleFlowReco/interface/PFBlockElementCluster.h"
 
 //--------------------------------------------------------------------------------------------------
 
@@ -41,38 +41,6 @@ void  PfBlockBasedIsolation::setup ( const edm::ParameterSet& conf ) {
 
 }
 
-bool PfBlockBasedIsolation::chargedHadronMatch(const reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
-{
-  const reco::PFCandidateEGammaExtraRef pfEGCandExtra = pfEGCand->egammaExtraRef();
-
-  const reco::TrackRef& pfCandTrackRef = pfCand->trackRef();
-
-  if(pfCandTrackRef==pfEGCand->trackRef()) return true;
-
-  for(const auto& trackElem : pfEGCandExtra->extraNonConvTracks()){
-    const reco::PFBlock& block = *(trackElem.first);
-    const reco::PFBlockElement& track = block.elements()[trackElem.second];
-    if(track.type()==reco::PFBlockElement::TRACK){
-      const reco::TrackRef trackRef = track.trackRef();
-      if(trackRef==pfCandTrackRef) return true;
-
-    }
-  }
-  return false;
-}
-
-bool PfBlockBasedIsolation::neutralHadronMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
-{
-  return false;
-}
-
-bool PfBlockBasedIsolation::photonMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
-{
-  return false; //for now
-
-}
-
-
 
 std::vector<reco::PFCandidateRef>  PfBlockBasedIsolation::calculate(math::XYZTLorentzVectorD p4, const reco::PFCandidateRef pfEGCand, const edm::Handle<reco::PFCandidateCollection> pfCandidateHandle) {
   
@@ -85,7 +53,7 @@ std::vector<reco::PFCandidateRef>  PfBlockBasedIsolation::calculate(math::XYZTLo
   reco::PFCandidate::ElementsInBlocks::const_iterator ieg = theElementsInpfEGcand.begin();
   const reco::PFBlockRef egblock = ieg->first;
 
-  
+
   unsigned nObj = pfCandidateHandle->size();
   for(unsigned int lCand=0; lCand < nObj; lCand++) {
 
@@ -99,47 +67,98 @@ std::vector<reco::PFCandidateRef>  PfBlockBasedIsolation::calculate(math::XYZTLo
 
     const reco::PFCandidate::ElementsInBlocks& theElementsInPFcand = pfCandRef->elementsInBlocks();
 
-
-    // std::cout <<"start looping over elements "<<std::endl;
-
     bool elementFound=false;
     for (reco::PFCandidate::ElementsInBlocks::const_iterator ipf = theElementsInPFcand.begin(); ipf<theElementsInPFcand.end(); ++ipf) {
  
-      if ( ipf->first == egblock && !elementFound ) {
-	for (ieg = theElementsInpfEGcand.begin(); ieg<theElementsInpfEGcand.end(); ++ieg) {
-	  if ( ipf->second == ieg->second && !elementFound  ) {
-	    //   const reco::PFBlockElement* elem = ipf->second<ipf->first->elements().size() ? &ipf->first->elements()[ipf->second] : nullptr;
-	    //  if(elem){
-	    //  std::cout <<" type "<<pfCandRef->particleId()<<" elem "<< elem->isPrimary()<<" elem type "<<elem->type()<<std::endl;
-	    // }
-	    //if(correctElementTypeToMatch(*pfCandRef,*ipf)){
-	      elementFound=true;
-	      myVec.push_back(pfCandRef);    
-	      // }//end correct type check
-	  }//end match of element
-	}//end loop over all EG elements
-      }//end check that PFBlock is same as e/gamma
-    }//end loop over all elements of PF candidate
+     if ( ipf->first == egblock && !elementFound ) {
 
-  }//end loop over all pf candidates
+	  for (ieg = theElementsInpfEGcand.begin(); ieg<theElementsInpfEGcand.end(); ++ieg) {
+	    if ( ipf->second == ieg->second && !elementFound  ) {
+	      if(elementPassesCleaning(pfCandRef,pfEGCand)){
+		myVec.push_back(pfCandRef);    
+		elementFound=true;
+	      }
+	    }
+	  }
+	
+	
+	
+      }
+    }
+
+    
+
+  }
+  
+
 
   return myVec;
-  
-}
 
 
-bool PfBlockBasedIsolation::correctElementTypeToMatch(const reco::PFCandidate& cand,const reco::PFCandidate::ElementInBlock& elemInBlock)
+
+ }
+
+
+bool PfBlockBasedIsolation::elementPassesCleaning(const reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
 {
-  
-  reco::PFCandidate::ParticleType pfType = cand.particleId();
-  const reco::PFBlockElement* elem = elemInBlock.second<elemInBlock.first->elements().size() ? &elemInBlock.first->elements()[elemInBlock.second] : nullptr;
-  
-  reco::PFBlockElement::Type elemType = elem ? elem->type() : reco::PFBlockElement::NONE;
-  
-  //PF photons must be matched by SC / ECAL elements to the electron, not sufficient to share a track
-  if(pfType==reco::PFCandidate::gamma){
-    if(elemType==reco::PFBlockElement::ECAL || elemType==reco::PFBlockElement::SC) return true;
-    else return false;
-  }else return true;
+  if(pfCand->particleId()==reco::PFCandidate::h) return passesCleaningChargedHadron(pfCand,pfEGCand);
+  else if(pfCand->particleId()==reco::PFCandidate::h0) return passesCleaningNeutralHadron(pfCand,pfEGCand);
+  else if(pfCand->particleId()==reco::PFCandidate::gamma) return passesCleaningPhoton(pfCand,pfEGCand);
+  else return true; //doesnt really matter here as if its not a photon,neutral or charged it wont be included in isolation
 }
 
+//currently the record of which candidates came from the charged hadron is acceptable, no further cleaning is needed
+bool PfBlockBasedIsolation::passesCleaningChargedHadron(const reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
+{
+  return true;
+}
+
+//neutral hadrons are not part of the PF E/gamma reco, therefore they cant currently come from an electron/photon and so should be rejected
+//but we still think there may be some useful info here and given we can easily
+//fix this at AOD level, we will auto accept them for now and clean later
+bool PfBlockBasedIsolation::passesCleaningNeutralHadron(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
+{
+  return true;
+}
+
+//the highest et ECAL element of the photon must match to the electron superclusters or one of its sub clusters
+bool PfBlockBasedIsolation::passesCleaningPhoton(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand)
+{
+  bool passesCleaning=false;
+  const reco::PFBlockElementCluster* ecalClusWithMaxEt = getHighestEtECALCluster(*pfCand);
+  if(ecalClusWithMaxEt){
+    if(ecalClusWithMaxEt->superClusterRef().isNonnull() && 
+       ecalClusWithMaxEt->superClusterRef()->seed()->seed()==pfEGCand->superClusterRef()->seed()->seed()){ //being sure to match, some concerned about different collections, shouldnt be but to be safe
+      passesCleaning=true;
+    }else{
+      for(auto cluster : pfEGCand->superClusterRef()->clusters()){
+	//the PF clusters there are in two different collections so cant reference match
+	//but we can match on the seed id, no clusters can share a seed so if the seeds are 
+	//equal, it must be the same cluster
+	if(ecalClusWithMaxEt->clusterRef()->seed()==cluster->seed()) {
+	  passesCleaning=true;
+	}
+      }//end of loop over clusters
+    }
+  }//end of null check for highest ecal cluster
+  return passesCleaning;
+
+}
+
+
+const reco::PFBlockElementCluster* PfBlockBasedIsolation::getHighestEtECALCluster(const reco::PFCandidate& pfCand)
+{
+  float maxECALEt =-1;
+  const reco::PFBlockElement* maxEtECALCluster=nullptr;
+  const reco::PFCandidate::ElementsInBlocks& elementsInPFCand = pfCand.elementsInBlocks();
+  for(auto& elemIndx : elementsInPFCand){
+    const reco::PFBlockElement* elem = elemIndx.second<elemIndx.first->elements().size() ? &elemIndx.first->elements()[elemIndx.second] : nullptr;
+    if(elem && elem->type()==reco::PFBlockElement::ECAL && elem->clusterRef()->pt()>maxECALEt){
+      maxECALEt = elem->clusterRef()->pt();
+      maxEtECALCluster = elem;
+    }
+    
+  }
+  return dynamic_cast<const reco::PFBlockElementCluster*>(maxEtECALCluster);
+	
+}

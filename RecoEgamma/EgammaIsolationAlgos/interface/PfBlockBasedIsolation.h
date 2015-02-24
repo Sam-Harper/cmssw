@@ -29,7 +29,9 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 
-
+namespace reco{
+  class PFBlockElementCluster;
+}
 
 class PfBlockBasedIsolation{
  public:
@@ -53,13 +55,13 @@ class PfBlockBasedIsolation{
 		 const edm::Handle<reco::PFCandidateCollection> pfCandidateHandle);
 
   
-  static bool correctElementTypeToMatch(const reco::PFCandidate& cand,const reco::PFCandidate::ElementInBlock& elem);
-  bool chargedHadronMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
-  bool neutralHadronMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
-  bool photonMatch(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
-
+  const reco::PFBlockElementCluster* getHighestEtECALCluster(const reco::PFCandidate& pfCand);
+  bool passesCleaningPhoton(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
+  bool passesCleaningNeutralHadron(const  reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
   
-
+  bool passesCleaningChargedHadron(const reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
+  bool elementPassesCleaning(const reco::PFCandidateRef& pfCand,const reco::PFCandidateRef& pfEGCand);
+  
  private:
 
  double coneSize_;
