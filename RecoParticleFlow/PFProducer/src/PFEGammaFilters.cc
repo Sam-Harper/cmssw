@@ -9,6 +9,9 @@
 using namespace std;
 using namespace reco;
 
+bool gForceReturn=false;
+bool gPassValue=false;
+
 PFEGammaFilters::PFEGammaFilters(float ph_Et,
 				 float ph_combIso,
 				 float ph_loose_hoe,
@@ -57,7 +60,7 @@ PFEGammaFilters::PFEGammaFilters(float ph_Et,
 
 bool PFEGammaFilters::passPhotonSelection(const reco::Photon & photon) {
   // First simple selection, same as the Run1 to be improved in CMSSW_710
-
+  if(gForceReturn) return gPassValue;
 
   // Photon ET
   if(photon.pt()  < ph_Et_ ) return false;
@@ -83,11 +86,73 @@ bool PFEGammaFilters::passPhotonSelection(const reco::Photon & photon) {
   return true;
 }
 
+struct Cuts {
+  double maxDEtaIn;
+  double dEtaInConstTerm;
+  double dEtaInGradTerm;
+  double maxDPhiIn;
+  double maxHadem;
+  double hademConstTerm;
+  double maxSigmaIEtaIEta;
+  double minE2x5Over5x5;
+  double minE1x5Over5x5;
+  int maxNrMissHits; 
+
+  void setEB(){
+    hademConstTerm = 2;
+    dEtaInGradTerm = -1E-4;
+    dEtaInConstTerm = 0.016;
+    maxDEtaIn = 0.004;
+    maxDPhiIn=0.06;  
+    maxHadem=0.05;
+   
+    maxSigmaIEtaIEta=999.;
+    minE2x5Over5x5=0.94;
+    minE1x5Over5x5=0.83;
+    maxNrMissHits=1;
+  }
+  
+  void setEE(){
+    hademConstTerm = 12.5;
+    dEtaInGradTerm = -8.5E-5;
+    dEtaInConstTerm = 0.015;  
+    maxDEtaIn = 0.006;
+    maxDPhiIn = 0.06;
+    maxHadem=0.05; 
+    maxSigmaIEtaIEta=0.03;
+    minE2x5Over5x5=-1;
+    minE1x5Over5x5=-1;
+    maxNrMissHits=1;
+  }
+};
+
+
+
+bool passHEEP(const reco::GsfElectron& ele)
+{
+  Cuts cuts;
+  if(fabs(ele.superCluster()->eta())<1.5) cuts.setEB();
+  else cuts.setEE();
+
+  const float scEnergy=ele.superCluster()->energy();
+
+  if(!ele.ecalDrivenSeed()) return false;
+  if(fabs(ele.deltaEtaSuperClusterTrackAtVtx()) > std::max(cuts.dEtaInConstTerm+cuts.dEtaInGradTerm*ele.et(),cuts.maxDEtaIn )) return false;
+  if(fabs(ele.deltaPhiSuperClusterTrackAtVtx()) > cuts.maxDPhiIn ) return false;
+  if(ele.hadronicOverEm()*scEnergy > cuts.hademConstTerm + cuts.maxHadem*scEnergy) return false;
+  if(ele.scSigmaIEtaIEta()>cuts.maxSigmaIEtaIEta) return false;
+  if(ele.e2x5Max()/ele.e5x5()< cuts.minE2x5Over5x5 && ele.e1x5()/ele.e5x5()<cuts.minE1x5Over5x5) return false;
+  if(ele.gsfTrack()->hitPattern().numberOfHits(reco::HitPattern::MISSING_INNER_HITS) > cuts.maxNrMissHits ) return false;
+
+  return true;
+}
+
 bool PFEGammaFilters::passElectronSelection(const reco::GsfElectron & electron,
 					    const reco::PFCandidate & pfcand, 
 					    const int & nVtx) {
   // First simple selection, same as the Run1 to be improved in CMSSW_710
-  
+  if(gForceReturn) return gPassValue;
+
   bool passEleSelection = false;
   
   // Electron ET
@@ -113,8 +178,15 @@ bool PFEGammaFilters::passElectronSelection(const reco::GsfElectron & electron,
     passEleSelection = true; 
   }
   
+  if(electronPt>30){
+    if(passHEEP(electron)) passEleSelection=true;
+  }
+
+
   return passEleSelection;
 }
+
+
 
 bool PFEGammaFilters::isElectron(const reco::GsfElectron & electron) {
  
@@ -130,7 +202,7 @@ bool PFEGammaFilters::isElectronSafeForJetMET(const reco::GsfElectron & electron
 					      const reco::PFCandidate & pfcand,
 					      const reco::Vertex & primaryVertex,
 					      bool lockTracks) {
-
+  if(gForceReturn) return gPassValue;
   bool debugSafeForJetMET = false;
   bool isSafeForJetMET = true;
 
@@ -296,12 +368,14 @@ bool PFEGammaFilters::isElectronSafeForJetMET(const reco::GsfElectron & electron
     isSafeForJetMET = false;
   }
 
-
+  if(electron.et()>30){
+    if(passHEEP(electron)) isSafeForJetMET=true;
+  }
 
   return isSafeForJetMET;
 }
 bool PFEGammaFilters::isPhotonSafeForJetMET(const reco::Photon & photon, const reco::PFCandidate & pfcand) {
-
+  if(gForceReturn) return gPassValue;
   bool isSafeForJetMET = true;
   bool debugSafeForJetMET = false;
 
