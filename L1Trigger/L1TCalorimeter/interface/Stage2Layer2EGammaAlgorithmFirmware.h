@@ -46,6 +46,21 @@ namespace l1t
     private:
       CaloParams* params_;
 
+  }; 
+
+  class Stage2Layer2EGammaAlgorithmFirmwareImp2 : public Stage2Layer2EGammaAlgorithm {
+  public:
+    Stage2Layer2EGammaAlgorithmFirmwareImp2(CaloParams* params); //const CaloMainProcessorParams & dbPars);
+    virtual ~Stage2Layer2EGammaAlgorithmFirmwareImp2(){}
+    virtual void processEvent(const std::vector<CaloCluster>& clusters, const std::vector<CaloTower>& towers, std::vector<EGamma>& egammas) override;
+    
+  private:
+    int calPtCalib(const l1t::CaloCluster& clus)const;
+    float calEtaPhysical(const l1t::CaloCluster& clus)const;
+    float calPhiPhysical(const l1t::CaloCluster& clus)const;
+  private:
+    CaloParams* params_; //we do not own this
+    
   };
 
 }

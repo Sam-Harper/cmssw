@@ -25,6 +25,9 @@ l1t::Stage2Layer2FirmwareFactory::create(unsigned fwv, CaloParams* params) {
   case 1:
     p = ReturnType(new Stage2MainProcessorFirmwareImp1(fwv, params));
       break;
+  case 2:
+    p = ReturnType(new Stage2MainProcessorFirmwareImp2(fwv, params));
+      break;
   default:
     // Invalid Firmware, log an error:
     LogError("l1t|caloStage2") << "Invalid firmware version requested: " << v << "\n";

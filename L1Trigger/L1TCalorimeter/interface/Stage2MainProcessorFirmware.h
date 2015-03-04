@@ -74,6 +74,49 @@ namespace l1t {
     
   };
   
-}
 
+
+  class Stage2MainProcessorFirmwareImp2 : public Stage2MainProcessor {
+  public:
+    Stage2MainProcessorFirmwareImp2(unsigned fwv, CaloParams* params);
+
+    virtual ~Stage2MainProcessorFirmwareImp2(){}
+
+    virtual void processEvent(const std::vector<l1t::CaloTower> & inTowers,
+			      std::vector<l1t::CaloTower> & outTowers,
+			      std::vector<l1t::CaloCluster> & clusters,
+			      std::vector<l1t::EGamma> & mpEGammas,
+			      std::vector<l1t::Tau> & mpTaus,
+			      std::vector<l1t::Jet> & mpJets,
+			      std::vector<l1t::EtSum> & mpSums,
+			      std::vector<l1t::EGamma> & egammas,
+			      std::vector<l1t::Tau> & taus,
+			      std::vector<l1t::Jet> & jets,
+			      std::vector<l1t::EtSum> & etSums) override;
+
+    void print(std::ostream&) const;
+
+    friend std::ostream& operator<<(std::ostream& o, const Stage2MainProcessorFirmwareImp2 & p) { p.print(o); return o; }
+
+  private:
+    
+    CaloParams* m_params;
+
+    Stage2TowerDecompressAlgorithm* m_towerAlgo;
+    Stage2Layer2ClusterAlgorithm* m_egClusterAlgo;
+    Stage2Layer2EGammaAlgorithm* m_egAlgo;
+    Stage2Layer2ClusterAlgorithm* m_tauClusterAlgo;
+    Stage2Layer2TauAlgorithm* m_tauAlgo;
+    Stage2Layer2JetAlgorithm* m_jetAlgo;
+    Stage2Layer2EtSumAlgorithm* m_sumAlgo;
+    Stage2Layer2JetSumAlgorithm* m_jetSumAlgo;
+
+    Stage2Layer2DemuxEGAlgo* m_demuxEGAlgo;
+    Stage2Layer2DemuxTauAlgo* m_demuxTauAlgo;
+    Stage2Layer2DemuxJetAlgo* m_demuxJetAlgo;
+    Stage2Layer2DemuxSumsAlgo* m_demuxSumsAlgo;
+    
+  };
+  
+}
 #endif

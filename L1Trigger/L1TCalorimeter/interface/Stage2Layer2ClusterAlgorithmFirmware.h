@@ -15,6 +15,7 @@
 
 #include "L1Trigger/L1TCalorimeter/interface/Stage2Layer2ClusterAlgorithm.h"
 #include "CondFormats/L1TObjects/interface/CaloParams.h"
+#include "L1Trigger/L1TCalorimeter/interface/CaloTools.h"
 
 namespace l1t 
 {
@@ -43,9 +44,33 @@ namespace l1t
       // parameters
       ClusterInput clusterInput_;
       int seedThreshold_;
-      int clusterThreshold_;
+      int clusterThreshold_;   
       int hcalThreshold_;
       CaloParams* params_;
+  };
+
+
+  // Imp2 is for 2x3 clustering in a 3x9 area
+  class Stage2Layer2ClusterAlgorithmFirmwareImp2 : public Stage2Layer2ClusterAlgorithm {
+  public:
+    
+    Stage2Layer2ClusterAlgorithmFirmwareImp2(CaloParams* params, l1t::CaloTools::SubDet clusEtType);
+    virtual ~Stage2Layer2ClusterAlgorithmFirmwareImp2(){}
+    
+    virtual void processEvent(const std::vector<l1t::CaloTower>& towers, std::vector<l1t::CaloCluster>& clusters) override;
+    
+  private:
+    bool isSeed(const l1t::CaloTower& seedCand,const std::vector<l1t::CaloTower>& towers)const;
+    int best2x3(const l1t::CaloTower& seed,const std::vector<l1t::CaloTower>& towers)const;
+    int cal2x3Et(const l1t::CaloTower& seed,const std::vector<l1t::CaloTower>& towers,
+		 const int regionNr,l1t::CaloTools::SubDet etType)const;
+    void clustering(const std::vector<l1t::CaloTower>& towers, std::vector<l1t::CaloCluster>& clusters)const;
+    
+
+    // parameters
+    l1t::CaloTools::SubDet clusEtType_;
+    int seedThreshold_;
+    CaloParams* params_; //we dont own this
   };
 
 }
