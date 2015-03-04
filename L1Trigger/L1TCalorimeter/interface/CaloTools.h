@@ -42,7 +42,12 @@ namespace l1t {
     enum SubDet{ECAL=0x1,HCAL=0x2,CALO=0x3}; //CALO is a short cut for ECAL|HCAL
 
     static const l1t::CaloTower&   getTower(const std::vector<l1t::CaloTower>& towers,int iEta,int iPhi);
-    static const l1t::CaloCluster& getCluster(const std::vector<l1t::CaloCluster>& clusters,int iEta,int iPhi);
+    static const l1t::CaloTower&   getTower(const std::vector<l1t::CaloTower>& towers,const std::pair<int,int>& iEtaIPhi)
+                                           {return getTower(towers,iEtaIPhi.first,iEtaIPhi.second);}
+    
+    static const l1t::CaloCluster& getCluster(const std::vector<l1t::CaloCluster>& clusters,int iEta,int iPhi); 
+    static const l1t::CaloCluster& getCluster(const std::vector<l1t::CaloCluster>& clusters,const std::pair<int,int>& iEtaIPhi)
+                                             {return getCluster(clusters,iEtaIPhi.first,iEtaIPhi.second);}
 
     //returns a hash suitable for indexing a vector, returns caloTowerHashMax if invalid iEta,iPhi
     static size_t caloTowerHash(int iEta,int iPhi);
