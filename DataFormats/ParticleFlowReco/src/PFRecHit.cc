@@ -112,9 +112,11 @@ void PFRecHit::setCorner( unsigned i, double posx, double posy, double posz ) {
   assert( i<cornersxyz_.size() );
 
   cornersxyz_[i] = math::XYZPoint( posx, posy, posz);
-  cornersrep_[i] = REPPoint( cornersxyz_[i].Rho(),
-			     cornersxyz_[i].Eta(),
-			     cornersxyz_[i].Phi() );
+  if(!cornersrep_.empty()){
+    cornersrep_[i] = REPPoint( cornersxyz_[i].Rho(),
+			       cornersxyz_[i].Eta(),
+			       cornersxyz_[i].Phi() );
+  }
 }
 
 void
@@ -122,6 +124,10 @@ PFRecHit::calculatePositionREP() {
   positionrep_.SetCoordinates( position_.Rho(), 
 			       position_.Eta(), 
 			       position_.Phi() );
+}
+
+void 
+PFRecHit::calculateCornersREP() const {
   cornersrep_.resize(cornersxyz_.size());
   for( unsigned i = 0; i < cornersxyz_.size(); ++i ) {
     cornersrep_[i].SetCoordinates(cornersxyz_[i].Rho(),

@@ -72,6 +72,7 @@ namespace reco {
     void setEnergy( double energy) { energy_ = energy; }
 
     void calculatePositionREP();
+    void calculateCornersREP()const;
 
     void addNeighbour(short x,short y, short z,const PFRecHitRef&);
     const PFRecHitRef getNeighbour(short x,short y, short z);
@@ -140,7 +141,8 @@ namespace reco {
     const std::vector< math::XYZPoint >& getCornersXYZ() const 
       { return cornersxyz_; }    
 
-    const std::vector<REPPoint>& getCornersREP() const { return cornersrep_; }
+    const std::vector<REPPoint>& getCornersREP() const {if(cornersrep_.empty()) calculateCornersREP();
+							   return cornersrep_; }
 
     void size(double& deta, double& dphi) const;
 
@@ -202,7 +204,7 @@ namespace reco {
     std::vector< math::XYZPoint > cornersxyz_;
 
     /// rechit cell corners rho/eta/phi
-    std::vector< REPPoint > cornersrep_;
+    mutable std::vector< REPPoint > cornersrep_;
   
     /// indices to existing neighbours (1 common side)
     PFRecHitRefVector   neighbours_;
