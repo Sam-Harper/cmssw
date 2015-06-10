@@ -73,6 +73,10 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
+  static void getClusterIndicesBehindES(const reco::PFClusterCollection& ecalClusts,
+					std::vector<size_t> & ecalClustersBehindESPosZ,
+					std::vector<size_t> & ecalClustersBehindESNegZ);
+private:
   const double _minimumPSEnergy;
   std::unique_ptr<PFClusterEMEnergyCorrector> _corrector;
   edm::EDGetTokenT<reco::PFClusterCollection> _inputECAL;
@@ -97,6 +101,11 @@ produce(edm::Event& e, const edm::EventSetup& es) {
   association_out->reserve(handleECAL->size());
   clusters_out->insert(clusters_out->end(),
 		       handleECAL->begin(),handleECAL->end());
+
+  std::vector<size_t> ecalClustersBehindESPosZ;
+  std::vector<size_t> ecalClustersBehindESNegZ;
+  getClusterIndicesBehindES(*handleECAL,ecalClustersBehindESPosZ,ecalClustersBehindESNegZ);
+
   //build the EE->PS association
   double dist = -1.0, min_dist = -1.0;
   for( unsigned i = 0; i < handlePS->size(); ++i ) {      
@@ -109,11 +118,12 @@ produce(edm::Event& e, const edm::EventSetup& es) {
     }    
     edm::Ptr<reco::PFCluster> psclus(handlePS,i);
     if( psclus->energy() < _minimumPSEnergy ) continue;
+    //    std::cout <<psclus->energy()<<std::endl;
     edm::Ptr<reco::PFCluster> eematch,eeclus;
     dist = min_dist = -1.0; // reset
-    for( size_t ic = 0; ic < handleECAL->size(); ++ic ) {
-      if( handleECAL->at(ic).layer() != PFLayer::ECAL_ENDCAP ) continue;
-      eeclus = edm::Ptr<reco::PFCluster>(handleECAL,ic);	
+    const auto& ecalClustersToMatch =  psclus->z()>0 ? ecalClustersBehindESPosZ : ecalClustersBehindESNegZ;
+    for(auto clusIndex : ecalClustersToMatch){
+      eeclus = edm::Ptr<reco::PFCluster>(handleECAL,clusIndex);	
       dist = testPreshowerDistance(eeclus,psclus);      
       if( dist == -1.0 || (min_dist != -1.0 && dist > min_dist) ) continue;
       if( dist < min_dist || min_dist == -1.0 ) {
@@ -153,6 +163,23 @@ void CorrectedECALPFClusterProducer::fillDescriptions(edm::ConfigurationDescript
   }
   desc.add<edm::InputTag>("inputECAL",edm::InputTag("particleFlowClusterECALUncorrected"));
   descriptions.add("particleFlowClusterECAL",desc);
+}
+
+void CorrectedECALPFClusterProducer::getClusterIndicesBehindES(const reco::PFClusterCollection& ecalClusts,
+							       std::vector<size_t> & ecalClustersBehindESPosZ,
+							       std::vector<size_t> & ecalClustersBehindESNegZ)
+{
+  ecalClustersBehindESPosZ.reserve(ecalClusts.size());
+  ecalClustersBehindESNegZ.reserve(ecalClusts.size());
+
+  for(size_t clusNr=0;clusNr<ecalClusts.size();clusNr++){
+    double eta = ecalClusts[clusNr].positionREP().eta();
+    if(eta>1.65 && eta<2.6) ecalClustersBehindESPosZ.push_back(clusNr);
+    else if(eta>-2.6 && eta<-1.65)  ecalClustersBehindESNegZ.push_back(clusNr);
+
+
+  }
+
 }
 
 #endif
