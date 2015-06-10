@@ -32,10 +32,11 @@ buildClusters(const edm::Handle<reco::PFRecHitCollection>& input,
   seeds.reserve(input->size());  
   for( unsigned i = 0; i < input->size(); ++i ) {
     if( !rechitMask[i] || !seedable[i] || used[i] ) continue;
-    std::pair<unsigned,double> val = std::make_pair(i,input->at(i).energy());
-    auto pos = std::upper_bound(seeds.begin(),seeds.end(),val,greaterByEnergy);
-    seeds.insert(pos,val);
+    //  std::pair<unsigned,double> val = std::make_pair(i,input->at(i).energy());
+    //    auto pos = std::upper_bound(seeds.begin(),seeds.end(),val,greaterByEnergy);
+    seeds.emplace_back(std::make_pair(i,input->at(i).energy()));
   }
+  std::sort(seeds.begin(),seeds.end(),greaterByEnergy);
   
   reco::PFCluster temp;
   for( const auto& idx_e : seeds ) {    
