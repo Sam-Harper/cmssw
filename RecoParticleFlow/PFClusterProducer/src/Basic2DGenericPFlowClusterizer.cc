@@ -85,8 +85,9 @@ buildClusters(const reco::PFClusterCollection& input,
   for( const auto& topocluster : input ) {
     clustersInTopo.clear();
     seedPFClustersFromTopo(topocluster,seedable,clustersInTopo);
-    const unsigned tolScal = 
-      std::pow(std::max(1.0,clustersInTopo.size()-1.0),2.0);
+    
+    const unsigned tolScal = clustersInTopo.size()<=2 ? 1.0 : (clustersInTopo.size()-1)*(clustersInTopo.size()-1);
+    //      std::pow(std::max(1.0,clustersInTopo.size()-1.0),2.0);
     growPFClusters(topocluster,seedable,tolScal,0,tolScal,clustersInTopo);
     // step added by Josh Bendavid, removes low-fraction clusters
     // did not impact position resolution with fraction cut of 1e-7
