@@ -107,11 +107,13 @@ clean(const edm::Handle<reco::PFRecHitCollection>& input,
   //need to run over energy sorted rechits
   std::vector<std::pair<unsigned,double> > ordered_hits;
   for( unsigned i = 0; i < input->size(); ++i ) {
-    std::pair<unsigned,double> val = std::make_pair(i,input->at(i).energy());
-    auto pos = std::upper_bound(ordered_hits.begin(),ordered_hits.end(),
-				val, greaterByEnergy);
-    ordered_hits.insert(pos,val);
+    ordered_hits.emplace_back(std::make_pair(i,input->at(i).energy()));
+    //    auto pos = std::upper_bound(ordered_hits.begin(),ordered_hits.end(),
+    //				val, greaterByEnergy);
+    // ordered_hits.insert(pos,val);
+
   }  
+  std::sort(ordered_hits.begin(),ordered_hits.end(),greaterByEnergy);
 
   for( const auto& idx_e : ordered_hits ) {
     const unsigned i = idx_e.first;
