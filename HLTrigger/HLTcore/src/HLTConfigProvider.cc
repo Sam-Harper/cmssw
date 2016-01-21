@@ -372,7 +372,7 @@ std::pair<std::vector<std::pair<std::string,int> >,int> HLTConfigProvider::presc
 	message << " " << i << ":" << errorCodes[i].first << "/" << errorCodes[i].second << "/" << result.first[i].second;
       }
       message << ".";
-      edm::LogError("HLTConfigData") << message.str();
+      //  edm::LogError("HLTConfigData") << message.str();
       result.first.clear();
     }
   } else {
