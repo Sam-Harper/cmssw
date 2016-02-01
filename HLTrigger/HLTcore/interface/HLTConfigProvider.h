@@ -256,6 +256,8 @@ class HLTConfigProvider {
     return hltConfigData_->prescaleTable();
   }
 
+  const L1GtUtils* l1GtUtils()const{return l1GtUtils_.get();}
+
   /// regexp processing
   static const std::vector<std::string> matched(const std::vector<std::string>& inputs, const std::string& pattern);
   static const std::string removeVersion(const std::string& trigger);

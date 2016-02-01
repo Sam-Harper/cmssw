@@ -12,6 +12,8 @@
 
 #include <iostream>
 
+const std::string& HLTConfigData::globalTag()const{return globalTag_;}
+
 //Using this function with the 'const static within s_dummyPSet'
 // guarantees that even if multiple threads call s_dummyPSet at the
 // same time, only the 'first' one registers the dummy PSet.
@@ -106,7 +108,12 @@ void HLTConfigData::extract()
    moduleLabels_.reserve(n);
    for (unsigned int i=0;i!=n; ++i) {
      if (processPSet_->existsAs<vector<string> >(triggerNames_[i],true)) {
-       moduleLabels_.push_back(processPSet_->getParameter<vector<string> >(triggerNames_[i]));
+       //theres a little hack needed, if the module is ignored, it will have a - in front of it the name, we 
+       //need to remove this
+       std::vector<std::string> moduleLabels= processPSet_->getParameter<vector<string> >(triggerNames_[i]);
+       //   std::transform(moduleLabels.begin(),moduleLabels.end(),moduleLabels.begin(),
+       //	      [](std::string label){if(label.front()=='-') label.erase(0,1);return label;});
+       moduleLabels_.push_back(moduleLabels);
      }
    }
    saveTagsModules_.reserve(n);
@@ -141,7 +148,7 @@ void HLTConfigData::extract()
      const unsigned int m(size(i));
      for (unsigned int j=0; j!=m; ++j) {
        const string& label(moduleLabels_[i][j]);
-       if (moduleType(label) == "HLTLevel1GTSeed") {
+       if (label.front()!='-' && moduleType(label) == "HLTLevel1GTSeed") {
 	 const ParameterSet& pset(modulePSet(label));
 	 if (pset!=ParameterSet()) {
 	   const bool   l1Tech(pset.getParameter<bool>("L1TechTriggerSeeding"));
@@ -425,8 +432,10 @@ const edm::ParameterSet& HLTConfigData::processPSet() const {
 }
 
 const edm::ParameterSet& HLTConfigData::modulePSet(const std::string& module) const {
-  if (processPSet_->exists(module)) {
-    return processPSet_->getParameterSet(module);
+  //this is a hack to avoid changing the interface, module should be passed by value
+  //we need to remove the "-" to get the module pset
+  if (processPSet_->exists(module.front()!='-' ? module : module.substr(1))) {
+    return processPSet_->getParameterSet(module.front()!='-' ? module : module.substr(1));
   } else {
     return *s_dummyPSet();
   }
