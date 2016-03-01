@@ -249,6 +249,9 @@ EmDQM::dqmBeginRun(edm::Run const &iRun, edm::EventSetup const &iSetup)
                  if (moduleType == "HLTLevel1GTSeed") {
                     filterPSet = makePSetForL1SeedFilter(moduleLabel);
                  }
+                 else if (moduleType == "HLTEgammaL1TMatchFilterRegional") {
+                    filterPSet = makePSetForL1SeedToSuperClusterMatchFilter(moduleLabel);
+                 }
                  else if (moduleType == "HLTEgammaL1MatchFilterRegional") {
                     filterPSet = makePSetForL1SeedToSuperClusterMatchFilter(moduleLabel);
                  }

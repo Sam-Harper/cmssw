@@ -91,9 +91,9 @@ def customizeHLTforCMSSW(process, menuType="GRun"):
 
 #   replace remaining l1extra modules with filter returning 'false'
     badTypes = (
-                'HLTEgammaL1MatchFilterRegional',
-                'HLTEcalRecHitInAllL1RegionsProducer',
-                'EgammaHLTCaloTowerProducer',
+#                'HLTEgammaL1MatchFilterRegional',
+#                'HLTEcalRecHitInAllL1RegionsProducer',
+#                'EgammaHLTCaloTowerProducer',
                 'HLTMuonL1Filter',
                 'HLTL1MuonSelector',
                 'L2MuonSeedGenerator',

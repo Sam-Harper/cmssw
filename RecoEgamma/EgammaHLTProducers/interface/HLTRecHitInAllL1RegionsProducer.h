@@ -32,6 +32,10 @@
 #include "DataFormats/L1Trigger/interface/L1JetParticle.h"
 #include "DataFormats/L1Trigger/interface/L1MuonParticle.h"
 
+#include "DataFormats/L1Trigger/interface/EGamma.h"
+#include "DataFormats/L1Trigger/interface/Jet.h"
+#include "DataFormats/L1Trigger/interface/Muon.h"
+
 #include "CondFormats/L1TObjects/interface/L1CaloGeometry.h"
 #include "CondFormats/DataRecord/interface/L1CaloGeometryRecord.h"
 
@@ -127,6 +131,7 @@ void HLTRecHitInAllL1RegionsProducer<RecHitType>::fillDescriptions(edm::Configur
   recHitLabels.push_back(edm::InputTag("hltESRegionalEgammaRecHit:EcalRecHitsES"));
   desc.add<std::vector<edm::InputTag>>("recHitLabels", recHitLabels);
   std::vector<edm::ParameterSet> l1InputRegions;
+  
   edm::ParameterSet emIsoPSet;
   emIsoPSet.addParameter<std::string>("type","L1EmParticle");
   emIsoPSet.addParameter<double>("minEt",5);
@@ -143,6 +148,25 @@ void HLTRecHitInAllL1RegionsProducer<RecHitType>::fillDescriptions(edm::Configur
   emNonIsoPSet.addParameter<double>("regionPhiMargin",0.4);
   emNonIsoPSet.addParameter<edm::InputTag>("inputColl",edm::InputTag("hltL1extraParticles:Isolated"));
   l1InputRegions.push_back(emNonIsoPSet);
+  
+  // Why no Central Jets here? They are present in the python config, e.g. OnLine_HLT_GRun.py
+  //
+  edm::ParameterSet EGIsoPSet;
+  EGIsoPSet.addParameter<std::string>("type","EGamma");
+  EGIsoPSet.addParameter<double>("minEt",5);
+  EGIsoPSet.addParameter<double>("maxEt",999);
+  EGIsoPSet.addParameter<double>("regionEtaMargin",0.14);
+  EGIsoPSet.addParameter<double>("regionPhiMargin",0.4);
+  EGIsoPSet.addParameter<edm::InputTag>("inputColl",edm::InputTag("hltCaloStage2Digis:NonIsolated"));
+  l1InputRegions.push_back(EGIsoPSet);
+  edm::ParameterSet EGNonIsoPSet;
+  EGNonIsoPSet.addParameter<std::string>("type","EGamma");
+  EGNonIsoPSet.addParameter<double>("minEt",5);
+  EGNonIsoPSet.addParameter<double>("maxEt",999);
+  EGNonIsoPSet.addParameter<double>("regionEtaMargin",0.14);
+  EGNonIsoPSet.addParameter<double>("regionPhiMargin",0.4);
+  EGNonIsoPSet.addParameter<edm::InputTag>("inputColl",edm::InputTag("hltCaloStage2Digis:Isolated"));
+  l1InputRegions.push_back(EGNonIsoPSet);
   
   edm::ParameterSetDescription l1InputRegionDesc;
   l1InputRegionDesc.add<std::string>("type");
@@ -220,6 +244,12 @@ L1RegionDataBase* HLTRecHitInAllL1RegionsProducer<RecHitType>::createL1RegionDat
     return new L1RegionData<l1extra::L1JetParticleCollection>(para,consumesColl);
   }else if(type=="L1MuonParticle"){
     return new L1RegionData<l1extra::L1MuonParticleCollection>(para,consumesColl);
+  }else if(type=="EGamma"){
+    return new L1RegionData<l1t::EGammaBxCollection>(para,consumesColl);
+  }else if(type=="Jet"){
+    return new L1RegionData<l1t::JetBxCollection>(para,consumesColl);
+  }else if(type=="Muon"){
+    return new L1RegionData<l1t::MuonBxCollection>(para,consumesColl);
   }else{
     //this is a major issue and could lead to rather subtle efficiency losses, so if its incorrectly configured, we're aborting the job!
     throw cms::Exception("InvalidConfig") << " type "<<type<<" is not recognised, this means the rec-hit you think you are keeping may not be and you should fix this error as it can lead to hard to find efficiency loses"<<std::endl;
@@ -279,6 +309,38 @@ void L1RegionData<l1extra::L1JetParticleCollection>::getEtaPhiRegions(const edm:
 }
 
 template<>
+void L1RegionData<l1t::JetBxCollection>::getEtaPhiRegions(const edm::Event& event,std::vector<EcalEtaPhiRegion>&regions,const L1CaloGeometry& l1CaloGeom)const
+{
+  edm::Handle<l1t::JetBxCollection> l1Cands;
+  event.getByToken(token_,l1Cands);
+  
+  for(const auto& l1Cand : *l1Cands){
+    if(l1Cand.et() >= minEt_ && l1Cand.et() < maxEt_){
+     
+      // Access the GCT hardware object corresponding to the L1Extra EM object.
+      //int etaIndex = l1Cand.gctJetCand()->etaIndex();
+      //int phiIndex = l1Cand.gctJetCand()->phiIndex();
+      int etaIndex = l1Cand.hwEta();
+      int phiIndex = l1Cand.hwPhi();
+      
+      // Use the L1CaloGeometry to find the eta, phi bin boundaries.
+      double etaLow  = l1CaloGeom.etaBinLowEdge(etaIndex);
+      double etaHigh = l1CaloGeom.etaBinHighEdge(etaIndex);
+      double phiLow  = l1CaloGeom.emJetPhiBinLowEdge( phiIndex ) ;
+      double phiHigh = l1CaloGeom.emJetPhiBinHighEdge( phiIndex ) ;
+      
+      etaLow -= regionEtaMargin_;
+      etaHigh += regionEtaMargin_;
+      phiLow -= regionPhiMargin_;
+      phiHigh += regionPhiMargin_;
+
+      
+      regions.push_back(EcalEtaPhiRegion(etaLow,etaHigh,phiLow,phiHigh));
+    }
+  }
+}
+
+template<>
 void L1RegionData<l1extra::L1EmParticleCollection>::getEtaPhiRegions(const edm::Event& event,std::vector<EcalEtaPhiRegion>&regions,const L1CaloGeometry& l1CaloGeom)const
 {
   edm::Handle<l1extra::L1EmParticleCollection> l1Cands;
@@ -290,6 +352,37 @@ void L1RegionData<l1extra::L1EmParticleCollection>::getEtaPhiRegions(const edm::
        // Access the GCT hardware object corresponding to the L1Extra EM object.
       int etaIndex = l1Cand.gctEmCand()->etaIndex();
       int phiIndex = l1Cand.gctEmCand()->phiIndex();
+      
+      // Use the L1CaloGeometry to find the eta, phi bin boundaries.
+      double etaLow  = l1CaloGeom.etaBinLowEdge(etaIndex);
+      double etaHigh = l1CaloGeom.etaBinHighEdge(etaIndex);
+      double phiLow  = l1CaloGeom.emJetPhiBinLowEdge( phiIndex ) ;
+      double phiHigh = l1CaloGeom.emJetPhiBinHighEdge( phiIndex ) ;
+      
+      etaLow -= regionEtaMargin_;
+      etaHigh += regionEtaMargin_;
+      phiLow -= regionPhiMargin_;
+      phiHigh += regionPhiMargin_;
+      
+      regions.push_back(EcalEtaPhiRegion(etaLow,etaHigh,phiLow,phiHigh));
+    }
+  }
+}
+
+template<>
+void L1RegionData<l1t::EGammaBxCollection>::getEtaPhiRegions(const edm::Event& event,std::vector<EcalEtaPhiRegion>&regions,const L1CaloGeometry& l1CaloGeom)const
+{
+  edm::Handle<l1t::EGammaBxCollection> l1Cands;
+  event.getByToken(token_,l1Cands);
+  
+  for(const auto& l1Cand : *l1Cands){
+    if(l1Cand.et() >= minEt_ && l1Cand.et() < maxEt_){
+      
+       // Access the GCT hardware object corresponding to the L1Extra EM object.
+      //int etaIndex = l1Cand.gctEmCand()->etaIndex();
+      //int phiIndex = l1Cand.gctEmCand()->phiIndex();
+      int etaIndex = l1Cand.hwEta();
+      int phiIndex = l1Cand.hwPhi();
       
       // Use the L1CaloGeometry to find the eta, phi bin boundaries.
       double etaLow  = l1CaloGeom.etaBinLowEdge(etaIndex);

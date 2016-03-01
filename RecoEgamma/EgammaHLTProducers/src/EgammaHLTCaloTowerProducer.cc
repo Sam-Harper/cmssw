@@ -11,6 +11,7 @@
 
 #include "DataFormats/L1Trigger/interface/L1EmParticle.h"
 #include "DataFormats/L1Trigger/interface/L1EmParticleFwd.h"
+#include "DataFormats/L1Trigger/interface/EGamma.h"
 
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -22,7 +23,7 @@
 using namespace edm;
 using namespace reco;
 using namespace std;
-using namespace l1extra ;
+//using namespace l1extra ;
 
 EgammaHLTCaloTowerProducer::EgammaHLTCaloTowerProducer( const ParameterSet & p ) : towers_ (consumes<CaloTowerCollection>(p.getParameter<InputTag> ("towerCollection"))),
 										   cone_ (p.getParameter<double> ("useTowersInCone")),
