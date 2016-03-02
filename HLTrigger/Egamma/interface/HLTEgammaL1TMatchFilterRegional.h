@@ -34,10 +34,9 @@ class HLTEgammaL1TMatchFilterRegional : public HLTFilter {
 
   private:
     edm::InputTag candIsolatedTag_;         // input tag identifying product contains egammas
-    edm::InputTag l1IsolatedTag_;           // input tag identifying product contains egammas
+    edm::InputTag l1EGTag_;           // input tag identifying product contains egammas
     edm::InputTag candNonIsolatedTag_;      // input tag identifying product contains egammas
-    edm::InputTag l1NonIsolatedTag_;         // input tag identifying product contains egammas
-    edm::InputTag l1CenJetsTag_;//EGamma can now be seeded by L1 Jet seeds (important for high energy) 
+    edm::InputTag l1JetsTag_;//EGamma can now be seeded by L1 Jet seeds (important for high energy) 
     edm::EDGetTokenT<reco::RecoEcalCandidateCollection> candIsolatedToken_;
     edm::EDGetTokenT<reco::RecoEcalCandidateCollection> candNonIsolatedToken_;
 
@@ -54,10 +53,6 @@ class HLTEgammaL1TMatchFilterRegional : public HLTFilter {
     double endcap_end_;
 
   private:
-    //bool matchedToL1Cand(const std::vector<l1extra::L1EmParticleRef >& l1Cands,const float scEta,const float scPhi) const;
-    //bool matchedToL1Cand(const std::vector<l1extra::L1JetParticleRef >& l1Cands,const float scEta,const float scPhi) const;
-    //bool matchedToL1Cand(const l1t::EGammaVectorRef l1Cands,const float scEta,const float scPhi) const;
-    //bool matchedToL1Cand(const l1t::JetVectorRef l1Cands,const float scEta,const float scPhi) const;
     bool matchedToL1Cand(const std::vector<l1t::EGammaRef>& l1Cands,const float scEta,const float scPhi) const;
     bool matchedToL1Cand(const std::vector<l1t::JetRef>& l1Cands,const float scEta,const float scPhi) const;
 };
