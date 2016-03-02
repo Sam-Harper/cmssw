@@ -313,45 +313,6 @@ void L1RegionData<l1extra::L1JetParticleCollection>::getEtaPhiRegions(const edm:
 }
 
 template<>
-void L1RegionData<l1t::JetBxCollection>::getEtaPhiRegions(const edm::Event& event,std::vector<EcalEtaPhiRegion>&regions,const L1CaloGeometry& l1CaloGeom)const
-{
-  edm::Handle<l1t::JetBxCollection> l1Cands;
-  event.getByToken(token_,l1Cands);
-  
-  for(const auto& l1Cand : *l1Cands){
-    if(l1Cand.et() >= minEt_ && l1Cand.et() < maxEt_){
-     
-      int etaIndex = l1Cand.hwEta();
-      int phiIndex = l1Cand.hwPhi();
-      
-      //stage-2 migration: this is a c&p of the EG code, need to look up jet specific version and see if we need to adapt
-
-      std::cout <<"jet: etaIndex "<<etaIndex<<" phiIndex "<<phiIndex<<std::endl;
-
-      // Use the L1CaloGeometry to find the eta, phi bin boundaries.
-      double eta = l1t::CaloTools::towerEta(etaIndex);
-      double towerEtaSize = l1t::CaloTools::towerEtaSize(etaIndex);
-      double etaLow = eta-towerEtaSize;
-      double etaHigh = eta+towerEtaSize;
-      
-      double phi = l1t::CaloTools::towerPhi(etaIndex,phiIndex);
-      double towerPhiSize = l1t::CaloTools::towerPhiSize(phiIndex);
-
-      double phiLow  = phi-towerPhiSize;
-      double phiHigh = phi+towerPhiSize;
-      
-      etaLow -= regionEtaMargin_;
-      etaHigh += regionEtaMargin_;
-      phiLow -= regionPhiMargin_;
-      phiHigh += regionPhiMargin_;
-
-      
-      regions.push_back(EcalEtaPhiRegion(etaLow,etaHigh,phiLow,phiHigh));
-    }
-  }
-}
-
-template<>
 void L1RegionData<l1extra::L1EmParticleCollection>::getEtaPhiRegions(const edm::Event& event,std::vector<EcalEtaPhiRegion>&regions,const L1CaloGeometry& l1CaloGeom)const
 {
   edm::Handle<l1extra::L1EmParticleCollection> l1Cands;
@@ -379,43 +340,6 @@ void L1RegionData<l1extra::L1EmParticleCollection>::getEtaPhiRegions(const edm::
     }
   }
 }
-
-template<>
-void L1RegionData<l1t::EGammaBxCollection>::getEtaPhiRegions(const edm::Event& event,std::vector<EcalEtaPhiRegion>&regions,const L1CaloGeometry& l1CaloGeom)const
-{
-  edm::Handle<l1t::EGammaBxCollection> l1Cands;
-  event.getByToken(token_,l1Cands);
-  
-  for(const auto& l1Cand : *l1Cands){
-    if(l1Cand.et() >= minEt_ && l1Cand.et() < maxEt_){
-      
-      int etaIndex = l1Cand.hwEta();
-      int phiIndex = l1Cand.hwPhi();
-      
-      std::cout <<"EG: etaIndex "<<etaIndex<<" phiIndex "<<phiIndex<<std::endl;
-
-      // Use the L1CaloGeometry to find the eta, phi bin boundaries.
-      double eta = l1t::CaloTools::towerEta(etaIndex);
-      double towerEtaSize = l1t::CaloTools::towerEtaSize(etaIndex);
-      double etaLow = eta-towerEtaSize;
-      double etaHigh = eta+towerEtaSize;
-      
-      double phi = l1t::CaloTools::towerPhi(etaIndex,phiIndex);
-      double towerPhiSize = l1t::CaloTools::towerPhiSize(phiIndex);
-
-      double phiLow  = phi-towerPhiSize;
-      double phiHigh = phi+towerPhiSize;
-      
-      etaLow -= regionEtaMargin_;
-      etaHigh += regionEtaMargin_;
-      phiLow -= regionPhiMargin_;
-      phiHigh += regionPhiMargin_;
-      
-      regions.push_back(EcalEtaPhiRegion(etaLow,etaHigh,phiLow,phiHigh));
-    }
-  }
-}
-
 
 
 
