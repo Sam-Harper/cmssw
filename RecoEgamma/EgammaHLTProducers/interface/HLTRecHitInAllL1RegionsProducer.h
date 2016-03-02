@@ -42,6 +42,7 @@
 #include "DataFormats/EcalRecHit/interface/EcalRecHit.h"
 #include "DataFormats/EcalRecHit/interface/EcalUncalibratedRecHit.h"
 
+#include "L1Trigger/L1TCalorimeter/interface/CaloTools.h"
 
 #include "HLTrigger/HLTcore/interface/defaultModuleLabel.h"
 
@@ -149,25 +150,28 @@ void HLTRecHitInAllL1RegionsProducer<RecHitType>::fillDescriptions(edm::Configur
   emNonIsoPSet.addParameter<edm::InputTag>("inputColl",edm::InputTag("hltL1extraParticles:Isolated"));
   l1InputRegions.push_back(emNonIsoPSet);
   
-  // Why no Central Jets here? They are present in the python config, e.g. OnLine_HLT_GRun.py
+  // Why no Central Jets here? They are present in the python config, e.g. OnLine_HLT_GRun.py 
+  // SHarper: because these are the default parameters designed to reproduce the original (no jets) behaviour
   //
-  edm::ParameterSet EGIsoPSet;
-  EGIsoPSet.addParameter<std::string>("type","EGamma");
-  EGIsoPSet.addParameter<double>("minEt",5);
-  EGIsoPSet.addParameter<double>("maxEt",999);
-  EGIsoPSet.addParameter<double>("regionEtaMargin",0.14);
-  EGIsoPSet.addParameter<double>("regionPhiMargin",0.4);
-  EGIsoPSet.addParameter<edm::InputTag>("inputColl",edm::InputTag("hltCaloStage2Digis:NonIsolated"));
-  l1InputRegions.push_back(EGIsoPSet);
-  edm::ParameterSet EGNonIsoPSet;
-  EGNonIsoPSet.addParameter<std::string>("type","EGamma");
-  EGNonIsoPSet.addParameter<double>("minEt",5);
-  EGNonIsoPSet.addParameter<double>("maxEt",999);
-  EGNonIsoPSet.addParameter<double>("regionEtaMargin",0.14);
-  EGNonIsoPSet.addParameter<double>("regionPhiMargin",0.4);
-  EGNonIsoPSet.addParameter<edm::InputTag>("inputColl",edm::InputTag("hltCaloStage2Digis:Isolated"));
-  l1InputRegions.push_back(EGNonIsoPSet);
+  edm::ParameterSet egPSet;
+  egPSet.addParameter<std::string>("type","EGamma");
+  egPSet.addParameter<double>("minEt",5);
+  egPSet.addParameter<double>("maxEt",999);
+  egPSet.addParameter<double>("regionEtaMargin",0.4);
+  egPSet.addParameter<double>("regionPhiMargin",0.5);
+  egPSet.addParameter<edm::InputTag>("inputColl",edm::InputTag("hltCaloStage2Digis"));
+  l1InputRegions.push_back(egPSet);
   
+  edm::ParameterSet jetPSet;
+  jetPSet.addParameter<std::string>("type","EGamma");
+  jetPSet.addParameter<double>("minEt",200);
+  jetPSet.addParameter<double>("maxEt",999);
+  jetPSet.addParameter<double>("regionEtaMargin",0.4);
+  jetPSet.addParameter<double>("regionPhiMargin",0.5);
+  jetPSet.addParameter<edm::InputTag>("inputColl",edm::InputTag("hltCaloStage2Digis"));
+  l1InputRegions.push_back(jetPSet);
+  
+
   edm::ParameterSetDescription l1InputRegionDesc;
   l1InputRegionDesc.add<std::string>("type");
   l1InputRegionDesc.add<double>("minEt");
@@ -317,17 +321,24 @@ void L1RegionData<l1t::JetBxCollection>::getEtaPhiRegions(const edm::Event& even
   for(const auto& l1Cand : *l1Cands){
     if(l1Cand.et() >= minEt_ && l1Cand.et() < maxEt_){
      
-      // Access the GCT hardware object corresponding to the L1Extra EM object.
-      //int etaIndex = l1Cand.gctJetCand()->etaIndex();
-      //int phiIndex = l1Cand.gctJetCand()->phiIndex();
       int etaIndex = l1Cand.hwEta();
       int phiIndex = l1Cand.hwPhi();
       
+      //stage-2 migration: this is a c&p of the EG code, need to look up jet specific version and see if we need to adapt
+
+      std::cout <<"jet: etaIndex "<<etaIndex<<" phiIndex "<<phiIndex<<std::endl;
+
       // Use the L1CaloGeometry to find the eta, phi bin boundaries.
-      double etaLow  = l1CaloGeom.etaBinLowEdge(etaIndex);
-      double etaHigh = l1CaloGeom.etaBinHighEdge(etaIndex);
-      double phiLow  = l1CaloGeom.emJetPhiBinLowEdge( phiIndex ) ;
-      double phiHigh = l1CaloGeom.emJetPhiBinHighEdge( phiIndex ) ;
+      double eta = l1t::CaloTools::towerEta(etaIndex);
+      double towerEtaSize = l1t::CaloTools::towerEtaSize(etaIndex);
+      double etaLow = eta-towerEtaSize;
+      double etaHigh = eta+towerEtaSize;
+      
+      double phi = l1t::CaloTools::towerPhi(etaIndex,phiIndex);
+      double towerPhiSize = l1t::CaloTools::towerPhiSize(phiIndex);
+
+      double phiLow  = phi-towerPhiSize;
+      double phiHigh = phi+towerPhiSize;
       
       etaLow -= regionEtaMargin_;
       etaHigh += regionEtaMargin_;
@@ -349,7 +360,7 @@ void L1RegionData<l1extra::L1EmParticleCollection>::getEtaPhiRegions(const edm::
   for(const auto& l1Cand : *l1Cands){
     if(l1Cand.et() >= minEt_ && l1Cand.et() < maxEt_){
       
-       // Access the GCT hardware object corresponding to the L1Extra EM object.
+      // Access the GCT hardware object corresponding to the L1Extra EM object.
       int etaIndex = l1Cand.gctEmCand()->etaIndex();
       int phiIndex = l1Cand.gctEmCand()->phiIndex();
       
@@ -378,17 +389,22 @@ void L1RegionData<l1t::EGammaBxCollection>::getEtaPhiRegions(const edm::Event& e
   for(const auto& l1Cand : *l1Cands){
     if(l1Cand.et() >= minEt_ && l1Cand.et() < maxEt_){
       
-       // Access the GCT hardware object corresponding to the L1Extra EM object.
-      //int etaIndex = l1Cand.gctEmCand()->etaIndex();
-      //int phiIndex = l1Cand.gctEmCand()->phiIndex();
       int etaIndex = l1Cand.hwEta();
       int phiIndex = l1Cand.hwPhi();
       
+      std::cout <<"EG: etaIndex "<<etaIndex<<" phiIndex "<<phiIndex<<std::endl;
+
       // Use the L1CaloGeometry to find the eta, phi bin boundaries.
-      double etaLow  = l1CaloGeom.etaBinLowEdge(etaIndex);
-      double etaHigh = l1CaloGeom.etaBinHighEdge(etaIndex);
-      double phiLow  = l1CaloGeom.emJetPhiBinLowEdge( phiIndex ) ;
-      double phiHigh = l1CaloGeom.emJetPhiBinHighEdge( phiIndex ) ;
+      double eta = l1t::CaloTools::towerEta(etaIndex);
+      double towerEtaSize = l1t::CaloTools::towerEtaSize(etaIndex);
+      double etaLow = eta-towerEtaSize;
+      double etaHigh = eta+towerEtaSize;
+      
+      double phi = l1t::CaloTools::towerPhi(etaIndex,phiIndex);
+      double towerPhiSize = l1t::CaloTools::towerPhiSize(phiIndex);
+
+      double phiLow  = phi-towerPhiSize;
+      double phiHigh = phi+towerPhiSize;
       
       etaLow -= regionEtaMargin_;
       etaHigh += regionEtaMargin_;
