@@ -71,6 +71,12 @@ public:
     token_(consumesColl.consumes<T1>(para.getParameter<edm::InputTag>("inputColl"))){}
   
   void getEtaPhiRegions(const edm::Event&,std::vector<EcalEtaPhiRegion>&,const L1CaloGeometry&)const override;
+  template<typename T2>static typename T2::const_iterator beginIt(const T2& coll){return coll.begin();}
+  template<typename T2>static typename T2::const_iterator endIt(const T2& coll){return coll.end();}
+  template<typename T2>static typename BXVector<T2>::const_iterator beginIt(const BXVector<T2>& coll){return coll.begin(0);}
+  template<typename T2>static typename BXVector<T2>::const_iterator endIt(const BXVector<T2>& coll){return coll.end(0);}
+  
+
 };
 
 
@@ -254,6 +260,8 @@ L1RegionDataBase* HLTRecHitInAllL1RegionsProducer<RecHitType>::createL1RegionDat
     return new L1RegionData<l1t::JetBxCollection>(para,consumesColl);
   }else if(type=="Muon"){
     return new L1RegionData<l1t::MuonBxCollection>(para,consumesColl);
+  }else if(type=="Tau"){
+    return new L1RegionData<l1t::TauBxCollection>(para,consumesColl);
   }else{
     //this is a major issue and could lead to rather subtle efficiency losses, so if its incorrectly configured, we're aborting the job!
     throw cms::Exception("InvalidConfig") << " type "<<type<<" is not recognised, this means the rec-hit you think you are keeping may not be and you should fix this error as it can lead to hard to find efficiency loses"<<std::endl;
@@ -262,20 +270,19 @@ L1RegionDataBase* HLTRecHitInAllL1RegionsProducer<RecHitType>::createL1RegionDat
 }
 
 
-
 template<typename L1CollType>
 void L1RegionData<L1CollType>::getEtaPhiRegions(const edm::Event& event,std::vector<EcalEtaPhiRegion>&regions,const L1CaloGeometry&)const
 {
   edm::Handle<L1CollType> l1Cands;
   event.getByToken(token_,l1Cands);
   
-  for(const auto& l1Cand : *l1Cands){
-    if(l1Cand.et() >= minEt_ && l1Cand.et() < maxEt_){
+  for(auto l1CandIt = beginIt(*l1Cands);l1CandIt!=endIt(*l1Cands);++l1CandIt){
+    if(l1CandIt->et() >= minEt_ && l1CandIt->et() < maxEt_){
       
-      double etaLow = l1Cand.eta() - regionEtaMargin_;
-      double etaHigh = l1Cand.eta() + regionEtaMargin_;
-      double phiLow = l1Cand.phi() - regionPhiMargin_;
-      double phiHigh = l1Cand.phi() + regionPhiMargin_;
+      double etaLow = l1CandIt->eta() - regionEtaMargin_;
+      double etaHigh = l1CandIt->eta() + regionEtaMargin_;
+      double phiLow = l1CandIt->phi() - regionPhiMargin_;
+      double phiHigh = l1CandIt->phi() + regionPhiMargin_;
       
       regions.push_back(EcalEtaPhiRegion(etaLow,etaHigh,phiLow,phiHigh));
     }
