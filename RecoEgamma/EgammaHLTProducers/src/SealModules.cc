@@ -39,6 +39,7 @@
 #include "RecoEgamma/EgammaHLTProducers/interface/EgammaHLTPFNeutralIsolationProducer.h"
 
 #include "RecoEgamma/EgammaHLTProducers/interface/EgammaHLTCaloTowerProducer.h"
+#include "RecoEgamma/EgammaHLTProducers/interface/EgammaHLTCaloTowerInL1TRegionsProducer.h"
 
 #include "RecoEgamma/EgammaHLTProducers/interface/EgammaHLTTimeCleanedRechitProducer.h"
 
@@ -77,5 +78,6 @@ DEFINE_FWK_MODULE(EgammaHLTPFNeutralIsolationProducer);
 
 
 DEFINE_FWK_MODULE(EgammaHLTCaloTowerProducer);
+DEFINE_FWK_MODULE(EgammaHLTCaloTowerInL1TRegionsProducer);
 
 DEFINE_FWK_MODULE(EgammaHLTTimeCleanedRechitProducer);
