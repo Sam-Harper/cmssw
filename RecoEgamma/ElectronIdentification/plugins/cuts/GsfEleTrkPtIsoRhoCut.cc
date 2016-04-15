@@ -62,13 +62,13 @@ void GsfEleTrkPtIsoRhoCut::getEventContent(const edm::EventBase& ev) {
 CutApplicatorBase::result_type 
 GsfEleTrkPtIsoRhoCut::
 operator()(const reco::GsfElectronPtr& cand) const{  
-  
+  const double rho = (*rhoHandle_);
   const float isolTrkPt = cand->dr03TkSumPt();
 
   const float et = cand->et();
   const float cutValue = et > slopeStart_(cand)  ? slopeTerm_(cand)*(et-slopeStart_(cand)) + constTerm_(cand) : constTerm_(cand);
 
-  const float rhoCutValue = et >= rhoEtStart_(cand) ? rhoEA_(cand) : 0.;
+  const float rhoCutValue = et >= rhoEtStart_(cand) ? rhoEA_(cand)*rho : 0.;
 
   return isolTrkPt < cutValue+rhoCutValue;
 }
