@@ -4,7 +4,7 @@
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "RecoEgamma/ElectronIdentification/interface/EBEECutValues.h"
 
-#include "RecoEgamma/EgammaIsolationAlgos/interface/ElectronTkIsolationCorr.h"
+#include "RecoEgamma/EgammaIsolationAlgos/interface/ElectronTkIsolation.h"
 
 class GsfEleTrkPtIsoNoJetCoreCut : public CutApplicatorWithEventContentBase {
 public:
@@ -75,7 +75,8 @@ value(const reco::CandidatePtr& cand) const {
   
   reco::GsfElectronPtr ele(cand);  
   if(trksHandle_.isValid() && beamSpotHandle_.isValid()){
-    ElectronTkIsolationCorr isolCorr(0.3,&*trksHandle_,&*beamSpotHandle_);
-    return isolCorr.getCorrectedTrkIso(&*ele);
+    ElectronTkIsolation isolCorr(0.3,0.015,0.015,0.015,0.015,0.7,0.2,999999999.0,trksHandle_.product(),beamSpotHandle_->position());
+    isolCorr.setAlgosToReject({reco::TrackBase::jetCoreRegionalStep});
+    return isolCorr.getPtTracks(&*ele);
   }else return ele->dr03TkSumPt();
 }
