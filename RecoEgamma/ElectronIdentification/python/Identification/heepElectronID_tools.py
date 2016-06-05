@@ -239,6 +239,25 @@ def psetGsfEleTrkPtIsoCut(wpEB, wpEE):
         needsAdditionalProducts = cms.bool(False),
         isIgnored = cms.bool(False)
         )
+
+# Configure the cut on the tracker isolation
+def psetGsfEleTrkPtIsoNoJetCoreCut(wpEB, wpEE):
+    return cms.PSet( 
+        cutName = cms.string('GsfEleTrkPtIsoNoJetCoreCut'),
+        # Three constants for the GsfEleTrkPtIsoCut
+        #     cut = constTerm if value < slopeStart
+        #     cut = slopeTerm * (value - slopeStart) + constTerm if value >= slopeStart
+        slopeTermEB = cms.double( wpEB.trkIsoSlopeTerm ),
+        slopeTermEE = cms.double( wpEE.trkIsoSlopeTerm ),
+        slopeStartEB = cms.double( wpEB.trkIsoSlopeStart ),
+        slopeStartEE = cms.double( wpEE.trkIsoSlopeStart ),
+        constTermEB = cms.double( wpEB.trkIsoConstTerm ),
+        constTermEE = cms.double( wpEE.trkIsoConstTerm ),
+        needsAdditionalProducts = cms.bool(True),
+        tracks=cms.InputTag("generalTracks"),
+        beamSpot=cms.InputTag("offlineBeamSpot"),
+        isIgnored = cms.bool(False)
+        )
 # Configure the cut on the tracker isolation with a rho correction (hack for 76X)
 def psetGsfEleTrkPtIsoRhoCut(wpEB, wpEE):
     return cms.PSet( 
@@ -363,6 +382,32 @@ def configureHEEPElectronID_V60(wpEB, wpEE):
             )
         )
     return parameterSet
+
+def configureHEEPElectronID_V60_80X(idName,wpEB, wpEE):
+    """
+    This function configures the full cms.PSet for a VID ID and returns it.
+    The inputs: two objects of the type HEEP_WorkingPoint_V1, one
+    containing the cuts for the Barrel (EB) and the other one for the Endcap (EE).
+    """
+    parameterSet = cms.PSet(
+        idName = cms.string(idName),
+        cutFlow = cms.VPSet(
+            psetMinPtCut(),                               #0
+            psetGsfEleSCEtaMultiRangeCut(),               #1
+            psetGsfEleDEtaInSeedCut(wpEB,wpEE),           #2
+            psetGsfEleDPhiInCut(wpEB,wpEE),               #3
+            psetGsfEleFull5x5SigmaIEtaIEtaCut(wpEB,wpEE), #4
+            psetGsfEleFull5x5E2x5OverE5x5Cut(wpEB,wpEE),  #5
+            psetGsfEleHadronicOverEMLinearCut(wpEB,wpEE), #6 
+            psetGsfEleTrkPtIsoNoJetCoreCut(wpEB,wpEE),    #7
+            psetGsfEleEmHadD1IsoRhoCut(wpEB,wpEE),        #8
+            psetGsfEleDxyCut(wpEB,wpEE),                  #9
+            psetGsfEleMissingHitsCut(wpEB,wpEE),          #10,
+            psetGsfEleEcalDrivenCut(wpEB,wpEE)            #11
+            )
+        )
+    return parameterSet
+
 
 def configureHEEPElectronID_V61(wpEB, wpEE):
     """
