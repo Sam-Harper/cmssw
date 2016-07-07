@@ -141,7 +141,10 @@ EgammaTowerIsolationNew<NC>::EgammaTowerIsolationNew(float extRadius[NC],
   #else
   float e[nt];
   #endif
-  for (std::size_t k=0; k!=nt; ++k) {
+  for (std::size_t k=0; k!=nt; ++k) { 
+    if(std::isnan(towers[k].eta())){  //CTs can have nans for eta, which will mess up sorting, set them to max eta to fix
+      e[k]=std::numeric_limits<float>::max();
+    }
     e[k]=towers[k].eta();
     index[k]=k;
     std::push_heap(index,index+k+1,[&e](uint32_t i, uint32_t j){ return e[i]<e[j];});
