@@ -2,22 +2,26 @@
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/Common/interface/View.h"
+#include "DataFormats/Common/interface/Handle.h"
 
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
 #include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
+#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 
 #include "Geometry/CaloTopology/interface/CaloTopology.h"
 #include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
 
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterTools.h"
-#include "RecoEgamma/EgammaIsolationAlgos/interface/ElectronTkIsolation.h"
+#include "RecoEgamma/EgammaIsolationAlgos/interface/EleTkIsolFromCands.h"
 
 #include <memory>
 #include <vector>
@@ -49,8 +53,21 @@ class ElectronHEEPIDValueMapProducer : public edm::stream::EDProducer<> {
 				  edm::Handle<EcalRecHitCollection>& eeHits,
 				  edm::ESHandle<CaloTopology>& caloTopo);
 
+  float calTrkIso(const reco::GsfElectron& ele,		  
+		  const edm::View<reco::GsfElectron>& eles,
+		  const edm::Event& iEvent);
+    
   template <typename T> void setToken(edm::EDGetTokenT<T>& token,edm::InputTag tag){token=consumes<T>(tag);}
   template <typename T> void setToken(edm::EDGetTokenT<T>& token,const edm::ParameterSet& iPara,const std::string& tag){token=consumes<T>(iPara.getParameter<edm::InputTag>(tag));}
+  template <typename T> void setToken(std::vector<edm::EDGetTokenT<T> >& tokens,const edm::ParameterSet& iPara,const std::string& tagName){
+    auto tags =iPara.getParameter<std::vector<edm::InputTag> >(tagName);
+    for(auto& tag : tags) {
+      edm::EDGetTokenT<T> token;
+      setToken(token,tag);
+      tokens.push_back(token);
+    }
+  }
+      
   template<typename T> edm::Handle<T> getHandle(const edm::Event& iEvent,const edm::EDGetTokenT<T>& token){
     edm::Handle<T> handle;
     iEvent.getByToken(token,handle);
@@ -61,21 +78,11 @@ class ElectronHEEPIDValueMapProducer : public edm::stream::EDProducer<> {
   edm::EDGetTokenT<EcalRecHitCollection> ebRecHitToken_;
   edm::EDGetTokenT<EcalRecHitCollection> eeRecHitToken_;
   edm::EDGetTokenT<edm::View<reco::GsfElectron> > eleToken_;
+  std::vector<edm::EDGetTokenT<pat::PackedCandidateCollection> >candTokens_;
   edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
-  edm::EDGetTokenT<reco::TrackCollection> trkToken_;
 
-  struct TrkIsoParam {
-    double extRadius;
-    double intRadiusBarrel;
-    double intRadiusEndcap;
-    double stripBarrel;
-    double stripEndcap;
-    double ptMin;
-    double maxVtxDist;
-    double drb;
-    TrkIsoParam(const edm::ParameterSet& iPara);
-  };
-  const TrkIsoParam trkIsoParam_;
+  EleTkIsolFromCands trkIsoCalc_;
+  
   static const std::string eleTrkPtIsoNoJetCoreLabel_;
   static const std::string eleNrSaturateIn5x5Label_;
 };
@@ -83,27 +90,15 @@ class ElectronHEEPIDValueMapProducer : public edm::stream::EDProducer<> {
 const std::string ElectronHEEPIDValueMapProducer::eleTrkPtIsoNoJetCoreLabel_="eleTrkPtIsoNoJetCore";
 const std::string ElectronHEEPIDValueMapProducer::eleNrSaturateIn5x5Label_="eleNrSaturateIn5x5";
  
-ElectronHEEPIDValueMapProducer::TrkIsoParam::TrkIsoParam(const edm::ParameterSet& iParam):
-  extRadius(iParam.getParameter<double>("extRadius")),
-  intRadiusBarrel(iParam.getParameter<double>("intRadiusBarrel")),
-  intRadiusEndcap(iParam.getParameter<double>("intRadiusEndcap")),
-  stripBarrel(iParam.getParameter<double>("stripBarrel")),
-  stripEndcap(iParam.getParameter<double>("stripEndcap")),
-  ptMin(iParam.getParameter<double>("ptMin")),
-  maxVtxDist(iParam.getParameter<double>("maxVtxDist")),
-  drb(iParam.getParameter<double>("drb"))
-{ 
 
-}
-  
 
 ElectronHEEPIDValueMapProducer::ElectronHEEPIDValueMapProducer(const edm::ParameterSet& iConfig):
-  trkIsoParam_(iConfig.getParameter<edm::ParameterSet>("trkIsoConfig"))
+  trkIsoCalc_(iConfig.getParameter<edm::ParameterSet>("trkIsoConfig"))
 {
   setToken(ebRecHitToken_,iConfig,"ebRecHits");
   setToken(eeRecHitToken_,iConfig,"eeRecHits");
   setToken(eleToken_,iConfig,"eles");
-  setToken(trkToken_,iConfig,"tracks");
+  setToken(candTokens_,iConfig,"cands");
   setToken(beamSpotToken_,iConfig,"beamSpot");
   
   produces<edm::ValueMap<float> >(eleTrkPtIsoNoJetCoreLabel_);  
@@ -118,7 +113,6 @@ ElectronHEEPIDValueMapProducer::~ElectronHEEPIDValueMapProducer()
 void ElectronHEEPIDValueMapProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   auto eleHandle = getHandle(iEvent,eleToken_);
-  auto trkHandle = getHandle(iEvent,trkToken_);
   auto ebRecHitHandle = getHandle(iEvent,ebRecHitToken_);
   auto eeRecHitHandle = getHandle(iEvent,eeRecHitToken_);
   auto beamSpotHandle = getHandle(iEvent,beamSpotToken_);
@@ -126,18 +120,12 @@ void ElectronHEEPIDValueMapProducer::produce(edm::Event& iEvent, const edm::Even
   edm::ESHandle<CaloTopology> caloTopoHandle;
   iSetup.get<CaloTopologyRecord>().get(caloTopoHandle);
   
-  ElectronTkIsolation isolCorr(trkIsoParam_.extRadius,trkIsoParam_.intRadiusBarrel,trkIsoParam_.intRadiusEndcap,
-			       trkIsoParam_.stripBarrel,trkIsoParam_.stripEndcap,trkIsoParam_.ptMin,
-			       trkIsoParam_.maxVtxDist,trkIsoParam_.drb,
-			       trkHandle.product(),beamSpotHandle->position());
-  isolCorr.setAlgosToReject({reco::TrackBase::jetCoreRegionalStep});
-
   std::vector<float> eleTrkPtIsoNoJetCore;
   std::vector<int> eleNrSaturateIn5x5;
 
   for(size_t eleNr=0;eleNr<eleHandle->size();eleNr++){
     auto elePtr = eleHandle->ptrAt(eleNr);
-    eleTrkPtIsoNoJetCore.push_back(isolCorr.getPtTracks(&*elePtr));
+    eleTrkPtIsoNoJetCore.push_back(calTrkIso(*elePtr,*eleHandle,iEvent));
     eleNrSaturateIn5x5.push_back(nrSaturatedCrysIn5x5(*elePtr,ebRecHitHandle,eeRecHitHandle,caloTopoHandle));    
   }
   
@@ -155,6 +143,24 @@ int ElectronHEEPIDValueMapProducer::nrSaturatedCrysIn5x5(const reco::GsfElectron
   auto recHits = id.subdetId()==EcalBarrel ? ebHits.product() : eeHits.product();
   return noZS::EcalClusterTools::nrSaturatedCrysIn5x5(id,recHits,caloTopo.product());
 
+}
+
+float ElectronHEEPIDValueMapProducer::calTrkIso(const reco::GsfElectron& ele,		  
+						const edm::View<reco::GsfElectron>& eles,
+						const edm::Event& iEvent)
+{
+  std::cout <<" gsf trk "<<ele.gsfTrack().isNull()<<std::endl;
+  if(ele.gsfTrack().isNull()) return std::numeric_limits<float>::max();
+  else{
+    float trkIso=0.;
+    for(auto& candToken: candTokens_){
+      auto candHandle = getHandle(iEvent,candToken);
+      if(candHandle.isValid()){
+	trkIso+= trkIsoCalc_.calIsolPt(*ele.gsfTrack(),*candHandle,eles);
+      }
+    }
+    return trkIso;
+  }
 }
 
 template<typename T>
@@ -176,20 +182,10 @@ void ElectronHEEPIDValueMapProducer::fillDescriptions(edm::ConfigurationDescript
   desc.add<edm::InputTag>("ebRecHits",edm::InputTag("reducedEcalRecHitsEB"));
   desc.add<edm::InputTag>("eeRecHits",edm::InputTag("reducedEcalRecHitsEE"));
   desc.add<edm::InputTag>("beamSpot",edm::InputTag("offlineBeamSpot"));
-  desc.add<edm::InputTag>("tracks",edm::InputTag("generalTracks"));
+  desc.add<std::vector<edm::InputTag> >("cands",{edm::InputTag("packedCandidates")});
   desc.add<edm::InputTag>("eles",edm::InputTag("gedGsfElectrons"));
   
-  edm::ParameterSetDescription trkIsoDesc;
-  trkIsoDesc.add<double>("extRadius",0.3);
-  trkIsoDesc.add<double>("intRadiusBarrel",0.015);
-  trkIsoDesc.add<double>("intRadiusEndcap",0.015);
-  trkIsoDesc.add<double>("stripBarrel",0.015);
-  trkIsoDesc.add<double>("stripEndcap",0.015);
-  trkIsoDesc.add<double>("ptMin",0.7);
-  trkIsoDesc.add<double>("maxVtxDist",0.2);
-  trkIsoDesc.add<double>("drb",999999999.0);
-  
-  desc.add("trkIsoConfig",trkIsoDesc);
+  desc.add("trkIsoConfig",EleTkIsolFromCands::pSetDescript());
 
   descriptions.addDefault(desc);
 }
