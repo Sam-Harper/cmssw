@@ -131,7 +131,6 @@ void ElectronHEEPIDValueMapProducer::produce(edm::Event& iEvent, const edm::Even
   
   writeValueMap(iEvent,eleHandle,eleTrkPtIsoNoJetCore,eleTrkPtIsoNoJetCoreLabel_);  
   writeValueMap(iEvent,eleHandle,eleNrSaturateIn5x5,eleNrSaturateIn5x5Label_);  
-  
 }
 
 int ElectronHEEPIDValueMapProducer::nrSaturatedCrysIn5x5(const reco::GsfElectron& ele,
@@ -149,7 +148,6 @@ float ElectronHEEPIDValueMapProducer::calTrkIso(const reco::GsfElectron& ele,
 						const edm::View<reco::GsfElectron>& eles,
 						const edm::Event& iEvent)
 {
-  std::cout <<" gsf trk "<<ele.gsfTrack().isNull()<<std::endl;
   if(ele.gsfTrack().isNull()) return std::numeric_limits<float>::max();
   else{
     float trkIso=0.;

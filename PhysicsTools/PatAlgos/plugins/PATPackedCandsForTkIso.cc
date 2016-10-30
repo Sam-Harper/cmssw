@@ -37,7 +37,7 @@ namespace pat {
     ~PATPackedCandsForTkIso()=default;
     
     virtual void produce(edm::StreamID, edm::Event&, const edm::EventSetup&) const override;
-    
+    static pat::PackedCandidate::LostInnerHits getLostInnerHitsStatus(const reco::TrackBase& trk);
     static pat::PackedCandidate::PVAssociationQuality convertAODToMiniAODVertAssoQualFlag(const size_t qual);
 
   private:
@@ -119,16 +119,16 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
 
       auto p4 = getP4(usedTrk,pfCand);
       const reco::VertexRef vertRef = getVertex(usedTrk,pfCand,vertAssoHandle,verticesHandle);
-      int vertAssoQual=(*vertAssoQualHandle)[pfCand];
+      int vertAssoQual=pfCand.isNonnull() ? (*vertAssoQualHandle)[pfCand] : 0;
       
       packedCands->push_back(pat::PackedCandidate(p4,usedTrk.vertex(),usedTrk.phi(),
 						  211*usedTrk.charge(),vertsProdRef,vertRef.key()));
       pat::PackedCandidate& packedCand = packedCands->back();
       packedCand.setTrackProperties(usedTrk);
-      //      packedCand.setLostInnerHits(lostHits);
-      packedCand.setAssociationQuality(convertAODToMiniAODVertAssoQualFlag(vertAssoQual));
+      packedCand.setLostInnerHits(getLostInnerHitsStatus(usedTrk));
       packedCand.setTrackHighPurity(trkRef->quality(reco::TrackBase::highPurity));
-      if(vertRef->trackWeight(trkRef) > 0.5 && vertAssoQual == 7) {
+      packedCand.setAssociationQuality(convertAODToMiniAODVertAssoQualFlag(vertAssoQual));
+      if(vertRef->trackWeight(trkRef) > 0.5 && (vertAssoQual == 7 || pfCand.isNull()) ) {
 	packedCand.setAssociationQuality(pat::PackedCandidate::UsedInFitTight);
       }
       if(pfCand.isNonnull() && pfCand->muonRef().isNonnull()){
@@ -138,6 +138,22 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
   }
   iEvent.put(std::move(packedCands));
 }
+
+pat::PackedCandidate::LostInnerHits
+pat::PATPackedCandsForTkIso::getLostInnerHitsStatus(const reco::TrackBase& trk)
+{
+  int nrLostHits =  trk.hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
+  
+  if(nrLostHits==0){
+    if(trk.hitPattern().hasValidHitInFirstPixelBarrel()) return pat::PackedCandidate::validHitInFirstPixelBarrelLayer;
+    else return pat::PackedCandidate::noLostInnerHits;
+  }else if(nrLostHits==1){
+    return pat::PackedCandidate::oneLostInnerHit;
+  }else{
+    return pat::PackedCandidate::moreLostInnerHits;
+  }
+}
+ 
 
 pat::PackedCandidate::PVAssociationQuality 
 pat::PATPackedCandsForTkIso::convertAODToMiniAODVertAssoQualFlag(const size_t qual)
@@ -190,7 +206,9 @@ pat::PATPackedCandsForTkIso::getVertex(const reco::TrackBase& trk,const reco::PF
 				       const edm::Handle<edm::Association<reco::VertexCollection> > vertAsso,
 				       const edm::Handle<reco::VertexCollection> vertices)
 {
-  reco::VertexRef vertexRef  = (*vertAsso)[pfCand];
+  reco::VertexRef vertexRef(vertices.id());
+  if(pfCand.isNonnull()) vertexRef = (*vertAsso)[pfCand];
+  
   if(vertexRef.isNull()){
     //okay minor different with PATPackedCandidateProducer, they use 1e99, I use max value
     float minDZ=std::numeric_limits<float>::max();
