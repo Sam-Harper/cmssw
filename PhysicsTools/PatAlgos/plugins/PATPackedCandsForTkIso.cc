@@ -41,8 +41,12 @@ namespace pat {
     static pat::PackedCandidate::PVAssociationQuality convertAODToMiniAODVertAssoQualFlag(const size_t qual);
 
   private:
+    void addPackedCandidate(const edm::Event& iEvent,reco::TrackRef trkRef,reco::PFCandidateRef pfCand,
+			    const reco::Track& usedTrk,
+			    std::vector<pat::PackedCandidate>& packedCands)const;
+      
     bool passTrkCuts(const reco::TrackBase& trk)const;
-    static const reco::Track& getUsedTrk(reco::TrackRef& trk,std::vector<const reco::PFCandidate*> pfEles);
+    static const reco::Track& getUsedTrk(reco::TrackRef& trk,const std::vector<reco::PFCandidateRef>& pfEles);
     static reco::VertexRef getVertex(const reco::TrackBase& trk,const reco::PFCandidateRef pfCand,
 			      const edm::Handle<edm::Association<reco::VertexCollection> > vertAsso,
 			      const edm::Handle<reco::VertexCollection> vertices);
@@ -87,11 +91,11 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
 {
   auto pfCandsHandle = getHandle(iEvent,pfCandsToken_);
   auto tracksHandle = getHandle(iEvent,tracksToken_);
-  auto verticesHandle = getHandle(iEvent,verticesToken_);
-  auto vertAssoHandle = getHandle(iEvent,vertAssoToken_);
-  auto vertAssoQualHandle = getHandle(iEvent,vertAssoQualToken_);
+  // auto verticesHandle = getHandle(iEvent,verticesToken_);
+  // auto vertAssoHandle = getHandle(iEvent,vertAssoToken_);
+  // auto vertAssoQualHandle = getHandle(iEvent,vertAssoQualToken_);
   
-  const reco::VertexRefProd vertsProdRef(verticesHandle);
+  //  const reco::VertexRefProd vertsProdRef(verticesHandle);
     
   std::unique_ptr<std::vector<pat::PackedCandidate> > packedCands(new std::vector<pat::PackedCandidate>);
   
@@ -99,45 +103,89 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
   //which tracks match to PF candidates that are electrons
   //we cant do this of GedGsfElectrons as the ctf track matching
   //requirement is different
-  std::vector<const reco::PFCandidate*> pfEles;
-  for(auto& pfCand : *pfCandsHandle){
-    if(std::abs(pfCand.pdgId())==11) pfEles.push_back(&pfCand);
+  std::vector<reco::PFCandidateRef> pfEles;
+  for(size_t candNr=0;candNr<pfCandsHandle->size();candNr++){
+    reco::PFCandidateRef pfCand(pfCandsHandle,candNr);
+    //if(std::abs(pfCand->pdgId())==11) std::cout <<"pfCandEle "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->trackRef().isNonnull()<<" "<<pfCand->gsfTrackRef().isNonnull()<<std::endl;
+    if(std::abs(pfCand->pdgId())==11) pfEles.push_back(pfCand);
+    
   }
 
+  //we have to manually add the electrons which dont have tracks but do have gsf tracks
+  //it is possible now we double count but there is no away around it other than 
+  //a) rejecting all pf electrons (not going to happen)
+  //b) doing a geometric match between gsf tracks and ctf tracks  ( a pain)
+  for(auto pfEle : pfEles){
+    if(pfEle->trackRef().isNull() && pfEle->gsfTrackRef().isNonnull()){
+      if(passTrkCuts(*pfEle->gsfTrackRef())){
+	addPackedCandidate(iEvent,pfEle->trackRef(),pfEle,*pfEle->gsfTrackRef(),*packedCands);
+      }
+    }
+  }
   //so in filling the candidates, we have to watch for electrons and gsf vs ctf tracks
   //gsf track : track properties stored in packed candidate
   //ctf track : vertex association & high purityflag stored in packed candidate
   //ctf track : matches the packed candidate
   //gsf track : default vertex dz match (only relavent if the association had failed)
-  
-
   for(size_t trkNr=0;trkNr<tracksHandle->size();trkNr++){
     edm::Ref<reco::TrackCollection> trkRef(tracksHandle,trkNr);
     const reco::Track& usedTrk = getUsedTrk(trkRef,pfEles); //will be the GsfTrack if it exists 
+
+    //    if(std::abs(trkRef->pt()-1.645)<0.001) std::cout <<"trk found "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used track "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi()<<" "<< trkRef->hitPattern().numberOfValidHits() << " "<<trkRef->hitPattern().numberOfValidPixelHits() <<" trk pt err "<<trkRef->ptError()<<std::endl;
+
     if(passTrkCuts(usedTrk)){
       const reco::PFCandidateRef pfCand= getPFCand(trkRef,pfCandsHandle);
 
-      auto p4 = getP4(usedTrk,pfCand);
-      const reco::VertexRef vertRef = getVertex(usedTrk,pfCand,vertAssoHandle,verticesHandle);
-      int vertAssoQual=pfCand.isNonnull() ? (*vertAssoQualHandle)[pfCand] : 0;
-      
-      packedCands->push_back(pat::PackedCandidate(p4,usedTrk.vertex(),usedTrk.phi(),
-						  211*usedTrk.charge(),vertsProdRef,vertRef.key()));
-      pat::PackedCandidate& packedCand = packedCands->back();
-      packedCand.setTrackProperties(usedTrk);
-      packedCand.setLostInnerHits(getLostInnerHitsStatus(usedTrk));
-      packedCand.setTrackHighPurity(trkRef->quality(reco::TrackBase::highPurity));
-      packedCand.setAssociationQuality(convertAODToMiniAODVertAssoQualFlag(vertAssoQual));
-      if(vertRef->trackWeight(trkRef) > 0.5 && (vertAssoQual == 7 || pfCand.isNull()) ) {
-	packedCand.setAssociationQuality(pat::PackedCandidate::UsedInFitTight);
-      }
-      if(pfCand.isNonnull() && pfCand->muonRef().isNonnull()){
-	packedCand.setMuonID(pfCand->muonRef()->isStandAloneMuon(),pfCand->muonRef()->isGlobalMuon());
-      }  
+      //  if(pfCand.isNonnull() &&  std::abs(pfCand->pdgId())==11) std::cout <<"pfCandEle "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi()<<std::endl;
+
+      //std::cout<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi();
+      //if(pfCand.isNonnull()) std::cout <<" pfCand "<<pfCand->pdgId()<<" "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->charge()<<" gsftrk "<<pfCand->gsfTrackRef().isNonnull();
+      //std::cout<<std::endl;
+      addPackedCandidate(iEvent,trkRef,pfCand,usedTrk,*packedCands);
     }
   }
+  
+
   iEvent.put(std::move(packedCands));
 }
+
+void pat::PATPackedCandsForTkIso::
+addPackedCandidate(const edm::Event& iEvent,reco::TrackRef trkRef,reco::PFCandidateRef pfCand,
+		   const reco::Track& usedTrk,
+		   std::vector<pat::PackedCandidate>& packedCands)const
+{
+  //first we need to detect if the pfCand is a photon and if so, set it to a null ref
+  //this is because tracks associated with photons are "lost" and therefore picked up via lost tracks
+  //where there is no candidate
+  if(pfCand.isNonnull() && pfCand->pdgId()==22) pfCand=reco::PFCandidateRef(nullptr,0);
+
+  auto verticesHandle = getHandle(iEvent,verticesToken_);
+  auto vertAssoHandle = getHandle(iEvent,vertAssoToken_);
+  auto vertAssoQualHandle = getHandle(iEvent,vertAssoQualToken_);
+  
+  const reco::VertexRefProd vertsProdRef(verticesHandle);
+
+  auto p4 = getP4(usedTrk,pfCand);
+  const reco::VertexRef vertRef = getVertex(usedTrk,pfCand,vertAssoHandle,verticesHandle);
+  int vertAssoQual=pfCand.isNonnull() ? (*vertAssoQualHandle)[pfCand] : 0;
+ 
+  int pdgId = pfCand.isNonnull() ? pfCand->pdgId() : 211* usedTrk.charge();
+ 
+  
+  packedCands.push_back(pat::PackedCandidate(p4,usedTrk.vertex(),usedTrk.phi(),
+					      pdgId,vertsProdRef,vertRef.key()));
+  pat::PackedCandidate& packedCand = packedCands.back();
+  packedCand.setTrackProperties(usedTrk);
+  packedCand.setLostInnerHits(getLostInnerHitsStatus(usedTrk));
+  packedCand.setTrackHighPurity(trkRef.isNonnull() && trkRef->quality(reco::TrackBase::highPurity));
+  packedCand.setAssociationQuality(convertAODToMiniAODVertAssoQualFlag(vertAssoQual));
+  if(vertRef->trackWeight(trkRef) > 0.5 && (vertAssoQual == 7 || pfCand.isNull()) ) {
+    packedCand.setAssociationQuality(pat::PackedCandidate::UsedInFitTight);
+  }
+  if(pfCand.isNonnull() && pfCand->muonRef().isNonnull()){
+    packedCand.setMuonID(pfCand->muonRef()->isStandAloneMuon(),pfCand->muonRef()->isGlobalMuon());
+  }
+}  
 
 pat::PackedCandidate::LostInnerHits
 pat::PATPackedCandsForTkIso::getLostInnerHitsStatus(const reco::TrackBase& trk)
@@ -188,7 +236,7 @@ bool pat::PATPackedCandsForTkIso::passTrkCuts(const reco::TrackBase& trk)const
 }
 
 const reco::Track& pat::PATPackedCandsForTkIso::
-getUsedTrk(reco::TrackRef& trk,std::vector<const reco::PFCandidate*> pfEles)
+getUsedTrk(reco::TrackRef& trk,const std::vector<reco::PFCandidateRef>& pfEles)
 {
   for(auto pfEle : pfEles){
     if(trk==pfEle->trackRef()){
@@ -207,19 +255,23 @@ pat::PATPackedCandsForTkIso::getVertex(const reco::TrackBase& trk,const reco::PF
 				       const edm::Handle<reco::VertexCollection> vertices)
 {
   reco::VertexRef vertexRef(vertices.id());
-  if(pfCand.isNonnull()) vertexRef = (*vertAsso)[pfCand];
-  
-  if(vertexRef.isNull()){
-    //okay minor different with PATPackedCandidateProducer, they use 1e99, I use max value
-    float minDZ=std::numeric_limits<float>::max();
-    for(size_t vertNr=0;vertNr<vertices->size();vertNr++){
-      const reco::Vertex& vert = (*vertices)[vertNr];
-      float dz=std::abs(trk.dz(vert.position()));
-      if(dz<minDZ){ 
-	minDZ = dz;
-	vertexRef = reco::VertexRef(vertices,vertNr);
+  if(pfCand.isNonnull()) {
+    vertexRef = (*vertAsso)[pfCand];
+    
+    if(vertexRef.isNull()){
+      //okay minor different with PATPackedCandidateProducer, they use 1e99, I use max value
+      float minDZ=std::numeric_limits<float>::max();
+      for(size_t vertNr=0;vertNr<vertices->size();vertNr++){
+	const reco::Vertex& vert = (*vertices)[vertNr];
+	float dz=std::abs(trk.dz(vert.position()));
+	if(dz<minDZ){ 
+	  minDZ = dz;
+	  vertexRef = reco::VertexRef(vertices,vertNr);
+	}
       }
     }
+  }else{ //we do it PATLostTracks way (yes this is does make a small difference in the resulting dz sometimes)
+    if(!vertices->empty()) vertexRef = reco::VertexRef(vertices, 0);
   }
   return vertexRef;
 }
