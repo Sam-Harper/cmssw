@@ -1,13 +1,17 @@
 import FWCore.ParameterSet.Config as cms
 
 heepIDVarValueMaps = cms.EDProducer("ElectronHEEPIDValueMapProducer",
-                                    ebRecHits=cms.InputTag("reducedEcalRecHitsEB"),
-                                    eeRecHits=cms.InputTag("reducedEcalRecHitsEB"),
                                     beamSpot=cms.InputTag("offlineBeamSpot"),
-                                    cands=cms.VInputTag("packedCandidates",
-                                                        "lostTracks",
-                                                        "packedCandsForTkIso"),
-                                    eles=cms.InputTag("gedGsfElectrons"),
+                                    ebRecHitsAOD=cms.InputTag("reducedEcalRecHitsEB"),
+                                    eeRecHitsAOD=cms.InputTag("reducedEcalRecHitsEB"),
+                                    candsAOD=cms.VInputTag("packedPFCandidates"),
+                                    elesAOD=cms.InputTag("gedGsfElectrons"),
+                                    ebRecHitsMiniAOD=cms.InputTag("reducedEgamma","reducedEBRecHits"),
+                                    eeRecHitsMiniAOD=cms.InputTag("reducedEgamma","reducedEERecHits"),
+                                    candsMiniAOD=cms.VInputTag("lostTracks",
+                                                               "packedCandsForTkIso"),
+                                    elesMiniAOD=cms.InputTag("slimmedElectrons"),
+
                                     trkIsoConfig= cms.PSet(
                                        barrelCuts=cms.PSet(
                                           minPt=cms.double(1.0),
