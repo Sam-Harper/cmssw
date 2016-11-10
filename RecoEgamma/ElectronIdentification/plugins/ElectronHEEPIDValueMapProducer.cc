@@ -104,13 +104,13 @@ class ElectronHEEPIDValueMapProducer : public edm::stream::EDProducer<> {
   template<typename T> std::vector<edm::Handle<T> > getHandles(const edm::Event& iEvent,const std::vector<DualToken<T> >& tokens){
     std::vector<edm::Handle<T> > handles(tokens.size());
     if(tokens.empty()) return handles;
-    if(tokens[0].aod.isUninitialized()) iEvent.getByToken(tokens[0].aod,handles[0]);
+    if(!tokens[0].aod.isUninitialized()) iEvent.getByToken(tokens[0].aod,handles[0]);
     bool isAOD = handles[0].isValid();
-    if(!isAOD && tokens[0].miniAOD.isUninitialized() ) iEvent.getByToken(tokens[0].miniAOD,handles[0]);
+    if(!isAOD && !tokens[0].miniAOD.isUninitialized() ) iEvent.getByToken(tokens[0].miniAOD,handles[0]);
     
     for(size_t tokenNr=1;tokenNr<tokens.size();tokenNr++){
       auto token = isAOD ? tokens[tokenNr].aod : tokens[tokenNr].miniAOD;
-      if(token.isUninitialized()) iEvent.getByToken(token,handles[tokenNr]);
+      if(!token.isUninitialized()) iEvent.getByToken(token,handles[tokenNr]);
     }
     return handles;
   }

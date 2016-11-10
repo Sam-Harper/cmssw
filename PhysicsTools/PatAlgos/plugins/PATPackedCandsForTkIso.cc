@@ -106,7 +106,12 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
   std::vector<reco::PFCandidateRef> pfEles;
   for(size_t candNr=0;candNr<pfCandsHandle->size();candNr++){
     reco::PFCandidateRef pfCand(pfCandsHandle,candNr);
-    //if(std::abs(pfCand->pdgId())==11) std::cout <<"pfCandEle "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->trackRef().isNonnull()<<" "<<pfCand->gsfTrackRef().isNonnull()<<std::endl;
+    // if(std::abs(pfCand->pt()-1.26256)<0.0001) {
+    //   std::cout <<"pfCandFound "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->trackRef().isNonnull()<<" "<<pfCand->gsfTrackRef().isNonnull()<<" "<<pfCand->pdgId();
+    //   if(pfCand->trackRef().isNonnull()) std::cout <<" "<<pfCand->trackRef()->pt()<<" "<<pfCand->trackRef()->eta()<<" "<<pfCand->trackRef()->phi();
+    //   std::cout <<std::endl;
+    // }
+    // if(std::abs(pfCand->pdgId())==11) std::cout <<"pfCandEle "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->trackRef().isNonnull()<<" "<<pfCand->gsfTrackRef().isNonnull()<<std::endl;
     if(std::abs(pfCand->pdgId())==11) pfEles.push_back(pfCand);
     
   }
@@ -131,16 +136,16 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
     edm::Ref<reco::TrackCollection> trkRef(tracksHandle,trkNr);
     const reco::Track& usedTrk = getUsedTrk(trkRef,pfEles); //will be the GsfTrack if it exists 
 
-    //    if(std::abs(trkRef->pt()-1.645)<0.001) std::cout <<"trk found "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used track "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi()<<" "<< trkRef->hitPattern().numberOfValidHits() << " "<<trkRef->hitPattern().numberOfValidPixelHits() <<" trk pt err "<<trkRef->ptError()<<std::endl;
+    // if(std::abs(trkRef->pt()-1.2)<0.1) std::cout <<"trk found "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used track "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi()<<" "<< trkRef->hitPattern().numberOfValidHits() << " "<<trkRef->hitPattern().numberOfValidPixelHits() <<" trk pt err "<<trkRef->ptError()<<std::endl;
 
     if(passTrkCuts(usedTrk)){
       const reco::PFCandidateRef pfCand= getPFCand(trkRef,pfCandsHandle);
 
       //  if(pfCand.isNonnull() &&  std::abs(pfCand->pdgId())==11) std::cout <<"pfCandEle "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi()<<std::endl;
 
-      //std::cout<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi();
+      //  std::cout<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi();
       //if(pfCand.isNonnull()) std::cout <<" pfCand "<<pfCand->pdgId()<<" "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->charge()<<" gsftrk "<<pfCand->gsfTrackRef().isNonnull();
-      //std::cout<<std::endl;
+      //  std::cout<<std::endl;
       addPackedCandidate(iEvent,trkRef,pfCand,usedTrk,*packedCands);
     }
   }
@@ -159,31 +164,35 @@ addPackedCandidate(const edm::Event& iEvent,reco::TrackRef trkRef,reco::PFCandid
   //where there is no candidate
   if(pfCand.isNonnull() && pfCand->pdgId()==22) pfCand=reco::PFCandidateRef(nullptr,0);
 
-  auto verticesHandle = getHandle(iEvent,verticesToken_);
-  auto vertAssoHandle = getHandle(iEvent,vertAssoToken_);
-  auto vertAssoQualHandle = getHandle(iEvent,vertAssoQualToken_);
-  
-  const reco::VertexRefProd vertsProdRef(verticesHandle);
-
   auto p4 = getP4(usedTrk,pfCand);
-  const reco::VertexRef vertRef = getVertex(usedTrk,pfCand,vertAssoHandle,verticesHandle);
-  int vertAssoQual=pfCand.isNonnull() ? (*vertAssoQualHandle)[pfCand] : 0;
+  if(p4.pt() > minPt_){
+    
+    auto verticesHandle = getHandle(iEvent,verticesToken_);
+    auto vertAssoHandle = getHandle(iEvent,vertAssoToken_);
+    auto vertAssoQualHandle = getHandle(iEvent,vertAssoQualToken_);
+    
+    const reco::VertexRefProd vertsProdRef(verticesHandle);
+    
+    const reco::VertexRef vertRef = getVertex(usedTrk,pfCand,vertAssoHandle,verticesHandle);
+    int vertAssoQual=pfCand.isNonnull() ? (*vertAssoQualHandle)[pfCand] : 0;
+    
+    int pdgId = pfCand.isNonnull() ? pfCand->pdgId() : 211* usedTrk.charge();
  
-  int pdgId = pfCand.isNonnull() ? pfCand->pdgId() : 211* usedTrk.charge();
  
-  
-  packedCands.push_back(pat::PackedCandidate(p4,usedTrk.vertex(),usedTrk.phi(),
-					      pdgId,vertsProdRef,vertRef.key()));
-  pat::PackedCandidate& packedCand = packedCands.back();
-  packedCand.setTrackProperties(usedTrk);
-  packedCand.setLostInnerHits(getLostInnerHitsStatus(usedTrk));
-  packedCand.setTrackHighPurity(trkRef.isNonnull() && trkRef->quality(reco::TrackBase::highPurity));
-  packedCand.setAssociationQuality(convertAODToMiniAODVertAssoQualFlag(vertAssoQual));
-  if(vertRef->trackWeight(trkRef) > 0.5 && (vertAssoQual == 7 || pfCand.isNull()) ) {
-    packedCand.setAssociationQuality(pat::PackedCandidate::UsedInFitTight);
-  }
-  if(pfCand.isNonnull() && pfCand->muonRef().isNonnull()){
-    packedCand.setMuonID(pfCand->muonRef()->isStandAloneMuon(),pfCand->muonRef()->isGlobalMuon());
+    
+    packedCands.push_back(pat::PackedCandidate(p4,usedTrk.vertex(),usedTrk.phi(),
+					       pdgId,vertsProdRef,vertRef.key()));
+    pat::PackedCandidate& packedCand = packedCands.back();
+    packedCand.setTrackProperties(usedTrk);
+    packedCand.setLostInnerHits(getLostInnerHitsStatus(usedTrk));
+    packedCand.setTrackHighPurity(trkRef.isNonnull() && trkRef->quality(reco::TrackBase::highPurity));
+    packedCand.setAssociationQuality(convertAODToMiniAODVertAssoQualFlag(vertAssoQual));
+    if(vertRef->trackWeight(trkRef) > 0.5 && (vertAssoQual == 7 || pfCand.isNull()) ) {
+      packedCand.setAssociationQuality(pat::PackedCandidate::UsedInFitTight);
+    }
+    if(pfCand.isNonnull() && pfCand->muonRef().isNonnull()){
+      packedCand.setMuonID(pfCand->muonRef()->isStandAloneMuon(),pfCand->muonRef()->isGlobalMuon());
+    }
   }
 }  
 
@@ -229,8 +238,7 @@ pat::PATPackedCandsForTkIso::convertAODToMiniAODVertAssoQualFlag(const size_t qu
 
 bool pat::PATPackedCandsForTkIso::passTrkCuts(const reco::TrackBase& trk)const
 {
-  return trk.pt()>minPt_ &&
-    trk.numberOfValidHits() >= minHits_ && 
+  return trk.numberOfValidHits() >= minHits_ && 
     trk.hitPattern().numberOfValidPixelHits() >= minPixelHits_;
  
 }
