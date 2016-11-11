@@ -67,6 +67,11 @@ namespace pat {
     const edm::EDGetTokenT<edm::Association<reco::VertexCollection> > vertAssoToken_;
     const edm::EDGetTokenT<edm::ValueMap<int> > vertAssoQualToken_;
          
+    //this needs to be the same as the setting of PATPackedCandidateProducer.minPtForTrackProperties
+    //otherwise will introduce small disagreements in output
+    const double minPtToHaveStoredTrk_;
+
+    //cuts on the track quality, mainly to pre-select the collection for speed
     const double minPt_;
     const int minHits_;
     const int minPixelHits_;
@@ -79,6 +84,7 @@ pat::PATPackedCandsForTkIso::PATPackedCandsForTkIso(const edm::ParameterSet& iCo
   verticesToken_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"))),
   vertAssoToken_(consumes<edm::Association<reco::VertexCollection> >(iConfig.getParameter<edm::InputTag>("vertAsso"))),
   vertAssoQualToken_(consumes<edm::ValueMap<int> >(iConfig.getParameter<edm::InputTag>("vertAssoQual"))),
+  minPtToHaveStoredTrk_(iConfig.getParameter<double>("minPtToHaveStoredTrk")),
   minPt_(iConfig.getParameter<double>("minPt")),
   minHits_(iConfig.getParameter<int>("minHits")),
   minPixelHits_(iConfig.getParameter<int>("minPixelHits"))
@@ -106,8 +112,8 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
   std::vector<reco::PFCandidateRef> pfEles;
   for(size_t candNr=0;candNr<pfCandsHandle->size();candNr++){
     reco::PFCandidateRef pfCand(pfCandsHandle,candNr);
-    // if(std::abs(pfCand->pt()-1.26256)<0.0001) {
-    //   std::cout <<"pfCandFound "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->trackRef().isNonnull()<<" "<<pfCand->gsfTrackRef().isNonnull()<<" "<<pfCand->pdgId();
+    // if(std::abs(pfCand->pt()-2.64453)<9999) {
+    //   std::cout <<"pfCand "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->trackRef().isNonnull()<<" "<<pfCand->gsfTrackRef().isNonnull()<<" "<<pfCand->pdgId()<<" "<<pfCand->charge();
     //   if(pfCand->trackRef().isNonnull()) std::cout <<" "<<pfCand->trackRef()->pt()<<" "<<pfCand->trackRef()->eta()<<" "<<pfCand->trackRef()->phi();
     //   std::cout <<std::endl;
     // }
@@ -135,7 +141,7 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
   for(size_t trkNr=0;trkNr<tracksHandle->size();trkNr++){
     edm::Ref<reco::TrackCollection> trkRef(tracksHandle,trkNr);
     const reco::Track& usedTrk = getUsedTrk(trkRef,pfEles); //will be the GsfTrack if it exists 
-
+ 
     // if(std::abs(trkRef->pt()-1.2)<0.1) std::cout <<"trk found "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used track "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi()<<" "<< trkRef->hitPattern().numberOfValidHits() << " "<<trkRef->hitPattern().numberOfValidPixelHits() <<" trk pt err "<<trkRef->ptError()<<std::endl;
 
     if(passTrkCuts(usedTrk)){
@@ -143,9 +149,9 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
 
       //  if(pfCand.isNonnull() &&  std::abs(pfCand->pdgId())==11) std::cout <<"pfCandEle "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi()<<std::endl;
 
-      //  std::cout<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi();
+      //   std::cout<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi();
       //if(pfCand.isNonnull()) std::cout <<" pfCand "<<pfCand->pdgId()<<" "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->charge()<<" gsftrk "<<pfCand->gsfTrackRef().isNonnull();
-      //  std::cout<<std::endl;
+      // std::cout<<std::endl;
       addPackedCandidate(iEvent,trkRef,pfCand,usedTrk,*packedCands);
     }
   }
@@ -163,6 +169,11 @@ addPackedCandidate(const edm::Event& iEvent,reco::TrackRef trkRef,reco::PFCandid
   //this is because tracks associated with photons are "lost" and therefore picked up via lost tracks
   //where there is no candidate
   if(pfCand.isNonnull() && pfCand->pdgId()==22) pfCand=reco::PFCandidateRef(nullptr,0);
+
+  //interesting thing #2, if a candidate has pt <0.95, it will no store its track in the PF candidate 
+  //so the track ends up in lost tracks, this means we have to reset the pfCand ref to null
+  //only an issue when the track and candidate pt are different of course
+  if(pfCand.isNonnull() && pfCand->pt()<=minPtToHaveStoredTrk_) pfCand=reco::PFCandidateRef(nullptr,0);
 
   auto p4 = getP4(usedTrk,pfCand);
   if(p4.pt() > minPt_){

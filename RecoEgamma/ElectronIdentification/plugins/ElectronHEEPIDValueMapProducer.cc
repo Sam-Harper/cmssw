@@ -194,7 +194,7 @@ float ElectronHEEPIDValueMapProducer::calTrkIso(const reco::GsfElectron& ele,
 {
   if(ele.gsfTrack().isNull()) return std::numeric_limits<float>::max();
   else{
-    float trkIso=0.;
+    float trkIso=0.; 
     for(auto& handle: handles){
       if(handle.isValid()){
 	trkIso+= trkIsoCalc_.calIsolPt(*ele.gsfTrack(),*handle,eles);

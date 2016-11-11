@@ -59,10 +59,10 @@ public:
   
 private:
   //no qualities specified, accept all, ORed
-  bool passQual(const reco::TrackBase& trk,
-		const std::vector<reco::TrackBase::TrackQuality>& quals);
-  bool passAlgo(const reco::TrackBase& trk,
-		const std::vector<reco::TrackBase::TrackAlgorithm>& algosToRej);
+  static bool passQual(const reco::TrackBase& trk,
+		       const std::vector<reco::TrackBase::TrackQuality>& quals);
+  static bool passAlgo(const reco::TrackBase& trk,
+		       const std::vector<reco::TrackBase::TrackAlgorithm>& algosToRej);
   //for PF electron candidates the "trk pt" is not the track pt
   //its the trk-calo gsfele combination energy * trk sin(theta)
   //so the idea is to match with the gsf electron and get the orginal

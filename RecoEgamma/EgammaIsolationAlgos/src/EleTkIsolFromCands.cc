@@ -103,6 +103,7 @@ bool EleTkIsolFromCands::passTrkSel(const reco::Track& trk,const TrkCuts& cuts,
   const float dR2 = reco::deltaR2(eleEta,elePhi,trk.eta(),trk.phi());
   const float dEta = trk.eta()-eleEta;
   const float dZ = eleVZ - trk.vz();
+    
   return dR2>=cuts.minDR2 && dR2<=cuts.maxDR2 && 
     std::abs(dEta)>=cuts.minDEta && 
     std::abs(dZ)<cuts.maxDZ &&
@@ -142,8 +143,8 @@ getTrkPt(const reco::TrackBase& trk,
 {
   auto match=[](const reco::TrackBase& trk,const reco::GsfElectron& ele){
     return std::abs(trk.eta()-ele.eta())<0.001 &&
-    std::abs(trk.phi()-ele.phi())<0.001 && 
-    std::abs(trk.pt()-ele.pt())<0.001;
+    std::abs(trk.phi()-ele.phi())<0.001;// && 
+    //    std::abs(trk.pt()-ele.pt())<0.001;
   };
 
   for(auto& ele : eles){
