@@ -238,7 +238,7 @@ void pat::PATPackedCandidateProducer::produce(edm::StreamID, edm::Event& iEvent,
           if (cand.muonRef().isNonnull()) {
             outPtrP->back().setMuonID(cand.muonRef()->isStandAloneMuon(), cand.muonRef()->isGlobalMuon());
           }
-        } else {
+	}else {
 
           if (!PVs->empty()) {
             PV = reco::VertexRef(PVs, 0);
