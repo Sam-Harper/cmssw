@@ -78,25 +78,12 @@ EleTkIsolFromCands::calIsol(const double eleEta,const double elePhi,
   double ptSum=0.;
   int nrTrks=0;
 
-  const TrkCuts cuts = std::abs(eleEta)<1.479 ? barrelCuts_ : endcapCuts_;
+  const TrkCuts& cuts = std::abs(eleEta)<1.479 ? barrelCuts_ : endcapCuts_;
   
   for(auto& cand  : cands){
     if(cand.charge()!=0){
       const reco::Track& trk = cand.pseudoTrack();
-      
-      const float dR2 = reco::deltaR2(eleEta,elePhi,cand.eta(),cand.phi());
-      const float dEta = cand.eta()-eleEta;
-      const float dZ = eleVZ - cand.vz();
-      if(dR2>=cuts.minDR2 && dR2<=cuts.maxDR2 && 
-	 std::abs(dEta)>=cuts.minDEta && 
-	 std::abs(dZ)<cuts.maxDZ &&
-	 trk.hitPattern().numberOfValidHits() >= cuts.minHits &&
-	 trk.hitPattern().numberOfValidPixelHits() >=cuts.minPixelHits &&
-	 (trk.ptError()/trk.pt() < cuts.maxDPtPt || cuts.maxDPtPt<0) && 
-	 passQual(trk,cuts.allowedQualities) &&
-	 passAlgo(trk,cuts.algosToReject) ) {
-	
-	
+      if(passTrkSel(trk,cuts,eleEta,elePhi,eleVZ)){	
 	double trkPt = std::abs(cand.pdgId())!=11 ? trk.pt() : getTrkPt(trk,eles);
 	if(trkPt>cuts.minPt){
 	  ptSum+=trkPt;
@@ -107,7 +94,26 @@ EleTkIsolFromCands::calIsol(const double eleEta,const double elePhi,
   }
   return {nrTrks,ptSum};	
 }
-	 
+	
+
+bool EleTkIsolFromCands::passTrkSel(const reco::Track& trk,const TrkCuts& cuts,
+				    const double eleEta,const double elePhi,
+				    const double eleVZ)
+{
+  const float dR2 = reco::deltaR2(eleEta,elePhi,trk.eta(),trk.phi());
+  const float dEta = trk.eta()-eleEta;
+  const float dZ = eleVZ - trk.vz();
+  return dR2>=cuts.minDR2 && dR2<=cuts.maxDR2 && 
+    std::abs(dEta)>=cuts.minDEta && 
+    std::abs(dZ)<cuts.maxDZ &&
+    trk.hitPattern().numberOfValidHits() >= cuts.minHits &&
+    trk.hitPattern().numberOfValidPixelHits() >=cuts.minPixelHits &&
+    (trk.ptError()/trk.pt() < cuts.maxDPtPt || cuts.maxDPtPt<0) && 
+    passQual(trk,cuts.allowedQualities) &&
+    passAlgo(trk,cuts.algosToReject);
+}
+    
+ 
 	
 bool EleTkIsolFromCands::
 passQual(const reco::TrackBase& trk,

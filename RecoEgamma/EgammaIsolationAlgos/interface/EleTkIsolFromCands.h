@@ -52,6 +52,10 @@ public:
 		   const edm::View<reco::GsfElectron>& eles){
     return calIsol(eleEta,elePhi,eleVZ,cands,eles).second;
   }
+
+  static bool passTrkSel(const reco::Track& trk,const TrkCuts& cuts,
+			 const double eleEta,const double elePhi,
+			 const double eleVZ);
   
 private:
   //no qualities specified, accept all, ORed
