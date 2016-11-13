@@ -7,7 +7,6 @@ packedCandsForTkIso = cms.EDProducer("PATPackedCandsForTkIso",
                                      vertAsso = cms.InputTag("primaryVertexAssociation","original"),
                                      vertAssoQual = cms.InputTag("primaryVertexAssociation","original"),
                                      minPtToHaveStoredTrk = cms.double(0.95),
-                                     minPt = cms.double(1.0),
                                      minHits = cms.int32(8),
                                      minPixelHits = cms.int32(1)
                                      )

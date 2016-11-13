@@ -72,7 +72,6 @@ namespace pat {
     const double minPtToHaveStoredTrk_;
 
     //cuts on the track quality, mainly to pre-select the collection for speed
-    const double minPt_;
     const int minHits_;
     const int minPixelHits_;
   }; 
@@ -85,7 +84,6 @@ pat::PATPackedCandsForTkIso::PATPackedCandsForTkIso(const edm::ParameterSet& iCo
   vertAssoToken_(consumes<edm::Association<reco::VertexCollection> >(iConfig.getParameter<edm::InputTag>("vertAsso"))),
   vertAssoQualToken_(consumes<edm::ValueMap<int> >(iConfig.getParameter<edm::InputTag>("vertAssoQual"))),
   minPtToHaveStoredTrk_(iConfig.getParameter<double>("minPtToHaveStoredTrk")),
-  minPt_(iConfig.getParameter<double>("minPt")),
   minHits_(iConfig.getParameter<int>("minHits")),
   minPixelHits_(iConfig.getParameter<int>("minPixelHits"))
 {
@@ -176,34 +174,33 @@ addPackedCandidate(const edm::Event& iEvent,reco::TrackRef trkRef,reco::PFCandid
   if(pfCand.isNonnull() && pfCand->pt()<=minPtToHaveStoredTrk_) pfCand=reco::PFCandidateRef(nullptr,0);
 
   auto p4 = getP4(usedTrk,pfCand);
-  if(p4.pt() > minPt_){
+
     
-    auto verticesHandle = getHandle(iEvent,verticesToken_);
-    auto vertAssoHandle = getHandle(iEvent,vertAssoToken_);
-    auto vertAssoQualHandle = getHandle(iEvent,vertAssoQualToken_);
-    
-    const reco::VertexRefProd vertsProdRef(verticesHandle);
-    
-    const reco::VertexRef vertRef = getVertex(usedTrk,pfCand,vertAssoHandle,verticesHandle);
-    int vertAssoQual=pfCand.isNonnull() ? (*vertAssoQualHandle)[pfCand] : 0;
-    
-    int pdgId = pfCand.isNonnull() ? pfCand->pdgId() : 211* usedTrk.charge();
+  auto verticesHandle = getHandle(iEvent,verticesToken_);
+  auto vertAssoHandle = getHandle(iEvent,vertAssoToken_);
+  auto vertAssoQualHandle = getHandle(iEvent,vertAssoQualToken_);
+  
+  const reco::VertexRefProd vertsProdRef(verticesHandle);
+  
+  const reco::VertexRef vertRef = getVertex(usedTrk,pfCand,vertAssoHandle,verticesHandle);
+  int vertAssoQual=pfCand.isNonnull() ? (*vertAssoQualHandle)[pfCand] : 0;
+  
+  int pdgId = pfCand.isNonnull() ? pfCand->pdgId() : 211* usedTrk.charge();
+  
  
- 
     
-    packedCands.push_back(pat::PackedCandidate(p4,usedTrk.vertex(),usedTrk.phi(),
-					       pdgId,vertsProdRef,vertRef.key()));
-    pat::PackedCandidate& packedCand = packedCands.back();
-    packedCand.setTrackProperties(usedTrk);
-    packedCand.setLostInnerHits(getLostInnerHitsStatus(usedTrk));
-    packedCand.setTrackHighPurity(trkRef.isNonnull() && trkRef->quality(reco::TrackBase::highPurity));
-    packedCand.setAssociationQuality(convertAODToMiniAODVertAssoQualFlag(vertAssoQual));
-    if(vertRef->trackWeight(trkRef) > 0.5 && (vertAssoQual == 7 || pfCand.isNull()) ) {
-      packedCand.setAssociationQuality(pat::PackedCandidate::UsedInFitTight);
-    }
-    if(pfCand.isNonnull() && pfCand->muonRef().isNonnull()){
-      packedCand.setMuonID(pfCand->muonRef()->isStandAloneMuon(),pfCand->muonRef()->isGlobalMuon());
-    }
+  packedCands.push_back(pat::PackedCandidate(p4,usedTrk.vertex(),usedTrk.phi(),
+					     pdgId,vertsProdRef,vertRef.key()));
+  pat::PackedCandidate& packedCand = packedCands.back();
+  packedCand.setTrackProperties(usedTrk);
+  packedCand.setLostInnerHits(getLostInnerHitsStatus(usedTrk));
+  packedCand.setTrackHighPurity(trkRef.isNonnull() && trkRef->quality(reco::TrackBase::highPurity));
+  packedCand.setAssociationQuality(convertAODToMiniAODVertAssoQualFlag(vertAssoQual));
+  if(vertRef->trackWeight(trkRef) > 0.5 && (vertAssoQual == 7 || pfCand.isNull()) ) {
+    packedCand.setAssociationQuality(pat::PackedCandidate::UsedInFitTight);
+  }
+  if(pfCand.isNonnull() && pfCand->muonRef().isNonnull()){
+    packedCand.setMuonID(pfCand->muonRef()->isStandAloneMuon(),pfCand->muonRef()->isGlobalMuon());
   }
 }  
 
