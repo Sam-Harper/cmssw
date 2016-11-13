@@ -53,7 +53,9 @@ public:
     return calIsol(eleEta,elePhi,eleVZ,cands,eles).second;
   }
 
-  static bool passTrkSel(const reco::Track& trk,const TrkCuts& cuts,
+  static bool passTrkSel(const reco::Track& trk,
+			 const double trkPt,
+			 const TrkCuts& cuts,
 			 const double eleEta,const double elePhi,
 			 const double eleVZ);
   

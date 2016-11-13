@@ -83,23 +83,23 @@ EleTkIsolFromCands::calIsol(const double eleEta,const double elePhi,
   for(auto& cand  : cands){
     if(cand.charge()!=0){
       const reco::Track& trk = cand.pseudoTrack(); 
-      if(passTrkSel(trk,cuts,eleEta,elePhi,eleVZ)){	
-	double trkPt = std::abs(cand.pdgId())!=11 ? trk.pt() : getTrkPt(trk,eles);
-	//std::cout <<" passsel "<<trkPt;
-	if(trkPt>cuts.minPt){
-	  ptSum+=trkPt;
-	  nrTrks++;
-	  // std::cout <<" passfull ";
-	}
+      // std::cout <<"cand id "<<cand.pdgId()<<" ";
+      double trkPt = std::abs(cand.pdgId())!=11 ? trk.pt() : getTrkPt(trk,eles);
+      if(passTrkSel(trk,trkPt,cuts,eleEta,elePhi,eleVZ)){	
+	//	std::cout <<" passsel "<<trkPt;
+	ptSum+=trkPt;
+	nrTrks++;
+	//	std::cout <<" passfull ";
       }
-      //std::cout<<std::endl;
+      //      std::cout<<std::endl;
     }
   }
   return {nrTrks,ptSum};	
 }
 	
 
-bool EleTkIsolFromCands::passTrkSel(const reco::Track& trk,const TrkCuts& cuts,
+bool EleTkIsolFromCands::passTrkSel(const reco::Track& trk,
+				    const double trkPt,const TrkCuts& cuts,
 				    const double eleEta,const double elePhi,
 				    const double eleVZ)
 {
@@ -107,15 +107,16 @@ bool EleTkIsolFromCands::passTrkSel(const reco::Track& trk,const TrkCuts& cuts,
   const float dEta = trk.eta()-eleEta;
   const float dZ = eleVZ - trk.vz();
   //  std::cout <<"trk pt "<<trk.pt()<<" "<<trk.eta()<<" "<<trk.phi();
-  //std::cout <<" dz "<<dZ<<" deta "<<dEta<<" dR2 "<<dR2<<" "<< trk.hitPattern().numberOfValidHits() << " "<<trk.hitPattern().numberOfValidPixelHits() <<" trk pt err "<<trk.ptError()<<" ele vz "<<eleVZ;
+  //  std::cout <<" dz "<<dZ<<" deta "<<dEta<<" dR2 "<<dR2<<" "<< trk.hitPattern().numberOfValidHits() << " "<<trk.hitPattern().numberOfValidPixelHits() <<" trk pt err "<<trk.ptError()<<" ele vz "<<eleVZ;
   return dR2>=cuts.minDR2 && dR2<=cuts.maxDR2 && 
     std::abs(dEta)>=cuts.minDEta && 
     std::abs(dZ)<cuts.maxDZ &&
     trk.hitPattern().numberOfValidHits() >= cuts.minHits &&
     trk.hitPattern().numberOfValidPixelHits() >=cuts.minPixelHits &&
-    (trk.ptError()/trk.pt() < cuts.maxDPtPt || cuts.maxDPtPt<0) && 
+    (trk.ptError()/trkPt < cuts.maxDPtPt || cuts.maxDPtPt<0) && 
     passQual(trk,cuts.allowedQualities) &&
-    passAlgo(trk,cuts.algosToReject);
+    passAlgo(trk,cuts.algosToReject) &&
+    trkPt > cuts.minPt;
 }
     
  
@@ -141,19 +142,22 @@ passAlgo(const reco::TrackBase& trk,
   return algosToRej.empty() || !std::binary_search(algosToRej.begin(),algosToRej.end(),trk.algo());
 }
 
+//so the working theory here is that the track we have is the electrons gsf track
+//if so, lets get the pt of the gsf track before E/p combinations
+//if no match found to a gsf ele with a gsftrack, return the pt of the input track
 double EleTkIsolFromCands::
 getTrkPt(const reco::TrackBase& trk,
 	 const edm::View<reco::GsfElectron>& eles)
 {
   auto match=[](const reco::TrackBase& trk,const reco::GsfElectron& ele){
-    return std::abs(trk.eta()-ele.eta())<0.001 &&
-    std::abs(trk.phi()-ele.phi())<0.001;// && 
-    //    std::abs(trk.pt()-ele.pt())<0.001;
+    return std::abs(trk.eta()-ele.gsfTrack()->eta())<0.001 &&
+    std::abs(trk.phi()-ele.gsfTrack()->phi())<0.001;// && 
   };
-
   for(auto& ele : eles){
-    if(match(trk,ele)) { 
-      return ele.gsfTrack().isNonnull() ? ele.gsfTrack()->pt() : trk.pt();
+    if(ele.gsfTrack().isNonnull()){
+      if(match(trk,ele)){
+	return ele.gsfTrack()->pt();
+      }
     }
   }
   return trk.pt();
