@@ -83,15 +83,11 @@ EleTkIsolFromCands::calIsol(const double eleEta,const double elePhi,
   for(auto& cand  : cands){
     if(cand.charge()!=0){
       const reco::Track& trk = cand.pseudoTrack(); 
-      // std::cout <<"cand id "<<cand.pdgId()<<" ";
       double trkPt = std::abs(cand.pdgId())!=11 ? trk.pt() : getTrkPt(trk,eles);
       if(passTrkSel(trk,trkPt,cuts,eleEta,elePhi,eleVZ)){	
-	//	std::cout <<" passsel "<<trkPt;
 	ptSum+=trkPt;
 	nrTrks++;
-	//	std::cout <<" passfull ";
       }
-      //      std::cout<<std::endl;
     }
   }
   return {nrTrks,ptSum};	
@@ -106,8 +102,7 @@ bool EleTkIsolFromCands::passTrkSel(const reco::Track& trk,
   const float dR2 = reco::deltaR2(eleEta,elePhi,trk.eta(),trk.phi());
   const float dEta = trk.eta()-eleEta;
   const float dZ = eleVZ - trk.vz();
-  //  std::cout <<"trk pt "<<trk.pt()<<" "<<trk.eta()<<" "<<trk.phi();
-  //  std::cout <<" dz "<<dZ<<" deta "<<dEta<<" dR2 "<<dR2<<" "<< trk.hitPattern().numberOfValidHits() << " "<<trk.hitPattern().numberOfValidPixelHits() <<" trk pt err "<<trk.ptError()<<" ele vz "<<eleVZ;
+
   return dR2>=cuts.minDR2 && dR2<=cuts.maxDR2 && 
     std::abs(dEta)>=cuts.minDEta && 
     std::abs(dZ)<cuts.maxDZ &&
