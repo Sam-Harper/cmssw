@@ -129,7 +129,7 @@ class ElectronHEEPIDValueMapProducer : public edm::stream::EDProducer<> {
   static const std::string eleNrSaturateIn5x5Label_;
 };
 
-const std::string ElectronHEEPIDValueMapProducer::eleTrkPtIsoLabel_="eleTrkPtIsol";
+const std::string ElectronHEEPIDValueMapProducer::eleTrkPtIsoLabel_="eleTrkPtIso";
 const std::string ElectronHEEPIDValueMapProducer::eleNrSaturateIn5x5Label_="eleNrSaturateIn5x5";
  
 
