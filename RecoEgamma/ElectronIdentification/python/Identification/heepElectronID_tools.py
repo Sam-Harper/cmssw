@@ -309,7 +309,28 @@ def psetGsfEleTrkPtNoJetCoreIsoCut(wpEB, wpEE):
         needsAdditionalProducts = cms.bool(True),
         isIgnored = cms.bool(False)
         )
-
+def psetGsfEleTrkPtFall16IsoCut(wpEB, wpEE):
+    return cms.PSet( 
+        cutName = cms.string('GsfEleValueMapIsoRhoCut'),
+        # Three constants for the GsfEleTrkPtIsoCut
+        #     cut = constTerm if value < slopeStart
+        #     cut = slopeTerm * (value - slopeStart) + constTerm if value >= slopeStart
+        slopeTermEB = cms.double( wpEB.trkIsoSlopeTerm ),
+        slopeTermEE = cms.double( wpEE.trkIsoSlopeTerm ),
+        slopeStartEB = cms.double( wpEB.trkIsoSlopeStart ),
+        slopeStartEE = cms.double( wpEE.trkIsoSlopeStart ),
+        constTermEB = cms.double( wpEB.trkIsoConstTerm ),
+        constTermEE = cms.double( wpEE.trkIsoConstTerm ),
+        #no rho so we zero it out, if the input tag is empty, its ignored anyways
+        rhoEtStartEB = cms.double( 999999.),
+        rhoEtStartEE = cms.double( 999999.),
+        rhoEAEB = cms.double( 0. ),
+        rhoEAEE = cms.double( 0. ),
+        rho = cms.InputTag(""),
+        value = cms.InputTag("heepIDVarValueMaps","eleTrkPtIso"),
+        needsAdditionalProducts = cms.bool(True),
+        isIgnored = cms.bool(False)
+        )
 # Configure the cut on the EM + Had_depth_1 isolation with rho correction
 def psetGsfEleEmHadD1IsoRhoCut(wpEB, wpEE):
     return cms.PSet(
@@ -430,7 +451,7 @@ def configureHEEPElectronID_V70(idName, wpEB, wpEE):
             psetGsfEleFull5x5SigmaIEtaIEtaWithSatCut(wpEB,wpEE), #4
             psetGsfEleFull5x5E2x5OverE5x5WithSatCut(wpEB,wpEE),  #5
             psetGsfEleHadronicOverEMLinearCut(wpEB,wpEE), #6 
-            psetGsfEleTrkPtNoJetCoreIsoCut(wpEB,wpEE),    #7
+            psetGsfEleTrkPtFall16IsoCut(wpEB,wpEE),    #7
             psetGsfEleEmHadD1IsoRhoCut(wpEB,wpEE),        #8
             psetGsfEleDxyCut(wpEB,wpEE),                  #9
             psetGsfEleMissingHitsCut(wpEB,wpEE),          #10,
