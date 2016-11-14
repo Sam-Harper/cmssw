@@ -43,6 +43,7 @@ namespace pat {
   private:
     void addPackedCandidate(const edm::Event& iEvent,reco::TrackRef trkRef,reco::PFCandidateRef pfCand,
 			    const reco::Track& usedTrk,
+			    const std::unordered_set<int>& pfCandIdsTrkStoreWhitelist,
 			    std::vector<pat::PackedCandidate>& packedCands)const;
       
     bool passTrkCuts(const reco::TrackBase& trk)const;
@@ -52,13 +53,27 @@ namespace pat {
 			      const edm::Handle<reco::VertexCollection> vertices);
     static reco::PFCandidateRef getPFCand(reco::TrackRef trk,const edm::Handle<reco::PFCandidateCollection> pfCands);
     static reco::Candidate::PolarLorentzVector getP4(const reco::TrackBase& trk,const reco::PFCandidateRef cand);
-
+    std::unordered_set<int> makePFCandIdTrkStoreWhitelist(const edm::Event& iEvent)const;
     template<typename T>
     static edm::Handle<T> getHandle(const edm::Event& event,const edm::EDGetTokenT<T>& token){
       edm::Handle<T> handle;
       event.getByToken(token,handle);
       return handle;
-    }
+    }  
+    template <typename T> void setToken(edm::EDGetTokenT<T>& token,edm::InputTag tag){token=consumes<T>(tag);}
+    template<typename T> 
+    std::vector<edm::EDGetTokenT<T> > getTokens(const edm::ParameterSet& iPara,const std::string& tagName){
+      std::vector<edm::EDGetTokenT<T> > tokens;
+      auto tags =iPara.getParameter<std::vector<edm::InputTag> >(tagName);
+      for(auto& tag : tags) {
+	edm::EDGetTokenT<T> token;
+	setToken(token,tag);
+      tokens.push_back(token);
+      }
+      return tokens;
+    } 
+    
+
   private:
 
     const edm::EDGetTokenT<reco::PFCandidateCollection> pfCandsToken_;
@@ -66,7 +81,8 @@ namespace pat {
     const edm::EDGetTokenT<reco::VertexCollection> verticesToken_;  
     const edm::EDGetTokenT<edm::Association<reco::VertexCollection> > vertAssoToken_;
     const edm::EDGetTokenT<edm::ValueMap<int> > vertAssoQualToken_;
-         
+    const std::vector<edm::EDGetTokenT<edm::View<reco::CompositePtrCandidate> > > secondaryVerticesTokens_;
+   
     //this needs to be the same as the setting of PATPackedCandidateProducer.minPtForTrackProperties
     //otherwise will introduce small disagreements in output
     const double minPtToHaveStoredTrk_;
@@ -83,6 +99,7 @@ pat::PATPackedCandsForTkIso::PATPackedCandsForTkIso(const edm::ParameterSet& iCo
   verticesToken_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"))),
   vertAssoToken_(consumes<edm::Association<reco::VertexCollection> >(iConfig.getParameter<edm::InputTag>("vertAsso"))),
   vertAssoQualToken_(consumes<edm::ValueMap<int> >(iConfig.getParameter<edm::InputTag>("vertAssoQual"))),
+  secondaryVerticesTokens_(getTokens<edm::View<reco::CompositePtrCandidate> >(iConfig,"secondaryVertices")),
   minPtToHaveStoredTrk_(iConfig.getParameter<double>("minPtToHaveStoredTrk")),
   minHits_(iConfig.getParameter<int>("minHits")),
   minPixelHits_(iConfig.getParameter<int>("minPixelHits"))
@@ -119,6 +136,10 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
     if(std::abs(pfCand->pdgId())==11) pfEles.push_back(pfCand);
     
   }
+  
+  //so pfcands will store their track if they have pt > minPtToHaveStoredTrk_ or their ID
+  auto pfCandIdsTrkStoreWhitelist = makePFCandIdTrkStoreWhitelist(iEvent);
+  
 
   //we have to manually add the electrons which dont have tracks but do have gsf tracks
   //it is possible now we double count but there is no away around it other than 
@@ -127,7 +148,8 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
   for(auto pfEle : pfEles){
     if(pfEle->trackRef().isNull() && pfEle->gsfTrackRef().isNonnull()){
       if(passTrkCuts(*pfEle->gsfTrackRef())){
-	addPackedCandidate(iEvent,pfEle->trackRef(),pfEle,*pfEle->gsfTrackRef(),*packedCands);
+	addPackedCandidate(iEvent,pfEle->trackRef(),pfEle,*pfEle->gsfTrackRef(),
+			   pfCandIdsTrkStoreWhitelist,*packedCands);
       }
     }
   }
@@ -150,7 +172,7 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
       //   std::cout<<" trk "<<trkRef->pt()<<" "<<trkRef->eta()<<" "<<trkRef->phi()<<" used trk "<<usedTrk.pt()<<" "<<usedTrk.eta()<<" "<<usedTrk.phi();
       //if(pfCand.isNonnull()) std::cout <<" pfCand "<<pfCand->pdgId()<<" "<<pfCand->pt()<<" "<<pfCand->eta()<<" "<<pfCand->phi()<<" "<<pfCand->charge()<<" gsftrk "<<pfCand->gsfTrackRef().isNonnull();
       // std::cout<<std::endl;
-      addPackedCandidate(iEvent,trkRef,pfCand,usedTrk,*packedCands);
+      addPackedCandidate(iEvent,trkRef,pfCand,usedTrk,pfCandIdsTrkStoreWhitelist,*packedCands);
     }
   }
   
@@ -161,6 +183,7 @@ void pat::PATPackedCandsForTkIso::produce(edm::StreamID,edm::Event& iEvent,const
 void pat::PATPackedCandsForTkIso::
 addPackedCandidate(const edm::Event& iEvent,reco::TrackRef trkRef,reco::PFCandidateRef pfCand,
 		   const reco::Track& usedTrk,
+		   const std::unordered_set<int>& pfCandIdsTrkStoreWhitelist,
 		   std::vector<pat::PackedCandidate>& packedCands)const
 {
   //first we need to detect if the pfCand is a photon and if so, set it to a null ref
@@ -168,10 +191,15 @@ addPackedCandidate(const edm::Event& iEvent,reco::TrackRef trkRef,reco::PFCandid
   //where there is no candidate
   if(pfCand.isNonnull() && pfCand->pdgId()==22) pfCand=reco::PFCandidateRef(nullptr,0);
 
-  //interesting thing #2, if a candidate has pt <0.95, it will no store its track in the PF candidate 
-  //so the track ends up in lost tracks, this means we have to reset the pfCand ref to null
+  //interesting thing #2, if a candidate has pt <0.95 and is not in the whitelist
+  //it will not store its track in the PF candidate so the track ends up in lost tracks,
+  //this means we have to reset the pfCand ref to null
   //only an issue when the track and candidate pt are different of course
-  if(pfCand.isNonnull() && pfCand->pt()<=minPtToHaveStoredTrk_) pfCand=reco::PFCandidateRef(nullptr,0);
+  if(pfCand.isNonnull() && 
+     pfCand->pt()<=minPtToHaveStoredTrk_ && 
+     pfCandIdsTrkStoreWhitelist.find(pfCand.key())==pfCandIdsTrkStoreWhitelist.end()){
+    pfCand=reco::PFCandidateRef(nullptr,0);
+  }
 
   auto p4 = getP4(usedTrk,pfCand);
 
@@ -307,6 +335,25 @@ pat::PATPackedCandsForTkIso::getP4(const reco::TrackBase& trk,const reco::PFCand
 {
   if(pfCand.isNull()) return  reco::Candidate::PolarLorentzVector(trk.pt(),trk.eta(),trk.phi(),0.13957018);
   else return pfCand->polarP4();
+}
+
+//this was taken more or less wholestyle (just style corrections)
+//from PATPackedCandidateProducer, lines 158-169
+std::unordered_set<int> 
+pat::PATPackedCandsForTkIso::makePFCandIdTrkStoreWhitelist(const edm::Event& iEvent)const
+{
+  std::unordered_set<int> whiteList;
+  auto pfCandsHandle = getHandle(iEvent,pfCandsToken_);
+  for(auto& token : secondaryVerticesTokens_){
+    auto vertHandle = getHandle(iEvent,token);
+    for(auto& vert : *vertHandle){
+      for(size_t candNr=0;candNr<vert.numberOfSourceCandidatePtrs();candNr++){
+	const edm::Ptr<reco::Candidate>& cand  = vert.sourceCandidatePtr(candNr);
+	if(cand.id()==pfCandsHandle.id()) whiteList.insert(cand.key());
+      }
+    }
+  }
+  return whiteList;
 }
 
 
