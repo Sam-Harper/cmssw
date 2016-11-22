@@ -510,3 +510,15 @@ def configureHEEPElectronID_V61(wpEB, wpEE):
             )
         )
     return parameterSet
+
+def addHEEPProducersToSeq(process,seq,insertIndex,useMiniAOD):
+    process.load("RecoEgamma.ElectronIdentification.heepIdVarValueMapProducer_cfi")
+    
+    seq.insert(insertIndex,process.heepIDVarValueMaps)
+
+    if useMiniAOD==False:
+        process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
+        process.load("PhysicsTools.PatAlgos.slimming.primaryVertexAssociation_cfi")
+        process.load("PhysicsTools.PatAlgos.slimming.packedCandidatesForTrkIso_cfi")
+        seq.insert(insertIndex,process.primaryVertexAssociation)
+        seq.insert(insertIndex+1,process.packedCandsForTkIso)
