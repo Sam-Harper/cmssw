@@ -519,6 +519,18 @@ def addHEEPProducersToSeq(process,seq,insertIndex,useMiniAOD):
     if useMiniAOD==False:
         process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
         process.load("PhysicsTools.PatAlgos.slimming.primaryVertexAssociation_cfi")
-        process.load("PhysicsTools.PatAlgos.slimming.packedCandidatesForTrkIso_cfi")
+        process.load("PhysicsTools.PatAlgos.slimming.offlineSlimmedPrimaryVertices_cfi")
+        process.load("PhysicsTools.PatAlgos.slimming.packedPFCandidates_cfi") 
+        from PhysicsTools.PatAlgos.slimming.packedPFCandidates_cfi import packedPFCandidates
+        process.packedCandsForTkIso = packedPFCandidates.clone()
+        process.packedCandsForTkIso.PuppiSrc=cms.InputTag("")
+        process.packedCandsForTkIso.PuppiNoLepSrc=cms.InputTag("")
+        
+        process.load("PhysicsTools.PatAlgos.slimming.lostTracks_cfi")
+        from PhysicsTools.PatAlgos.slimming.lostTracks_cfi import lostTracks
+        process.lostTracksForTkIso = lostTracks.clone()
+        process.lostTracksForTkIso.packedPFCandidates =cms.InputTag("packedCandsForTkIso")
         seq.insert(insertIndex,process.primaryVertexAssociation)
-        seq.insert(insertIndex+1,process.packedCandsForTkIso)
+        seq.insert(insertIndex+1,process.offlineSlimmedPrimaryVertices)
+        seq.insert(insertIndex+2,process.packedCandsForTkIso)
+        seq.insert(insertIndex+3,process.lostTracksForTkIso)
