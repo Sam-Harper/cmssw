@@ -71,12 +71,11 @@ GainSwitchTools::redoEcalShowerShape(reco::GsfElectron::ShowerShape showerShape,
   showerShape.sigmaIphiIphi =!edm::isNotFinite(localCovariances[2]) ? sqrt(localCovariances[2]) : 0;
   showerShape.e1x5 = EcalClusterToolsT<noZS>::e1x5(seedClus,recHits,topology);
   showerShape.e2x5Max = EcalClusterToolsT<noZS>::e2x5Max(seedClus,recHits,topology);
+  // The standard HoE will be corrected with the regression is re-run
   float new_e5x5 = EcalClusterToolsT<noZS>::e5x5(seedClus,recHits,topology);
   showerShape.hcalDepth1OverEcalBc = showerShape.hcalDepth1OverEcalBc * showerShape.e5x5 / new_e5x5;
   showerShape.hcalDepth2OverEcalBc = showerShape.hcalDepth2OverEcalBc * showerShape.e5x5 / new_e5x5;
   showerShape.e5x5 = new_e5x5;
-  showerShape.hcalDepth1OverEcal = showerShape.hcalDepth1OverEcal * superClusOld->energy() / superClus->energy();
-  showerShape.hcalDepth2OverEcal = showerShape.hcalDepth2OverEcal * superClusOld->energy() / superClus->energy();
   showerShape.r9 = EcalClusterToolsT<noZS>::e3x3(seedClus,recHits,topology)/superClus->rawEnergy();  
   const float see_by_spp = showerShape.sigmaIetaIeta*showerShape.sigmaIphiIphi;
   if(  see_by_spp > 0 ) {
