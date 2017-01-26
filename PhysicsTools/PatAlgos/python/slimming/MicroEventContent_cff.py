@@ -64,9 +64,6 @@ MicroEventContent = cms.PSet(
         'keep *_caTopTagInfosPAT_*_*'
         # Lumi
         'keep LumiScalerss_scalersRawToDigi_*_*',
-        # ECAL digis
-        'keep EBDigiCollection_selectDigi_*_*',
-        'keep EEDigiCollection_selectDigi_*_*',
     )
 )
 MicroEventContentMC = cms.PSet(
