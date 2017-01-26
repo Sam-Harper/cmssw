@@ -44,6 +44,9 @@ public:
   static reco::SuperClusterRef matchSCBySeedCrys(const reco::SuperCluster&, HANDLE const&);
   template<typename HANDLE>
   static reco::SuperClusterRef matchSCBySeedCrys(const reco::SuperCluster&, HANDLE const&, int maxDEta, int maxDPhi);
+  template<typename HANDLE>
+  static reco::CaloClusterPtr matchSeedClusBySeedCrys(const DetId, HANDLE const&, int maxDEta=0, int maxDPhi=0);
+
 
   // find an entry in H::element_type (a collection) that maps in M to R
   template<typename R, typename H, typename M>
@@ -109,7 +112,6 @@ GainSwitchTools::matchSCBySeedCrys(const reco::SuperCluster& sc, HANDLE const& s
   
   if(sc.seed()->seed().subdetId()==EcalBarrel){
     EBDetId scDetId(sc.seed()->seed());
-    
     for(size_t scNr=0;scNr<scColl->size();scNr++){
       reco::SuperClusterRef matchRef(scColl,scNr);
       if(matchRef->seed()->seed().subdetId()==EcalBarrel){
@@ -122,12 +124,38 @@ GainSwitchTools::matchSCBySeedCrys(const reco::SuperCluster& sc, HANDLE const& s
 	  bestRef = reco::SuperClusterRef(scColl,scNr);
 	}
       }
-    }
-    
-    
+    }   
   }
   return bestRef;
 }
+
+template<typename HANDLE>
+reco::CaloClusterPtr 
+GainSwitchTools::matchSeedClusBySeedCrys(const DetId seedCrysId, HANDLE const& clusColl, int maxDEta, int maxDPhi)
+{
+  reco::CaloClusterPtr bestRef(clusColl.id());
+
+  int bestDIR2 = maxDEta*maxDEta+maxDPhi*maxDPhi+1; //+1 is to make it slightly bigger than max allowed
+  
+  if(seedCrysId.subdetId()==EcalBarrel){
+    EBDetId seedCrysEBId(seedCrysId);
+    for(size_t clusNr=0;clusNr<clusColl->size();clusNr++){
+      reco::CaloClusterPtr matchRef(clusColl,clusNr);
+      if(matchRef->seed().subdetId()==EcalBarrel){
+	EBDetId matchDetId(matchRef->seed());
+	int dIEta = calDIEta(seedCrysEBId.ieta(),matchDetId.ieta());
+	int dIPhi = calDIPhi(seedCrysEBId.iphi(),matchDetId.iphi());
+	int dIR2 = dIEta*dIEta+dIPhi*dIPhi;
+	if(dIR2<bestDIR2){
+	  bestDIR2=dIR2;
+	  bestRef = matchRef;
+	}
+      }
+    }    
+  }
+  return bestRef;
+}
+
 
 template<bool noZS>
 reco::GsfElectron::ShowerShape 

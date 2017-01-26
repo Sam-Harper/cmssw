@@ -41,7 +41,22 @@
 //  but take the smallest dIR
 
 //  issues: sub cluster ordering may not be correct (its sorted by decreasing energy)
-//  issues: when it assigns a sub cluster to a refined SC, it doesnt remove it from others
+
+//the rules for remaking a supercluster
+//rule 1) only remake barrel superclusters, endcap clusters are just passed through
+//rule 2) seed clusters of superclusters are assumed to be the same their seed crystals is 
+//        in <=|1| in iEta/iPhi (ie be in the 3x3 surrounding it) when comparing new to old clusters
+//rule 3) non-seed clusters are assumed to have the same seed crystal when remade
+//rule 4) we make a new refined supercluster for each existing refined supercluster
+//rule 5) a cluster which was previously added to a refined supercluster is readded
+//        and that cluster is removed from all other superclusters
+//rule 6) any cluster which was removed from a refined supercluster is re-removed
+//rule 7) if a refined supercluster does not have a parent supercluster, it is remade
+//        from the new sub clusters, ignoring any that do not exist anymore
+//        its seed cluster is allowed to vary its seed crystal by -/+ 1 in iEta/iPhi as normal
+  
+
+
 
 class EGRefinedSCFixer : public edm::stream::EDProducer<> {
 public:
@@ -49,6 +64,7 @@ public:
   virtual ~EGRefinedSCFixer(){}
   virtual void produce(edm::Event &, const edm::EventSetup &);
   
+  //this function appears not to be used
   reco::SuperCluster 
   makeFixedRefinedSC(const reco::SuperCluster& orgRefinedSC,
 		     const reco::SuperCluster& orgSC,
@@ -70,13 +86,22 @@ public:
   static std::vector<edm::Ptr<reco::PFCluster> >
   getClustersFromSeedIds(const std::unordered_set<unsigned>& seedIds,const edm::Handle<edm::View<reco::PFCluster> >& inClusters);
 
+  
   static reco::SuperCluster 
   makeFixedRefinedBarrelSC(const reco::SuperCluster& orgRefinedSC,
 			   const reco::SuperCluster& orgSC,
 			   const reco::SuperCluster& fixedSC,
 			   const edm::Handle<edm::View<reco::PFCluster> >& fixedClusters,
 			   const std::vector<edm::Ptr<reco::CaloCluster> >& clustersAddedToAnySC);
-
+  
+  static reco::SuperCluster 
+  makeFixedRefinedBarrelSC(const reco::SuperCluster& orgRefinedSC,
+			   const edm::Handle<edm::View<reco::PFCluster> >& fixedClusters);
+  
+  static reco::SuperCluster 
+  makeFixedRefinedBarrelSC(const unsigned seedSeedId,
+			   const std::unordered_set<unsigned>& listOfSeedIds,
+			   const edm::Handle<edm::View<reco::PFCluster> >& fixedClusters);
 private:
   typedef edm::View<reco::PFCluster> PFClusterView;
   typedef edm::ValueMap<reco::SuperClusterRef> SCRefMap;
@@ -208,41 +233,47 @@ void EGRefinedSCFixer::produce(edm::Event & iEvent, const edm::EventSetup & iSet
 	auto clusAdded = getSubClustersMissing(refinedSC,*parentSC);
 	for(auto clusPtr : clusAdded) clusterAddedToAnyEBSC.push_back(clusPtr);
       }else{ //no parent supercluster, all superclusters in this supercluster are addded
-	for(auto clusPtr : refinedSC.clusters()) clusterAddedToAnyEBSC.push_back(clusPtr);
+	//we do something a bit naughty, for the seed we put the fixed cluster in as its seed may change
+	//later on we match by seed id to this with the fixed clusters
+	for(auto clusPtr : refinedSC.clusters()){
+	  if(clusPtr!=refinedSC.seed()){
+	    clusterAddedToAnyEBSC.push_back(clusPtr);
+	  }else{
+	    clusterAddedToAnyEBSC.push_back(GainSwitchTools::matchSeedClusBySeedCrys(clusPtr->seed(),fixedPFClusters,1,1));
+	  }
+	}
       }
     }
   }
     
+  //loop over all orginal refined SC and make a new refined SC for each of them (rule 4)
   for (unsigned iO(0); iO != orgRefinedSCs->size(); ++iO) {
     auto& orgRefinedSC(orgRefinedSCs->at(iO));
     mappedRefinedSCs.emplace_back(orgRefinedSCs, iO);
 
-    // find the PFSuperCluster for this refined SC
+    //only remake barrel superclusters (rule 1)
     if (orgRefinedSC.seed()->seed().subdetId() == EcalBarrel) {
-      auto orgEBSC(GainSwitchTools::matchSCBySeedCrys(orgRefinedSC, orgEBSCs));
-
-      // particleFlowEGamma can create superclusters directly out of PFClusters too
-      // -> there is not always a matching EB SC
-      if (orgEBSC.isNonnull()) {
-	//changing the matching to be in  3x3 now (had issues with suprious matches)
-        auto fixedEBSC(GainSwitchTools::matchSCBySeedCrys(*orgEBSC, fixedEBSCs, 1, 1));
-       
-        // here we may genuinely miss a mapping, if the seed position moves too much by re-reconstruction
-	// Sam: its very unlikely, if not impossible. To be replaced the gain switched crystal must be within +/-1 crystal a hybrid supercluster seed crystal because of ecalSelectedDigis. You could only get a shift larger than 1 if you had two supercluster seed crystals very close together and even then I'm not sure its possible. 
-        if (fixedEBSC.isNonnull()) {
-          mappedSCsEB[fixedEBSC.key()] = orgEBSC;
-
-          auto fixedRefinedSC(makeFixedRefinedBarrelSC(orgRefinedSC, *orgEBSC, *fixedEBSC, fixedPFClusters,clusterAddedToAnyEBSC));
-          fixedRefinedSCs->push_back(fixedRefinedSC);
-
-	  //	  std::cout<<" org refined "<<SCDeepPrinter(orgRefinedSC)<<std::endl;
-	  //std::cout<<" new refined "<<SCDeepPrinter(fixedRefinedSC)<<std::endl;
-
-          continue;
-        }
-      }
-    }
-    else {
+      
+      //orginal to orginal parent match (can do exact seed crystal match)
+      reco::SuperClusterRef orgEBSC = GainSwitchTools::matchSCBySeedCrys(orgRefinedSC, orgEBSCs);
+      
+      
+      //changing the matching to be in 3x3 now (had issues with spurious matches)
+      //with a 3x3 match, it is impossible to get a match to the wrong supercluster 
+      //as to be a local maxium in the 3x3, the crystal needs to have its energy changed
+      reco::SuperClusterRef fixedEBSC = orgEBSC.isNonnull() ? GainSwitchTools::matchSCBySeedCrys(*orgEBSC, fixedEBSCs, 1, 1) : reco::SuperClusterRef(fixedEBSCs.id());
+      
+      
+      // here we may genuinely miss a mapping, if the seed position moves too much by re-reconstruction
+      // Sam: its very unlikely, if not impossible. To be replaced the gain switched crystal must be within +/-1 crystal a hybrid supercluster seed crystal because of ecalSelectedDigis. You could only get a shift larger than 1 if you had two supercluster seed crystals very close together and even then I'm not sure its possible. 
+      if (fixedEBSC.isNonnull()) mappedSCsEB[fixedEBSC.key()] = orgEBSC;
+      
+      reco::SuperCluster fixedRefinedSC = makeFixedRefinedBarrelSC(orgRefinedSC, *orgEBSC,*fixedEBSC, 
+								   fixedPFClusters,
+								   clusterAddedToAnyEBSC);
+      fixedRefinedSCs->push_back(fixedRefinedSC);
+    
+    }else { //endcap electron, pass through
       auto orgEESC(GainSwitchTools::matchSCBySeedCrys(orgRefinedSC, orgEESCs));
       if (orgEESC.isNonnull()) {
         // there is nothing "fixed" here - two clusters are identical
@@ -250,10 +281,9 @@ void EGRefinedSCFixer::produce(edm::Event & iEvent, const edm::EventSetup & iSet
         // fixedEESC has to be nonnull
         mappedSCsEE[fixedEESC.key()] = orgEESC;
       }
+      fixedRefinedSCs->push_back(orgRefinedSC);
     }
 
-    // if EE or no PFSuperCluster match
-    fixedRefinedSCs->push_back(orgRefinedSC);
   }
 
 
@@ -368,7 +398,9 @@ EGRefinedSCFixer::getListOfClusterSeedIdsForNewSC(const reco::SuperCluster& orgR
 						  const std::vector<edm::Ptr<reco::CaloCluster> >& clustersAddedToAnySC)
   
 {
+  //these are the clusters which the PFEgammaAlgo added to the orginal supercluster when making the orginal refined sc
   auto clusAdded = getSubClustersMissing(orgRefinedSC,orgSC);
+  //these are the clusters which the PFEgammaAlgo removed to the orginal supercluster when making the orginal refined sc
   auto clusRemoved = getSubClustersMissing(orgSC,orgRefinedSC);
 
   
@@ -376,13 +408,13 @@ EGRefinedSCFixer::getListOfClusterSeedIdsForNewSC(const reco::SuperCluster& orgR
   for(auto& clus : fixedSC.clusters()){
     auto compFunc=[&clus](auto& rhs){return rhs->seed().rawId()==clus->seed().rawId();};
     
-    //first check if the cluster was removed by the refining process
+    //first check if the cluster was not removed by the refining process (rule 6)
     bool notRemoved = std::find_if(clusRemoved.begin(),clusRemoved.end(),compFunc)==clusRemoved.end();
 
-    //now check if it was assigned to another supercluster (it wont be picked up by the previous
-    //check if the parent supercluster picked it up during reclustering)
-    //if its a cluster which is added to any supercluster it wont add it
+    //now check that the cluster was not assigned to supercluster
+    // it wont be picked up by the previous check if the parent supercluster picked it up during reclustering
     //its okay if it was added to this supercluster as we will add it in below
+    //this is part of rule 5
     bool notAddedToASuperCluster = std::find_if(clustersAddedToAnySC.begin(),
 						clustersAddedToAnySC.end(),compFunc)==clustersAddedToAnySC.end();
  
@@ -390,6 +422,8 @@ EGRefinedSCFixer::getListOfClusterSeedIdsForNewSC(const reco::SuperCluster& orgR
       detIdsOfClustersForNewSC.insert(clus->seed().rawId());
     }
   }
+
+  //rule 5: add the clusters previously added by PFEgammaAlgo to make the refined SC
   for(auto clus : clusAdded){
     detIdsOfClustersForNewSC.insert(clus->seed().rawId());
   }
@@ -411,9 +445,7 @@ EGRefinedSCFixer::getClustersFromSeedIds(const std::unordered_set<unsigned>& see
   return outClusters;
 }
 
-//EB only which simplies things a lot
-//stolen from PFEGammaAlgo which stole it from PFECALSuperClusterAlgo
-//probably some sort of refactoring would be handy
+//the case where have a matched orginal parent SC and fixed parent SC
 reco::SuperCluster 
 EGRefinedSCFixer::makeFixedRefinedBarrelSC(const reco::SuperCluster& orgRefinedSC,
 					   const reco::SuperCluster& orgSC,
@@ -421,12 +453,58 @@ EGRefinedSCFixer::makeFixedRefinedBarrelSC(const reco::SuperCluster& orgRefinedS
 					   const edm::Handle<edm::View<reco::PFCluster> >& fixedClusters,
 					   const std::vector<edm::Ptr<reco::CaloCluster> >& clustersAddedToAnySC)
 {
+  //this function gives us all the seed crystal IDs of the clusters which we have decided
+  //belong to this supercluster
   auto listOfSeedIds = getListOfClusterSeedIdsForNewSC(orgRefinedSC,orgSC,fixedSC,clustersAddedToAnySC);
 
   // make sure the seed cluster is in the listOfSeedIds
   unsigned seedSeedId(fixedSC.seed()->seed().rawId());
   listOfSeedIds.insert(seedSeedId);
+  return makeFixedRefinedBarrelSC(seedSeedId,listOfSeedIds,fixedClusters);
+}
 
+//when we only have a orginal refined SC (rule 7)
+reco::SuperCluster 
+EGRefinedSCFixer::makeFixedRefinedBarrelSC(const reco::SuperCluster& orgRefinedSC,
+					   const edm::Handle<edm::View<reco::PFCluster> >& fixedClusters)
+{
+  
+  //the new sub clusters of the event
+  //we have to watch for the seed changing
+  std::vector<edm::Ptr<reco::CaloCluster> > fixedSubClusters;
+
+  unsigned seedSeedId = orgRefinedSC.seed()->seed().rawId();
+  
+ 
+ 
+  //match seed to new clusters in the 3x3 (rule 7)
+  reco::CaloClusterPtr fixedSeedClus = GainSwitchTools::matchSeedClusBySeedCrys(seedSeedId,fixedClusters,1,1);
+  if(fixedSeedClus.isNonnull()){
+    fixedSubClusters.push_back(fixedSeedClus);
+  }
+  //now do the other clusters, skipping the seed, exact match by det id
+  for(auto& subClus : orgRefinedSC.clusters()){
+    if(subClus==orgRefinedSC.seed()) continue;
+    reco::CaloClusterPtr fixedSubClus = GainSwitchTools::matchSeedClusBySeedCrys(subClus->seed(),fixedClusters);
+    if(fixedSubClus.isNonnull()) fixedSubClusters.push_back(fixedSubClus);
+  }
+
+  std::unordered_set<unsigned> listOfSeedIds;
+  if(fixedSubClusters.empty()) return reco::SuperCluster();
+  else{
+    for(auto& clus : fixedSubClusters) listOfSeedIds.insert(clus->seed().rawId());
+    return makeFixedRefinedBarrelSC(fixedSubClusters[0]->seed().rawId(),listOfSeedIds,fixedClusters);
+  }
+}
+
+//EB only which simplies things a lot
+//stolen from PFEGammaAlgo which stole it from PFECALSuperClusterAlgo
+//probably some sort of refactoring would be handy
+reco::SuperCluster 
+EGRefinedSCFixer::makeFixedRefinedBarrelSC(const unsigned seedSeedId,
+					   const std::unordered_set<unsigned>& listOfSeedIds,
+					   const edm::Handle<edm::View<reco::PFCluster> >& fixedClusters)
+{
   std::vector<edm::Ptr<reco::PFCluster> > clusters = getClustersFromSeedIds(listOfSeedIds,fixedClusters);
 
   // fixedSC.seed() is from a different BasicCluster collection
