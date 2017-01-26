@@ -168,7 +168,7 @@ void EGRefinedSCFixer::produce(edm::Event & iEvent, const edm::EventSetup & iSet
   
   for(const auto& fixedSC : *fixedSCs){
     
-    reco::SuperClusterRef orgSC = GainSwitchTools::matchSCBySeedCrys(fixedSC,orgSCs,2,2);
+    reco::SuperClusterRef orgSC = GainSwitchTools::matchSCBySeedCrys(fixedSC,orgSCs,1,1);
     reco::SuperClusterRef orgRefinedSC = orgSC.isNonnull() ? GainSwitchTools::matchSCBySeedCrys(*orgSC,orgRefinedSCs) : orgSC;
     
     //so we have a matched orginal and refined SC, we can remake the refined SC out of the new clusters
