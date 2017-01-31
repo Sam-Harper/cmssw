@@ -224,8 +224,13 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
             self.jetConfiguration()
         
         #met reprocessing and jet reclustering
+<<<<<<< HEAD
         if recoMetFromPFCs: 
             self.setParameter('reclusterJets',True)
+=======
+        #if recoMetFromPFCs:
+        #    self.setParameter('reclusterJets',True)
+>>>>>>> Tools to re-miniAOD with a cleaned collection of PF candidates after removing bad muons, and correct MET for the gain switch
         
         #jet collection overloading for automatic jet reclustering
         if reclusterJets:
@@ -1226,10 +1231,11 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
             if self._parameters["onMiniAOD"].value: 
                 pfCHS = cms.EDFilter("CandPtrSelector", src = pfCandCollection, cut = cms.string("fromPV"))
             else:
-                setattr( process, "tmpPFCandCollPtr", cms.EDProducer("PFCandidateFwdPtrProducer",
+                setattr( process, "tmpPFCandCollPtr"+postfix, cms.EDProducer("PFCandidateFwdPtrProducer",
                                                                      src = pfCandCollection ) )
                 process.load("CommonTools.ParticleFlow.pfNoPileUpJME_cff")
                 configtools.cloneProcessingSnippet(process, getattr(process,"pfNoPileUpJMESequence"), postfix )
+<<<<<<< HEAD
                 getattr(process, "pfPileUpJME"+postfix).PFCandidates = cms.InputTag("tmpPFCandCollPtr")
                 pfCHS = getattr(process, "pfNoPileUpJME").clone( bottomCollection = cms.InputTag("tmpPFCandCollPtr") )
             
@@ -1237,6 +1243,15 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
                 setattr(process,"pfCHS"+postfix,pfCHS)
             pfCandColl = cms.InputTag("pfCHS"+postfix)
             
+=======
+                getattr(process, "pfPileUpJME"+postfix).PFCandidates = cms.InputTag("tmpPFCandCollPtr"+postfix)
+                setattr(process, "pfNoPileUpJME"+postfix,
+                        getattr(process, "pfNoPileUpJME"+postfix).clone( 
+                        bottomCollection = cms.InputTag("tmpPFCandCollPtr"+postfix) )
+                        )
+                pfCandColl = cms.InputTag("pfNoPileUpJME"+postfix)
+                   
+>>>>>>> Tools to re-miniAOD with a cleaned collection of PF candidates after removing bad muons, and correct MET for the gain switch
 
         jetColName+=postfix
 
@@ -1449,6 +1464,7 @@ def runMetCorAndUncForMiniAODProduction(process, metType="PF",
 ##                                        jecUnFile="CondFormats/JetMETObjects/data/Summer15_50nsV5_DATA_UncertaintySources_AK4PFchs.txt",
                                         jecUnFile="",
                                         recoMetFromPFCs=False,
+                                        reclusterJets=False,
                                         postfix=""):
 
     runMETCorrectionsAndUncertainties = RunMETCorrectionsAndUncertainties()
@@ -1469,6 +1485,7 @@ def runMetCorAndUncForMiniAODProduction(process, metType="PF",
                                       autoJetCleaning=jetCleaning,
                                       jecUncertaintyFile=jecUnFile,
                                       recoMetFromPFCs=recoMetFromPFCs,
+                                      reclusterJets=reclusterJets,
                                       postfix=postfix
                                       )
     
@@ -1488,6 +1505,7 @@ def runMetCorAndUncForMiniAODProduction(process, metType="PF",
                                       autoJetCleaning=jetCleaning,
                                       jecUncertaintyFile=jecUnFile,
                                       recoMetFromPFCs=recoMetFromPFCs,
+                                      reclusterJets=reclusterJets,
                                       postfix=postfix
                                       )
     
@@ -1507,6 +1525,7 @@ def runMetCorAndUncForMiniAODProduction(process, metType="PF",
                                       autoJetCleaning=jetCleaning,
                                       jecUncertaintyFile=jecUnFile,
                                       recoMetFromPFCs=recoMetFromPFCs,
+                                      reclusterJets=reclusterJets,
                                       postfix=postfix,
                                       )
 
