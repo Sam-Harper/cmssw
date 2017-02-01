@@ -205,6 +205,7 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
         
         self.setParameter('addToPatDefaultSequence',addToPatDefaultSequence),
         self.setParameter('recoMetFromPFCs',recoMetFromPFCs),
+        self.setParameter('reclusterJets',reclusterJets),
         self.setParameter('runOnData',runOnData),
         self.setParameter('onMiniAOD',onMiniAOD),
         self.setParameter('postfix',postfix),
