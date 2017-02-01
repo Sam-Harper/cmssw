@@ -112,6 +112,7 @@ def miniAOD_customizeCommon(process):
     runMetCorAndUncForMiniAODProduction(process,
                                         pfCandColl=cms.InputTag("noHFCands"),
                                         recoMetFromPFCs=True, #needed for HF removal
+
                                         postfix="NoHF"
                                         )
     process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
