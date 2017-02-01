@@ -205,6 +205,7 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
         
         self.setParameter('addToPatDefaultSequence',addToPatDefaultSequence),
         self.setParameter('recoMetFromPFCs',recoMetFromPFCs),
+        self.setParameter('reclusterJets',reclusterJets),
         self.setParameter('runOnData',runOnData),
         self.setParameter('onMiniAOD',onMiniAOD),
         self.setParameter('postfix',postfix),
@@ -224,18 +225,20 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
             self.jetConfiguration()
         
         #met reprocessing and jet reclustering
-<<<<<<< HEAD
         if recoMetFromPFCs: 
             self.setParameter('reclusterJets',True)
-=======
+
         #if recoMetFromPFCs:
         #    self.setParameter('reclusterJets',True)
->>>>>>> Tools to re-miniAOD with a cleaned collection of PF candidates after removing bad muons, and correct MET for the gain switch
         
         #jet collection overloading for automatic jet reclustering
         if reclusterJets:
+
             self.setParameter('jetCollection',cms.InputTag('selectedPatJets'))
             self.setParameter('jetCollectionUnSkimmed',cms.InputTag('patJets'))
+
+            self.setParameter('jetCollectionUnskimmed',cms.InputTag('patJets'+postfix))
+
             
         self.apply(process)
         
@@ -1235,15 +1238,13 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
                                                                      src = pfCandCollection ) )
                 process.load("CommonTools.ParticleFlow.pfNoPileUpJME_cff")
                 configtools.cloneProcessingSnippet(process, getattr(process,"pfNoPileUpJMESequence"), postfix )
-<<<<<<< HEAD
                 getattr(process, "pfPileUpJME"+postfix).PFCandidates = cms.InputTag("tmpPFCandCollPtr")
                 pfCHS = getattr(process, "pfNoPileUpJME").clone( bottomCollection = cms.InputTag("tmpPFCandCollPtr") )
             
             if not hasattr(process, "pfCHS"+postfix):
                 setattr(process,"pfCHS"+postfix,pfCHS)
             pfCandColl = cms.InputTag("pfCHS"+postfix)
-            
-=======
+        
                 getattr(process, "pfPileUpJME"+postfix).PFCandidates = cms.InputTag("tmpPFCandCollPtr"+postfix)
                 setattr(process, "pfNoPileUpJME"+postfix,
                         getattr(process, "pfNoPileUpJME"+postfix).clone( 
@@ -1251,7 +1252,6 @@ class RunMETCorrectionsAndUncertainties(ConfigToolBase):
                         )
                 pfCandColl = cms.InputTag("pfNoPileUpJME"+postfix)
                    
->>>>>>> Tools to re-miniAOD with a cleaned collection of PF candidates after removing bad muons, and correct MET for the gain switch
 
         jetColName+=postfix
 
