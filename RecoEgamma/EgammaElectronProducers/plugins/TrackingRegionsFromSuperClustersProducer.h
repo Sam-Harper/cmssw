@@ -66,6 +66,16 @@ namespace{
     }
     throw cms::Exception("LogicError") <<typeid(MyEnum).name()<<" not recognised by ROOT";
   }
+  template<> RectangularEtaPhiTrackingRegion::UseMeasurementTracker strToEnum(std::string const& enumConstName){
+    using MyEnum = RectangularEtaPhiTrackingRegion::UseMeasurementTracker;
+    if(enumConstName=="kNever") return MyEnum::kNever;
+    else if(enumConstName=="kForSiStrips") return MyEnum::kForSiStrips;
+    else if(enumConstName=="kAlways") return MyEnum::kAlways;
+    else{
+      throw cms::Exception("Configuration") <<enumConstName<<" is not a valid member of "<<typeid(MyEnum).name()<<" (or strToEnum needs updating, this is a manual translation)";
+    }
+  }
+
 } 
 class TrackingRegionsFromSuperClustersProducer : public TrackingRegionProducer
 {
@@ -173,10 +183,15 @@ fillDescriptions(edm::ConfigurationDescriptions& descriptions)
   desc.add<bool>("useZInVertex", false);
   desc.add<bool>("precise", true);
   desc.add<std::string>("whereToUseMeasTracker","kNever");
+  desc.add<edm::InputTag>("beamSpot", edm::InputTag());
   desc.add<edm::InputTag>("vertices", edm::InputTag());
   desc.add<std::vector<edm::InputTag> >("superClusters", std::vector<edm::InputTag>());
-  desc.add<edm::InputTag>("measurementTrackerEvent",edm::InputTag());
-  descriptions.add("globalTrackingRegionFromSuperCluster", desc);
+  desc.add<edm::InputTag>("measurementTrackerEvent",edm::InputTag()); 
+  
+  edm::ParameterSetDescription descRegion;
+  descRegion.add<edm::ParameterSetDescription>("RegionPSet", desc);
+
+  descriptions.add("trackingRegionsFromSuperClusters", descRegion);
 }
 
 
