@@ -1,0 +1,172 @@
+#include "RecoEgamma/EgammaElectronAlgos/interface/PixelNHitMatcher.h"
+
+#include "FWCore/Framework/interface/EventSetup.h"
+
+#include "DataFormats/TrajectorySeed/interface/TrajectorySeed.h"
+#include "DataFormats/GeometryCommonDetAlgo/interface/PerpendicularBoundPlaneBuilder.h"
+#include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
+
+#include "TrackingTools/TrajectoryState/interface/FreeTrajectoryState.h"
+
+#include "RecoEgamma/EgammaElectronAlgos/interface/FTSFromVertexToPointFactory.h"
+#include "RecoEgamma/EgammaElectronAlgos/interface/ElectronUtilities.h"
+
+void PixelNHitMatcher::doEventSetup(const edm::EventSetup& iSetup)
+{
+  if (cacheIDMagField_!=iSetup.get<IdealMagneticFieldRecord>().cacheIdentifier()) {
+    iSetup.get<IdealMagneticFieldRecord>().get(magField_);
+    cacheIDMagField_=iSetup.get<IdealMagneticFieldRecord>().cacheIdentifier();
+    forwardPropagator_=std::make_unique<PropagatorWithMaterial>(alongMomentum,kElectronMass_,&*(magField_));
+    backwardPropagator_=std::make_unique<PropagatorWithMaterial>(oppositeToMomentum,kElectronMass_,&*(magField_));
+  }
+}
+
+std::vector<SeedWithInfo>
+PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
+				  const GlobalPoint & vprim, const float energy, const int charge )
+{
+  if(!forwardPropagator_ || backwardPropagator_ || !magField_.isValid()){
+    throw cms::Exception("LogicError") <<__FUNCTION__<<" can not make pixel seeds as event setup has not properly been called";
+  }
+
+  std::vector<SeedWithInfo> matchedSeeds;
+  for(const auto& seed : seeds) {
+    std::vector<HitInfo> matchedHits = processSeed(seed,candPos,vprim,energy,charge);
+    if(matchedHits.size()==nrHitsRequired_){
+      //do the result
+
+    }
+  }
+  return matchedSeeds;
+}
+
+std::vector<PixelNHitMatcher::HitInfo>
+PixelNHitMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
+			      const GlobalPoint & vprim, const float energy, const int charge )
+{
+  
+  if(seed.nHits()!=nrHitsRequired_){
+    throw cms::Exception("Configuration") <<"PixelNHitMatcher is being fed seeds with "<<seed.nHits()<<" but requires "<<nrHitsRequired_<<" for a match, it is inconsistantly configured";
+  }
+
+  
+  FreeTrajectoryState trajStateFromVtx = FTSFromVertexToPointFactory::get(*magField_, candPos, vprim, energy, charge);
+  PerpendicularBoundPlaneBuilder bpb;
+  TrajectoryStateOnSurface initialTrajState(trajStateFromVtx,*bpb(trajStateFromVtx.position(), 
+								  trajStateFromVtx.momentum()));
+ 
+  std::vector<HitInfo> matchedHits;
+  HitInfo firstHit = matchFirstHit(seed,initialTrajState,vprim,*backwardPropagator_);
+  if(passesMatchSel(firstHit,0)){
+    matchedHits.push_back(firstHit);
+    
+    //now we can figure out the z vertex
+    double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,firstHit.pos(),candPos);
+    GlobalPoint vertex(vprim.x(),vprim.y(),zVertex);
+    
+    //FIXME: rename this variable
+    FreeTrajectoryState fts2 = FTSFromVertexToPointFactory::get(*magField_, firstHit.pos(), 
+								vertex, energy, charge) ;
+    
+    GlobalPoint prevHitPos = firstHit.pos();
+    for(size_t hitNr=1;hitNr<nrHitsRequired_;hitNr++){
+      HitInfo hit = match2ndToNthHit(seed,fts2,hitNr,prevHitPos,vertex,*forwardPropagator_);
+      if(passesMatchSel(hit,hitNr)){
+	matchedHits.push_back(hit);
+	prevHitPos = hit.pos();
+      }else break;
+    }
+  }
+  return matchedHits;
+}
+
+// compute the z vertex from the candidate position and the found pixel hit
+float PixelNHitMatcher::getZVtxFromExtrapolation(const GlobalPoint& primeVtxPos,const GlobalPoint& hitPos,
+						 const GlobalPoint& candPos)
+{
+  auto sq = [](float x){return x*x;};
+  auto calRDiff = [sq](const GlobalPoint& p1,const GlobalPoint& p2){
+    return std::sqrt(sq(p2.x()-p1.x()) + sq(p2.y()-p1.y()));
+  };
+  const double r1Diff = calRDiff(primeVtxPos,hitPos);
+  const double r2Diff = calRDiff(hitPos,candPos);
+  return hitPos.z() - r1Diff*(candPos.z()-hitPos.z())/r2Diff;
+}
+
+bool PixelNHitMatcher::passTrajPreSel(const GlobalPoint& hitPos,const GlobalPoint& candPos)const
+{
+  float dt = hitPos.x()*candPos.x()+hitPos.y()*candPos.y();
+  if (dt<0) return false;
+  if (dt<kPhiCut_*(candPos.perp()*hitPos.perp())) return false;
+  return true;
+}
+
+const TrajectoryStateOnSurface& PixelNHitMatcher::getTrajStateFromVtx(const TrackingRecHit& hit,const TrajectoryStateOnSurface& initialState,const PropagatorWithMaterial& propagator)
+{
+  auto key = hit.det()->gdetIndex();
+  auto res = trajStateFromVtxCache_.find(key);
+  if(res!=trajStateFromVtxCache_.end()) return res->second;
+  else{ //doesnt exist, need to make it
+    //FIXME: check for efficiency
+    auto val = trajStateFromVtxCache_.emplace(key,propagator.propagate(initialState,hit.det()->surface()));
+    return val.first->second;
+  }
+}
+
+const TrajectoryStateOnSurface& PixelNHitMatcher::getTrajStateFromPoint(const TrackingRecHit& hit,const FreeTrajectoryState& initialState,const GlobalPoint& point,const PropagatorWithMaterial& propagator)
+{
+  
+  auto key = std::make_pair(hit.det()->gdetIndex(),point);
+  auto res = trajStateFromPointCache_.find(key);
+  if(res!=trajStateFromPointCache_.end()) return res->second;
+  else{ //doesnt exist, need to make it
+    //FIXME: check for efficiency
+    auto val = trajStateFromPointCache_.emplace(key,propagator.propagate(initialState,hit.det()->surface()));
+    return val.first->second;
+  }
+}
+
+PixelNHitMatcher::HitInfo PixelNHitMatcher::matchFirstHit(const TrajectorySeed& seed,const TrajectoryStateOnSurface& trajState,const GlobalPoint& vtxPos,const PropagatorWithMaterial& propagator)
+{
+  const TrajectorySeed::range& hits = seed.recHits();
+  auto hitIt = hits.first;
+
+  if(hitIt->isValid()){
+    const TrajectoryStateOnSurface& trajStateFromVtx = getTrajStateFromVtx(*hitIt,trajState,propagator);
+    
+    if(trajState.isValid()) return HitInfo(vtxPos,trajStateFromVtx,*hitIt);  
+  }
+  return HitInfo();
+}
+
+PixelNHitMatcher::HitInfo PixelNHitMatcher::match2ndToNthHit(const TrajectorySeed& seed,
+							     const FreeTrajectoryState& initialState,
+							     const size_t hitNr,
+							     const GlobalPoint& prevHitPos,
+							     const GlobalPoint& vtxPos,
+							     const PropagatorWithMaterial& propagator)
+{
+  const TrajectorySeed::range& hits = seed.recHits();
+  auto hitIt = hits.first+hitNr;
+  
+  if(hitIt->isValid()){
+    const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(*hitIt,initialState,prevHitPos,propagator);
+    
+    if(trajState.isValid()) return HitInfo(vtxPos,trajState,*hitIt);  
+  }
+  return HitInfo();
+  
+}
+
+
+PixelNHitMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
+				   const TrajectoryStateOnSurface& trajState,
+				   const TrackingRecHit& hit):
+  detId_(hit.geographicalId()),
+  pos_(hit.globalPosition()),
+  hit_(&hit)
+{
+  EleRelPointPair pointPair(pos_,trajState.globalParameters().position(),vtxPos);
+  dRZ_ = detId_.subdetId()==PixelSubdetector::PixelBarrel ? pointPair.dZ() : pointPair.dPerp();
+  dPhi_ = pointPair.dPhi();
+}
