@@ -17,6 +17,8 @@
 
 namespace edm{
   class EventSetup;
+  class ConfigurationDescriptions;
+  class ParameterSet;
 }
 
 class FreeTrajectoryState;
@@ -77,16 +79,32 @@ class PixelNHitMatcher {
     const TrackingRecHit* hit_; //we do not own this
   };
 
+  class MatchingCuts {
+  public:
+    explicit MatchingCuts(const edm::ParameterSet& pset);
+    bool operator()(const HitInfo& hit)const;
+  private:
+    float dPhiMax_;
+    float dZMax_;
+    float dRIMax_;
+    float dRFMax_; 
+  };
+
+  
+  explicit PixelNHitMatcher(const edm::ParameterSet& pset);
+  ~PixelNHitMatcher()=default;
+
+  static void fillDescriptions(edm::ConfigurationDescriptions& description);
+  
+
   void doEventSetup(const edm::EventSetup& iSetup);
   
   std::vector<SeedWithInfo>
   compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
 		  const GlobalPoint & vprim, const float energy, const int charge );
   
-
-  
 private:
-
+  
   std::vector<HitInfo> processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
 				   const GlobalPoint & vprim, const float energy, const int charge );
 
@@ -110,6 +128,8 @@ private:
   const TrajectoryStateOnSurface& getTrajStateFromVtx(const TrackingRecHit& hit,const TrajectoryStateOnSurface& initialState,const PropagatorWithMaterial& propagator);
   const TrajectoryStateOnSurface& getTrajStateFromPoint(const TrackingRecHit& hit,const FreeTrajectoryState& initialState,const GlobalPoint& point,const PropagatorWithMaterial& propagator);
 
+  void clearCache();
+
   bool passesMatchSel(const HitInfo& hit,const size_t hitNr)const;
   
 private:
@@ -122,6 +142,7 @@ private:
 
   size_t nrHitsRequired_;
   bool useRecoVertex_;
+  std::vector<MatchingCuts> matchingCuts_;
 
   std::unordered_map<int,TrajectoryStateOnSurface> trajStateFromVtxCache_;
   std::unordered_map<std::pair<int,GlobalPoint>,TrajectoryStateOnSurface> trajStateFromPointCache_;

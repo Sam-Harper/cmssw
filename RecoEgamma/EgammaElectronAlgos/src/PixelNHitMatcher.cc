@@ -1,6 +1,9 @@
 #include "RecoEgamma/EgammaElectronAlgos/interface/PixelNHitMatcher.h"
 
 #include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 
 #include "DataFormats/TrajectorySeed/interface/TrajectorySeed.h"
 #include "DataFormats/GeometryCommonDetAlgo/interface/PerpendicularBoundPlaneBuilder.h"
@@ -10,6 +13,31 @@
 
 #include "RecoEgamma/EgammaElectronAlgos/interface/FTSFromVertexToPointFactory.h"
 #include "RecoEgamma/EgammaElectronAlgos/interface/ElectronUtilities.h"
+
+PixelNHitMatcher::PixelNHitMatcher(const edm::ParameterSet& pset):
+  cacheIDMagField_(0)
+{
+  useRecoVertex_ = pset.getParameter<bool>("useRecoVertex");
+  const auto cutsPSets=pset.getParameter<std::vector<edm::ParameterSet> >("matchingCuts");
+  for(const auto & cutPSet : cutsPSets){
+    matchingCuts_.push_back(MatchingCuts(cutPSet));
+  }
+  nrHitsRequired_=matchingCuts_.size();
+}
+
+void PixelNHitMatcher::fillDescriptions(edm::ConfigurationDescriptions& description)
+{
+  edm::ParameterSetDescription desc;
+  desc.add<bool>("useRecoVertex");
+
+  edm::ParameterSetDescription cutsDesc;
+  cutsDesc.add<double>("dPhiMax",0.04);
+  cutsDesc.add<double>("dZMax",0.04);
+  cutsDesc.add<double>("dRIMax",0.04);
+  cutsDesc.add<double>("dRFMax",0.04);
+  desc.addVPSet("matchingCuts",cutsDesc);
+  description.add("pixelNHitMatch",desc);
+}
 
 void PixelNHitMatcher::doEventSetup(const edm::EventSetup& iSetup)
 {
@@ -28,6 +56,8 @@ PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const G
   if(!forwardPropagator_ || backwardPropagator_ || !magField_.isValid()){
     throw cms::Exception("LogicError") <<__FUNCTION__<<" can not make pixel seeds as event setup has not properly been called";
   }
+
+  clearCache();
 
   std::vector<SeedWithInfo> matchedSeeds;
   for(const auto& seed : seeds) {
@@ -158,6 +188,21 @@ PixelNHitMatcher::HitInfo PixelNHitMatcher::match2ndToNthHit(const TrajectorySee
   
 }
 
+void PixelNHitMatcher::clearCache()
+{
+  trajStateFromVtxCache_.clear();
+  trajStateFromPointCache_.clear();
+}
+
+bool PixelNHitMatcher::passesMatchSel(const PixelNHitMatcher::HitInfo& hit,const size_t hitNr)const
+{
+  if(hitNr<matchingCuts_.size()){
+    return matchingCuts_[hitNr](hit);
+  }else{
+    throw cms::Exception("LogicError") <<" Error, attempting to apply selection to hit "<<hitNr<<" but only cuts for "<<matchingCuts_.size()<<" defined";
+  }
+  
+}
 
 PixelNHitMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
 				   const TrajectoryStateOnSurface& trajState,
@@ -169,4 +214,22 @@ PixelNHitMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
   EleRelPointPair pointPair(pos_,trajState.globalParameters().position(),vtxPos);
   dRZ_ = detId_.subdetId()==PixelSubdetector::PixelBarrel ? pointPair.dZ() : pointPair.dPerp();
   dPhi_ = pointPair.dPhi();
+}
+
+PixelNHitMatcher::MatchingCuts::MatchingCuts(const edm::ParameterSet& pset):
+  dPhiMax_(pset.getParameter<double>("dPhiMax")),
+  dZMax_(pset.getParameter<double>("dZMax")),
+  dRIMax_(pset.getParameter<double>("dRIMax")),
+  dRFMax_(pset.getParameter<double>("dRFMax"))
+{
+  
+}
+
+bool PixelNHitMatcher::MatchingCuts::operator()(const PixelNHitMatcher::HitInfo& hit)const
+{
+  if(hit.dPhi() > dPhiMax_) return false;
+  float dZOrRMax = hit.subdetId()==PixelSubdetector::PixelBarrel ? dZMax_ : dRFMax_;
+  if(hit.dRZ() > dZOrRMax) return false;
+  
+  return true;
 }
