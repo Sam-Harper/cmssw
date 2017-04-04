@@ -74,9 +74,18 @@ void ElectronNSeedProducer::fillDescriptions(edm::ConfigurationDescriptions& des
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("initialSeeds",edm::InputTag());
   desc.add<edm::InputTag>("vertices",edm::InputTag());
-  desc.add<edm::InputTag>("beamSpot",edm::InputTag());
+  desc.add<edm::InputTag>("beamSpot",edm::InputTag()); 
   desc.add<std::vector<edm::InputTag> >("superClusters");
-  
+  edm::ParameterSetDescription cutsDesc;
+  cutsDesc.add<double>("dPhiMax",0.04);
+  cutsDesc.add<double>("dZMax",0.04);
+  cutsDesc.add<double>("dRIMax",0.04);
+  cutsDesc.add<double>("dRFMax",0.04);
+  desc.add<bool>("useRecoVertex",false);
+  desc.addVPSet("matchingCuts",cutsDesc);
+
+
+  descriptions.add("electronNSeedProducer",desc);
   PixelNHitMatcher::fillDescriptions(descriptions);
 }
 

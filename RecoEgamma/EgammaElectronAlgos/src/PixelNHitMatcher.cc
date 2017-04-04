@@ -53,13 +53,12 @@ std::vector<PixelNHitMatcher::SeedWithInfo>
 PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
 				  const GlobalPoint & vprim, const float energy)
 {
-  if(!forwardPropagator_ || backwardPropagator_ || !magField_.isValid()){
+  if(!forwardPropagator_ || !backwardPropagator_ || !magField_.isValid()){
     throw cms::Exception("LogicError") <<__FUNCTION__<<" can not make pixel seeds as event setup has not properly been called";
   }
 
   clearCache();
   
-
   std::vector<SeedWithInfo> matchedSeeds;
   for(const auto& seed : seeds) {
     std::vector<HitInfo> matchedHitsNeg = processSeed(seed,candPos,vprim,energy,-1);
@@ -67,12 +66,11 @@ PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const G
     if(matchedHitsNeg.size()==nrHitsRequired_ ||
        matchedHitsPos.size()==nrHitsRequired_){
       //do the result
-      std::cout <<"do something "<<std::endl;
+      matchedSeeds.push_back({seed,matchedHitsPos,matchedHitsNeg});
     }
   }
   return matchedSeeds;
 }
-
 
 //checks if the hits of the seed match within requested selection
 //matched hits are required to be consecutive, as soon as hit isnt matched,
@@ -96,7 +94,7 @@ PixelNHitMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& can
   HitInfo firstHit = matchFirstHit(seed,initialTrajState,vprim,*backwardPropagator_);
   if(passesMatchSel(firstHit,0)){
     matchedHits.push_back(firstHit);
-    
+
     //now we can figure out the z vertex
     double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,firstHit.pos(),candPos);
     GlobalPoint vertex(vprim.x(),vprim.y(),zVertex);
@@ -169,15 +167,14 @@ const TrajectoryStateOnSurface& PixelNHitMatcher::getTrajStateFromPoint(const Tr
   }
 }
 
-PixelNHitMatcher::HitInfo PixelNHitMatcher::matchFirstHit(const TrajectorySeed& seed,const TrajectoryStateOnSurface& trajState,const GlobalPoint& vtxPos,const PropagatorWithMaterial& propagator)
+PixelNHitMatcher::HitInfo PixelNHitMatcher::matchFirstHit(const TrajectorySeed& seed,const TrajectoryStateOnSurface& initialState,const GlobalPoint& vtxPos,const PropagatorWithMaterial& propagator)
 {
   const TrajectorySeed::range& hits = seed.recHits();
   auto hitIt = hits.first;
 
   if(hitIt->isValid()){
-    const TrajectoryStateOnSurface& trajStateFromVtx = getTrajStateFromVtx(*hitIt,trajState,propagator);
-    
-    if(trajState.isValid()) return HitInfo(vtxPos,trajStateFromVtx,*hitIt);  
+    const TrajectoryStateOnSurface& trajStateFromVtx = getTrajStateFromVtx(*hitIt,initialState,propagator);
+    if(trajStateFromVtx.isValid()) return HitInfo(vtxPos,trajStateFromVtx,*hitIt);  
   }
   return HitInfo();
 }
@@ -267,9 +264,9 @@ PixelNHitMatcher::MatchingCuts::MatchingCuts(const edm::ParameterSet& pset):
 
 bool PixelNHitMatcher::MatchingCuts::operator()(const PixelNHitMatcher::HitInfo& hit)const
 {
-  if(hit.dPhi() > dPhiMax_) return false;
+  if(std::abs(hit.dPhi()) > dPhiMax_) return false;
   float dZOrRMax = hit.subdetId()==PixelSubdetector::PixelBarrel ? dZMax_ : dRFMax_;
-  if(hit.dRZ() > dZOrRMax) return false;
+  if(std::abs(hit.dRZ()) > dZOrRMax) return false;
   
   return true;
 }
