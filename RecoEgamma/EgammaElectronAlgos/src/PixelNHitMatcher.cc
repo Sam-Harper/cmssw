@@ -28,7 +28,7 @@ PixelNHitMatcher::PixelNHitMatcher(const edm::ParameterSet& pset):
 void PixelNHitMatcher::fillDescriptions(edm::ConfigurationDescriptions& description)
 {
   edm::ParameterSetDescription desc;
-  desc.add<bool>("useRecoVertex");
+  desc.add<bool>("useRecoVertex",false);
 
   edm::ParameterSetDescription cutsDesc;
   cutsDesc.add<double>("dPhiMax",0.04);
@@ -51,25 +51,32 @@ void PixelNHitMatcher::doEventSetup(const edm::EventSetup& iSetup)
 
 std::vector<SeedWithInfo>
 PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
-				  const GlobalPoint & vprim, const float energy, const int charge )
+				  const GlobalPoint & vprim, const float energy)
 {
   if(!forwardPropagator_ || backwardPropagator_ || !magField_.isValid()){
     throw cms::Exception("LogicError") <<__FUNCTION__<<" can not make pixel seeds as event setup has not properly been called";
   }
 
   clearCache();
+  
 
   std::vector<SeedWithInfo> matchedSeeds;
   for(const auto& seed : seeds) {
-    std::vector<HitInfo> matchedHits = processSeed(seed,candPos,vprim,energy,charge);
-    if(matchedHits.size()==nrHitsRequired_){
+    std::vector<HitInfo> matchedHitsNeg = processSeed(seed,candPos,vprim,energy,-1);
+    std::vector<HitInfo> matchedHitsPos = processSeed(seed,candPos,vprim,energy,+1);
+    if(matchedHitsNeg.size()==nrHitsRequired_ ||
+       matchedHitsPos.size()==nrHitsRequired_){
       //do the result
-
+      std::cout <<"do something "<<std::endl;
     }
   }
   return matchedSeeds;
 }
 
+
+//checks if the hits of the seed match within requested selection
+//matched hits are required to be consecutive, as soon as hit isnt matched,
+//the function returns, it doesnt allow skipping hits
 std::vector<PixelNHitMatcher::HitInfo>
 PixelNHitMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
 			      const GlobalPoint & vprim, const float energy, const int charge )
@@ -133,12 +140,15 @@ bool PixelNHitMatcher::passTrajPreSel(const GlobalPoint& hitPos,const GlobalPoin
 
 const TrajectoryStateOnSurface& PixelNHitMatcher::getTrajStateFromVtx(const TrackingRecHit& hit,const TrajectoryStateOnSurface& initialState,const PropagatorWithMaterial& propagator)
 {
+  auto& trajStateFromVtxCache = initialState.charge()==1 ? trajStateFromVtxPosChargeCache_ :
+                                                           trajStateFromVtxNegChargeCache_;
+
   auto key = hit.det()->gdetIndex();
-  auto res = trajStateFromVtxCache_.find(key);
-  if(res!=trajStateFromVtxCache_.end()) return res->second;
+  auto res = trajStateFromVtxCache.find(key);
+  if(res!=trajStateFromVtxCache.end()) return res->second;
   else{ //doesnt exist, need to make it
     //FIXME: check for efficiency
-    auto val = trajStateFromVtxCache_.emplace(key,propagator.propagate(initialState,hit.det()->surface()));
+    auto val = trajStateFromVtxCache.emplace(key,propagator.propagate(initialState,hit.det()->surface()));
     return val.first->second;
   }
 }
@@ -146,12 +156,15 @@ const TrajectoryStateOnSurface& PixelNHitMatcher::getTrajStateFromVtx(const Trac
 const TrajectoryStateOnSurface& PixelNHitMatcher::getTrajStateFromPoint(const TrackingRecHit& hit,const FreeTrajectoryState& initialState,const GlobalPoint& point,const PropagatorWithMaterial& propagator)
 {
   
+  auto& trajStateFromPointCache = initialState.charge()==1 ? trajStateFromPointPosChargeCache_ :
+                                                             trajStateFromPointNegChargeCache_;
+
   auto key = std::make_pair(hit.det()->gdetIndex(),point);
-  auto res = trajStateFromPointCache_.find(key);
-  if(res!=trajStateFromPointCache_.end()) return res->second;
+  auto res = trajStateFromPointCache.find(key);
+  if(res!=trajStateFromPointCache.end()) return res->second;
   else{ //doesnt exist, need to make it
     //FIXME: check for efficiency
-    auto val = trajStateFromPointCache_.emplace(key,propagator.propagate(initialState,hit.det()->surface()));
+    auto val = trajStateFromPointCache.emplace(key,propagator.propagate(initialState,hit.det()->surface()));
     return val.first->second;
   }
 }
@@ -190,8 +203,10 @@ PixelNHitMatcher::HitInfo PixelNHitMatcher::match2ndToNthHit(const TrajectorySee
 
 void PixelNHitMatcher::clearCache()
 {
-  trajStateFromVtxCache_.clear();
-  trajStateFromPointCache_.clear();
+  trajStateFromVtxPosChargeCache_.clear();
+  trajStateFromVtxNegChargeCache_.clear();
+  trajStateFromPointPosChargeCache_.clear();
+  trajStateFromPointPosChargeCache_.clear();
 }
 
 bool PixelNHitMatcher::passesMatchSel(const PixelNHitMatcher::HitInfo& hit,const size_t hitNr)const

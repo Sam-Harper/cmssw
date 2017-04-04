@@ -2,6 +2,9 @@
 #define RecoEgamma_EgammaElectronAlgos_PixelNHitMatch_h
 
 
+
+
+
 #include "FWCore/Framework/interface/ESHandle.h"
 
 #include "MagneticField/Engine/interface/MagneticField.h"
@@ -28,7 +31,7 @@ class SeedWithInfo {
   int dummy_;
 };
 
-//stolen from PixelNHitMatcher
+//stolen from PixelHitMatcher
 //decide if its evil or not later
 //actually I think the answer is, yes, yes its evil
 //maybe replace with less evil?
@@ -52,7 +55,7 @@ namespace std{
 }
 
 class PixelNHitMatcher {
-
+public:
   class HitInfo {
   public:
     HitInfo():detId_(0),
@@ -90,7 +93,7 @@ class PixelNHitMatcher {
     float dRFMax_; 
   };
 
-  
+public:  
   explicit PixelNHitMatcher(const edm::ParameterSet& pset);
   ~PixelNHitMatcher()=default;
 
@@ -101,7 +104,7 @@ class PixelNHitMatcher {
   
   std::vector<SeedWithInfo>
   compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
-		  const GlobalPoint & vprim, const float energy, const int charge );
+		  const GlobalPoint & vprim, const float energy);
   
 private:
   
@@ -144,8 +147,11 @@ private:
   bool useRecoVertex_;
   std::vector<MatchingCuts> matchingCuts_;
 
-  std::unordered_map<int,TrajectoryStateOnSurface> trajStateFromVtxCache_;
-  std::unordered_map<std::pair<int,GlobalPoint>,TrajectoryStateOnSurface> trajStateFromPointCache_;
+  std::unordered_map<int,TrajectoryStateOnSurface> trajStateFromVtxPosChargeCache_;
+  std::unordered_map<int,TrajectoryStateOnSurface> trajStateFromVtxNegChargeCache_;
+
+  std::unordered_map<std::pair<int,GlobalPoint>,TrajectoryStateOnSurface> trajStateFromPointPosChargeCache_;
+  std::unordered_map<std::pair<int,GlobalPoint>,TrajectoryStateOnSurface> trajStateFromPointNegChargeCache_;
 
 };
 
