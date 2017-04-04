@@ -27,9 +27,6 @@ namespace edm{
 class FreeTrajectoryState;
 class TrackingRecHit;
 
-class SeedWithInfo {
-  int dummy_;
-};
 
 //stolen from PixelHitMatcher
 //decide if its evil or not later
@@ -82,6 +79,43 @@ public:
     const TrackingRecHit* hit_; //we do not own this
   };
 
+  struct MatchInfo {
+  public:
+    DetId detId;
+    float dRZPos,dRZNeg;
+    float dPhiPos,dPhiNeg;
+    
+    MatchInfo(const DetId& iDetId,
+	      float iDRZPos,float iDRZNeg,
+	      float iDPhiPos,float iDPhiNeg):
+      detId(iDetId),dRZPos(iDRZPos),dRZNeg(iDRZNeg),
+      dPhiPos(iDPhiPos),dPhiNeg(iDPhiNeg){}
+  };
+
+  class SeedWithInfo {
+  public:
+    SeedWithInfo(const TrajectorySeed& seed,
+		 const std::vector<HitInfo>& posCharge,
+		 const std::vector<HitInfo>& negCharge);
+    ~SeedWithInfo()=default;
+    
+    const TrajectorySeed& seed()const{return seed_;}
+    float dRZPos(size_t hitNr)const{return getVal(hitNr,&MatchInfo::dRZPos);}
+    float dRZNeg(size_t hitNr)const{return getVal(hitNr,&MatchInfo::dRZNeg);}
+    float dPhiPos(size_t hitNr)const{return getVal(hitNr,&MatchInfo::dPhiPos);}
+    float dPhiNeg(size_t hitNr)const{return getVal(hitNr,&MatchInfo::dPhiNeg);}
+    DetId detId(size_t hitNr)const{return hitNr<matchInfo_.size() ? matchInfo_[hitNr].detId : DetId(0);}
+    size_t nrMatchedHits()const{return matchInfo_.size();}
+  private:
+    float getVal(size_t hitNr,float MatchInfo::*val)const{
+      return hitNr<matchInfo_.size() ? matchInfo_[hitNr].*val : std::numeric_limits<float>::max();
+    }
+
+  private:
+    const TrajectorySeed& seed_;
+    std::vector<MatchInfo> matchInfo_;
+  };
+
   class MatchingCuts {
   public:
     explicit MatchingCuts(const edm::ParameterSet& pset);
@@ -102,7 +136,7 @@ public:
 
   void doEventSetup(const edm::EventSetup& iSetup);
   
-  std::vector<SeedWithInfo>
+  std::vector<PixelNHitMatcher::SeedWithInfo>
   compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
 		  const GlobalPoint & vprim, const float energy);
   

@@ -84,6 +84,8 @@ void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
 {
   matcher_.doEventSetup(iSetup);
 
+  auto eleSeeds = std::make_unique<reco::ElectronSeedCollection>();
+  
   auto initialSeedsHandle = getHandle(iEvent,initialSeedsToken_);
 
   auto beamSpotHandle = getHandle(iEvent,beamSpotToken_);
@@ -91,15 +93,27 @@ void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
 
   for(const auto& superClustersToken : superClustersTokens_){
     auto superClustersHandle = getHandle(iEvent,superClustersToken);
-    for(const auto& superClus : *superClustersHandle){
-      std::vector<SeedWithInfo> matchedSeeds = 
-	matcher_.compatibleSeeds(*initialSeedsHandle,convertToGP(superClus.position()),
-				 primVtxPos,superClus.energy());
+    //    for(const auto& superClus : *superClustersHandle){
+    for(size_t scNr=0;scNr<superClustersHandle->size();scNr++){
+      reco::SuperClusterRef superClusRef(superClustersHandle,scNr);
+      const std::vector<PixelNHitMatcher::SeedWithInfo> matchedSeeds = 
+	matcher_.compatibleSeeds(*initialSeedsHandle,convertToGP(superClusRef->position()),
+				 primVtxPos,superClusRef->energy());
       
-
+      for(auto& matchedSeed : matchedSeeds){
+	reco::ElectronSeed eleSeed(matchedSeed.seed()); 
+	reco::ElectronSeed::CaloClusterRef caloClusRef(superClusRef);
+	eleSeed.setCaloCluster(caloClusRef,0x3,matchedSeed.detId(0),matchedSeed.detId(1),0.,0.);
+	eleSeed.setPosAttributes(matchedSeed.dRZPos(1),matchedSeed.dPhiPos(1),
+				 matchedSeed.dRZPos(0),matchedSeed.dPhiPos(0));
+	eleSeed.setNegAttributes(matchedSeed.dRZNeg(1),matchedSeed.dPhiNeg(1),
+				 matchedSeed.dRZNeg(0),matchedSeed.dPhiNeg(0));
+	eleSeeds->emplace_back(eleSeed);
+      }
     }
-
+    
   }
+  iEvent.put(std::move(eleSeeds));
 }
   
 DEFINE_FWK_MODULE(ElectronNSeedProducer);

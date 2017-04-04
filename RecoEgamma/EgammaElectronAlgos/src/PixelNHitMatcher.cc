@@ -49,7 +49,7 @@ void PixelNHitMatcher::doEventSetup(const edm::EventSetup& iSetup)
   }
 }
 
-std::vector<SeedWithInfo>
+std::vector<PixelNHitMatcher::SeedWithInfo>
 PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
 				  const GlobalPoint & vprim, const float energy)
 {
@@ -229,6 +229,31 @@ PixelNHitMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
   EleRelPointPair pointPair(pos_,trajState.globalParameters().position(),vtxPos);
   dRZ_ = detId_.subdetId()==PixelSubdetector::PixelBarrel ? pointPair.dZ() : pointPair.dPerp();
   dPhi_ = pointPair.dPhi();
+}
+    
+
+PixelNHitMatcher::SeedWithInfo::
+SeedWithInfo(const TrajectorySeed& seed,
+	     const std::vector<HitInfo>& posCharge,
+	     const std::vector<HitInfo>& negCharge):
+  seed_(seed)
+{
+  size_t nrHitsMax = std::max(posCharge.size(),negCharge.size());
+  for(size_t hitNr=0;hitNr<nrHitsMax;hitNr++){
+    DetId detIdPos = hitNr<posCharge.size() ? posCharge[hitNr].detId() : DetId(0);
+    float dRZPos = hitNr<posCharge.size() ? posCharge[hitNr].dRZ() : std::numeric_limits<float>::max();
+    float dPhiPos = hitNr<posCharge.size() ? posCharge[hitNr].dPhi() : std::numeric_limits<float>::max();
+
+    DetId detIdNeg = hitNr<negCharge.size() ? negCharge[hitNr].detId() : DetId(0);
+    float dRZNeg = hitNr<negCharge.size() ? negCharge[hitNr].dRZ() : std::numeric_limits<float>::max();
+    float dPhiNeg = hitNr<negCharge.size() ? negCharge[hitNr].dPhi() : std::numeric_limits<float>::max();
+    
+    if(detIdPos!=detIdNeg && (detIdPos.rawId()!=0 && detIdNeg.rawId()!=0)){
+      cms::Exception("LogicError")<<" error in "<<__FILE__<<", "<<__LINE__<<" hits to be combined have different detIDs, this should not be possible and will cause Bad Things (tm) to happen";
+    }
+    DetId detId = detIdPos.rawId()!=0 ? detIdPos : detIdNeg;
+    matchInfo_.push_back(MatchInfo(detId,dRZPos,dRZNeg,dPhiPos,dPhiNeg));
+  }
 }
 
 PixelNHitMatcher::MatchingCuts::MatchingCuts(const edm::ParameterSet& pset):
