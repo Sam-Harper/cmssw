@@ -2,6 +2,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
@@ -12,9 +13,11 @@
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
-#include "DataFormats/EgammaReco/interface/ElectronSeed.h"
-#include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
+#include "DataFormats/EgammaReco/interface/ElectronNHitSeed.h"
+#include "DataFormats/EgammaReco/interface/ElectronNHitSeedFwd.h"
 #include "DataFormats/TrajectorySeed/interface/TrajectorySeedCollection.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/TrackerTopologyRcd.h"
 
 #include "RecoEgamma/EgammaElectronAlgos/interface/PixelNHitMatcher.h"
 
@@ -53,6 +56,31 @@ namespace {
   GlobalPoint convertToGP(const T& orgPoint){
     return GlobalPoint(orgPoint.x(),orgPoint.y(),orgPoint.z());
   }
+
+  int getLayerOrDiskNr(DetId detId,const TrackerTopology& trackerTopo)
+  {
+    if(detId.subdetId()==PixelSubdetector::PixelBarrel){
+      return trackerTopo.pxbLayer(detId);
+    }else if(detId.subdetId()==PixelSubdetector::PixelEndcap){
+      return trackerTopo.pxfDisk(detId);
+    }else return -1;
+  }
+  
+  
+  reco::ElectronNHitSeed::PMVars 
+  makeSeedPixelVar(const PixelNHitMatcher::MatchInfo& matchInfo,
+		   const TrackerTopology& trackerTopo)
+  {
+    
+    int layerOrDisk = getLayerOrDiskNr(matchInfo.detId,trackerTopo);
+    reco::ElectronNHitSeed::PMVars pmVars;
+    pmVars.setDet(matchInfo.detId,layerOrDisk);
+    pmVars.setDPhi(matchInfo.dPhiPos,matchInfo.dPhiNeg);
+    pmVars.setDPhi(matchInfo.dRZPos,matchInfo.dRZNeg);
+    
+    return pmVars;
+  }  
+
 }
 
 ElectronNSeedProducer::ElectronNSeedProducer( const edm::ParameterSet& pset):
@@ -65,7 +93,7 @@ ElectronNSeedProducer::ElectronNSeedProducer( const edm::ParameterSet& pset):
   for(const auto& scTag : superClusTags){
     superClustersTokens_.emplace_back(consumes<reco::SuperClusterCollection>(scTag));
   }
-  produces<reco::ElectronSeedCollection>() ;
+  produces<reco::ElectronNHitSeedCollection>() ;
 }
 
 void ElectronNSeedProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions)
@@ -90,10 +118,13 @@ void ElectronNSeedProducer::fillDescriptions(edm::ConfigurationDescriptions& des
 }
 
 void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
-{
+{ 
+  edm::ESHandle<TrackerTopology> trackerTopoHandle;
+  iSetup.get<TrackerTopologyRcd>().get(trackerTopoHandle);
+  
   matcher_.doEventSetup(iSetup);
 
-  auto eleSeeds = std::make_unique<reco::ElectronSeedCollection>();
+  auto eleSeeds = std::make_unique<reco::ElectronNHitSeedCollection>();
   
   auto initialSeedsHandle = getHandle(iEvent,initialSeedsToken_);
 
@@ -110,13 +141,12 @@ void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
 				 primVtxPos,superClusRef->energy());
       
       for(auto& matchedSeed : matchedSeeds){
-	reco::ElectronSeed eleSeed(matchedSeed.seed()); 
-	reco::ElectronSeed::CaloClusterRef caloClusRef(superClusRef);
-	eleSeed.setCaloCluster(caloClusRef,0x3,matchedSeed.detId(0),matchedSeed.detId(1),0.,0.);
-	eleSeed.setPosAttributes(matchedSeed.dRZPos(1),matchedSeed.dPhiPos(1),
-				 matchedSeed.dRZPos(0),matchedSeed.dPhiPos(0));
-	eleSeed.setNegAttributes(matchedSeed.dRZNeg(1),matchedSeed.dPhiNeg(1),
-				 matchedSeed.dRZNeg(0),matchedSeed.dPhiNeg(0));
+	reco::ElectronNHitSeed eleSeed(matchedSeed.seed()); 
+	reco::ElectronNHitSeed::CaloClusterRef caloClusRef(superClusRef);
+	eleSeed.setCaloCluster(caloClusRef);
+	for(auto& matchInfo : matchedSeed.matches()){
+	  eleSeed.addHitInfo(makeSeedPixelVar(matchInfo,*trackerTopoHandle));
+	}
 	eleSeeds->emplace_back(eleSeed);
       }
     }
@@ -124,5 +154,7 @@ void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
   }
   iEvent.put(std::move(eleSeeds));
 }
+  
+
   
 DEFINE_FWK_MODULE(ElectronNSeedProducer);

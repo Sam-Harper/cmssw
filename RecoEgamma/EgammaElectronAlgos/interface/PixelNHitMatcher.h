@@ -106,6 +106,8 @@ public:
     float dPhiNeg(size_t hitNr)const{return getVal(hitNr,&MatchInfo::dPhiNeg);}
     DetId detId(size_t hitNr)const{return hitNr<matchInfo_.size() ? matchInfo_[hitNr].detId : DetId(0);}
     size_t nrMatchedHits()const{return matchInfo_.size();}
+    const std::vector<MatchInfo>& matches()const{return matchInfo_;}
+    
   private:
     float getVal(size_t hitNr,float MatchInfo::*val)const{
       return hitNr<matchInfo_.size() ? matchInfo_[hitNr].*val : std::numeric_limits<float>::max();
