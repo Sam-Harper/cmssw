@@ -36,7 +36,7 @@ private:
 
   PixelNHitMatcher matcher_;
   
-  std::vector<edm::EDGetTokenT<reco::SuperClusterCollection> > superClustersTokens_;
+  std::vector<edm::EDGetTokenT<reco::SuperClusterRefVector> > superClustersTokens_;
   edm::EDGetTokenT<TrajectorySeedCollection> initialSeedsToken_ ;
   edm::EDGetTokenT<std::vector<reco::Vertex> > verticesToken_;
   edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_ ;
@@ -91,7 +91,7 @@ ElectronNSeedProducer::ElectronNSeedProducer( const edm::ParameterSet& pset):
 {
   const auto superClusTags = pset.getParameter<std::vector<edm::InputTag> >("superClusters");
   for(const auto& scTag : superClusTags){
-    superClustersTokens_.emplace_back(consumes<reco::SuperClusterCollection>(scTag));
+    superClustersTokens_.emplace_back(consumes<reco::SuperClusterRefVector>(scTag));
   }
   produces<reco::ElectronNHitSeedCollection>() ;
 }
@@ -133,9 +133,7 @@ void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
 
   for(const auto& superClustersToken : superClustersTokens_){
     auto superClustersHandle = getHandle(iEvent,superClustersToken);
-    //    for(const auto& superClus : *superClustersHandle){
-    for(size_t scNr=0;scNr<superClustersHandle->size();scNr++){
-      reco::SuperClusterRef superClusRef(superClustersHandle,scNr);
+    for(auto& superClusRef : *superClustersHandle){
       const std::vector<PixelNHitMatcher::SeedWithInfo> matchedSeeds = 
 	matcher_.compatibleSeeds(*initialSeedsHandle,convertToGP(superClusRef->position()),
 				 primVtxPos,superClusRef->energy());

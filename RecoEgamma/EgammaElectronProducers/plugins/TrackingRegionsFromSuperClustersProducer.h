@@ -72,7 +72,7 @@ namespace{
     else if(enumConstName=="kForSiStrips") return MyEnum::kForSiStrips;
     else if(enumConstName=="kAlways") return MyEnum::kAlways;
     else{
-      throw cms::Exception("Configuration") <<enumConstName<<" is not a valid member of "<<typeid(MyEnum).name()<<" (or strToEnum needs updating, this is a manual translation)";
+      throw cms::Exception("Configuration") <<enumConstName<<" is not a valid member of "<<typeid(MyEnum).name()<<" (or strToEnum needs updating, this is a manual translation found at "<<__FILE__<<" line "<<__LINE__<<")";
     }
   }
 
@@ -120,7 +120,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> verticesToken_; 
   edm::EDGetTokenT<reco::BeamSpot>  beamSpotToken_; 
   edm::EDGetTokenT<MeasurementTrackerEvent> measTrackerEventToken_;
-  std::vector<edm::EDGetTokenT<reco::SuperClusterCollection> > superClustersTokens_;
+  std::vector<edm::EDGetTokenT<reco::SuperClusterRefVector> > superClustersTokens_;
 
 };
 
@@ -164,7 +164,7 @@ TrackingRegionsFromSuperClustersProducer(const edm::ParameterSet& cfg,
     measTrackerEventToken_ = iC.consumes<MeasurementTrackerEvent>(measTrackerEventTag);
   }
   for(const auto& tag : superClustersTags){
-    superClustersTokens_.emplace_back(iC.consumes<reco::SuperClusterCollection>(tag));
+    superClustersTokens_.emplace_back(iC.consumes<reco::SuperClusterRefVector>(tag));
   }
 }   
 
@@ -214,10 +214,10 @@ regions(const edm::Event& iEvent, const edm::EventSetup& iSetup)const
   
   for(auto& superClustersToken : superClustersTokens_){
     auto superClustersHandle = getHandle(iEvent,superClustersToken);
-    for(auto& superCluster : *superClustersHandle){
+    for(auto& superClusterRef : *superClustersHandle){
       //do both charge hypothesises 
-      trackingRegions.emplace_back(createTrackingRegion(superCluster,vtxPos,deltaZVertex,Charge::POS,measTrackerEvent,*magFieldHandle));
-      trackingRegions.emplace_back(createTrackingRegion(superCluster,vtxPos,deltaZVertex,Charge::NEG,measTrackerEvent,*magFieldHandle));
+      trackingRegions.emplace_back(createTrackingRegion(*superClusterRef,vtxPos,deltaZVertex,Charge::POS,measTrackerEvent,*magFieldHandle));
+      trackingRegions.emplace_back(createTrackingRegion(*superClusterRef,vtxPos,deltaZVertex,Charge::NEG,measTrackerEvent,*magFieldHandle));
     }
   }
   return trackingRegions;
@@ -243,7 +243,10 @@ getVtxPos(const edm::Event& iEvent,double& deltaZVertex)const
   const double sigmaZ = beamSpotHandle->sigmaZ();
   const double sigmaZ0Error = beamSpotHandle->sigmaZ0Error();
   deltaZVertex = 3*std::sqrt(sigmaZ*sigmaZ+sigmaZ0Error*sigmaZ0Error);
+  //  std::cout <<"z "<<bsPos.z()<<" deltaZ "<<deltaZVertex<<std::endl;
+  //deltaZVertex = 30.;
   return GlobalPoint(bsPos.x(),bsPos.y(),bsPos.z());
+  //return GlobalPoint(bsPos.x(),bsPos.y(),0);
 }
 
 std::unique_ptr<TrackingRegion>
