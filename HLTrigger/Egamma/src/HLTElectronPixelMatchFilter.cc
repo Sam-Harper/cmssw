@@ -40,7 +40,8 @@ HLTElectronPixelMatchFilter::HLTElectronPixelMatchFilter(const edm::ParameterSet
   l1EGTag_           = iConfig.getParameter< edm::InputTag > ("l1EGCand");
   
   candToken_         = consumes<trigger::TriggerFilterObjectWithRefs> (candTag_);
-  l1PixelSeedsToken_ = consumes<reco::ElectronNHitSeedCollection> (l1PixelSeedsTag_);
+  l1PixelSeedsToken_ = consumes<reco::ElectronSeedCollection> (l1PixelSeedsTag_);
+  l1PixelNHitSeedsToken_ = consumes<reco::ElectronNHitSeedCollection> (l1PixelSeedsTag_);
   
   sPhi1B_         = iConfig.getParameter< double >("s_a_phi1B") ;
   sPhi1I_         = iConfig.getParameter< double >("s_a_phi1I") ;
@@ -110,8 +111,11 @@ bool HLTElectronPixelMatchFilter::hltFilter(edm::Event& iEvent, const edm::Event
   if(recoecalcands.empty()) PrevFilterOutput->getObjects(TriggerPhoton,recoecalcands);  //we dont know if its type trigger cluster or trigger photon
   
   //get hold of the pixel seed - supercluster association map
-  edm::Handle<reco::ElectronNHitSeedCollection> l1PixelSeeds;
-  iEvent.getByToken(l1PixelSeedsToken_, l1PixelSeeds);
+  edm::Handle<reco::ElectronSeedCollection> l1PixelSeeds;
+  iEvent.getByToken(l1PixelSeedsToken_, l1PixelSeeds); 
+  edm::Handle<reco::ElectronNHitSeedCollection> l1PixelNHitSeeds;
+  iEvent.getByToken(l1PixelNHitSeedsToken_, l1PixelNHitSeeds);
+  
   
   // look at all egammas,  check cuts and add to filter object
   int n = 0;
@@ -120,7 +124,10 @@ bool HLTElectronPixelMatchFilter::hltFilter(edm::Event& iEvent, const edm::Event
     ref = recoecalcands[i];
     reco::SuperClusterRef recr2 = ref->superCluster();
     
-    int nmatch = getNrOfMatches(l1PixelSeeds, recr2);
+    int nmatch = 0;
+    if(l1PixelNHitSeeds.isValid()) nmatch = getNrOfMatches(l1PixelNHitSeeds, recr2);
+    else if(l1PixelSeeds.isValid()) nmatch = getNrOfMatches(l1PixelSeeds, recr2);
+
 
     if (!isPixelVeto_) {
       if ( nmatch >= npixelmatchcut_) {
@@ -141,7 +148,22 @@ bool HLTElectronPixelMatchFilter::hltFilter(edm::Event& iEvent, const edm::Event
   return accept;
 }
 
+
 int HLTElectronPixelMatchFilter::getNrOfMatches(edm::Handle<reco::ElectronNHitSeedCollection>& eleSeeds,
+						reco::SuperClusterRef& candSCRef)const
+{
+  int nrMatch=0;
+  for(auto seed : *eleSeeds){
+    edm::RefToBase<reco::CaloCluster> caloCluster = seed.caloCluster() ;
+    reco::SuperClusterRef scRef = caloCluster.castTo<reco::SuperClusterRef>() ;
+    if(&(*candSCRef) ==  &(*scRef)){
+      nrMatch++;
+    }//end sc ref match
+  }//end loop over ele seeds
+  return nrMatch;
+}
+
+int HLTElectronPixelMatchFilter::getNrOfMatches(edm::Handle<reco::ElectronSeedCollection>& eleSeeds,
 						reco::SuperClusterRef& candSCRef)const
 {
   int nrMatch=0;

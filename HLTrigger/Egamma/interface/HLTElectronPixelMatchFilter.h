@@ -10,6 +10,8 @@
 #include "HLTrigger/HLTcore/interface/HLTFilter.h"
 #include "DataFormats/EgammaReco/interface/ElectronNHitSeed.h"
 #include "DataFormats/EgammaReco/interface/ElectronNHitSeedFwd.h"
+#include "DataFormats/EgammaReco/interface/ElectronSeed.h"
+#include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
 #include "DataFormats/HLTReco/interface/TriggerFilterObjectWithRefs.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 namespace edm {
@@ -25,15 +27,18 @@ class HLTElectronPixelMatchFilter : public HLTFilter {
   static void fillDescriptions(edm::ConfigurationDescriptions & descriptions);
   
  private:
+  //not templating this as its supposed to be temporary
   int getNrOfMatches(edm::Handle<reco::ElectronNHitSeedCollection>& eleSeeds,
 		     reco::SuperClusterRef& candSCRef)const;
-
+  int getNrOfMatches(edm::Handle<reco::ElectronSeedCollection>& eleSeeds,
+		     reco::SuperClusterRef& candSCRef)const;
   
   edm::InputTag candTag_;     // input tag identifying product contains filtered egammas
   edm::EDGetTokenT<trigger::TriggerFilterObjectWithRefs> candToken_;
   
   edm::InputTag l1PixelSeedsTag_; // input tag for the pixel seed - supercluster map
-  edm::EDGetTokenT<reco::ElectronNHitSeedCollection> l1PixelSeedsToken_;
+  edm::EDGetTokenT<reco::ElectronSeedCollection> l1PixelSeedsToken_;
+  edm::EDGetTokenT<reco::ElectronNHitSeedCollection> l1PixelNHitSeedsToken_;
   
   double npixelmatchcut_;     // number of pixelmatch hits
   int    ncandcut_;           // number of electrons required

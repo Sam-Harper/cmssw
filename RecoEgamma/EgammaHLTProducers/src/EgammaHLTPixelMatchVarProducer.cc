@@ -37,8 +37,9 @@ namespace {
     int info = 0;
     for(size_t hitNr=0;hitNr<seed.hitInfo().size();hitNr++){
       int subDetBit = 0x1 <<hitNr;
+      if(seed.subDet(hitNr)==PixelSubdetector::PixelEndcap) info |=subDetBit;
       int layerBit = 0x1 << 4 << seed.layerOrDisk(hitNr) ;
-      info |=subDetBit;
+   
       info |=layerBit;
     }
     return info;
@@ -203,7 +204,16 @@ void EgammaHLTPixelMatchVarProducer::produce(edm::StreamID sid, edm::Event& iEve
   edm::Handle<reco::ElectronNHitSeedCollection> pixelSeedsHandle;
   iEvent.getByToken(pixelSeedsToken_,pixelSeedsHandle);
 
-  if(!recoEcalCandHandle.isValid() || !pixelSeedsHandle.isValid()) return;
+  if(!recoEcalCandHandle.isValid()) return;
+  else if(!pixelSeedsHandle.isValid()){
+    auto s2Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
+    for(unsigned int candNr = 0; candNr<recoEcalCandHandle->size(); candNr++) {
+      reco::RecoEcalCandidateRef candRef(recoEcalCandHandle,candNr);
+      s2Map->insert(candRef,0);
+    }
+    iEvent.put(std::move(s2Map),"s2");
+    return;
+  }
 
   edm::ESHandle<TrackerTopology> trackerTopoHandle;
   iSetup.get<TrackerTopologyRcd>().get(trackerTopoHandle);
