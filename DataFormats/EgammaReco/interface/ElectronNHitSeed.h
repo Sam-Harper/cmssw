@@ -37,7 +37,7 @@ namespace reco
       float dPhiPos;
       float dPhiNeg;
       int layerOrDisk;
-      int detId;
+      int detId; //this is already stored as the hit is stored in traj seed
 
       void setDPhi(float pos,float neg){dPhiPos=pos;dPhiNeg=neg;}
       void setDRZ(float pos,float neg){dRZPos=pos;dRZNeg=neg;}
@@ -75,6 +75,21 @@ namespace reco
     bool isEcalDriven() const { return isEcalDriven_ ; }
     bool isTrackerDriven() const { return isTrackerDriven_ ; }
 
+    const std::vector<PMVars>& hitInfo()const{return hitInfo_;}
+    float dPhiNeg(size_t hitNr)const{return hitInfo_[hitNr].dPhiNeg;}
+    float dPhiPos(size_t hitNr)const{return hitInfo_[hitNr].dPhiPos;}
+    float dPhiBest(size_t hitNr)const{return bestVal(dPhiNeg(hitNr),dPhiPos(hitNr));}
+    float dRZPos(size_t hitNr)const{return hitInfo_[hitNr].dRZPos;}
+    float dRZNeg(size_t hitNr)const{return hitInfo_[hitNr].dRZNeg;}
+    float dRZBest(size_t hitNr)const{return bestVal(dRZNeg(hitNr),dRZPos(hitNr));}
+    int subDet(size_t hitNr)const{return DetId(hitInfo_[hitNr].detId).subdetId();}
+    int layerOrDisk(size_t hitNr)const{return hitInfo_[hitNr].layerOrDisk;}
+ 
+    
+
+  private:
+    static float bestVal(float val1,float val2){return std::abs(val1)<std::abs(val2) ? val1 : val2;}
+    
   private:
 
     CtfTrackRef ctfTrack_ ;

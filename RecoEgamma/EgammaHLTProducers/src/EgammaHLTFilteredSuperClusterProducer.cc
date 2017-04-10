@@ -106,7 +106,7 @@ EgammaHLTFilteredSuperClusterProducer(const edm::ParameterSet& pset):
     cuts_.push_back(SelectionCut(cutPset,consumesCollector()));
   }
 
-  produces<reco::SuperClusterRefVector>();
+  produces<std::vector<reco::SuperClusterRef>>();
   
 }
  
@@ -117,10 +117,14 @@ fillDescriptions(edm::ConfigurationDescriptions & descriptions)
   desc.add<edm::InputTag>("cands",edm::InputTag());
   
   edm::ParameterSetDescription cutsDesc;
-  cutsDesc.add<double>("cut",-1);
-  cutsDesc.add<double>("cutOverE",-1);
-  cutsDesc.add<double>("cutOverE2",-1);
-  desc.add<bool>("useEt",false);
+  edm::ParameterSetDescription regionCutsDesc;
+  regionCutsDesc.add<double>("cut",-1);
+  regionCutsDesc.add<double>("cutOverE",-1);
+  regionCutsDesc.add<double>("cutOverE2",-1);
+  regionCutsDesc.add<bool>("useEt",false);
+  cutsDesc.add<edm::ParameterSetDescription>("barrelCut",regionCutsDesc);
+  cutsDesc.add<edm::ParameterSetDescription>("endcapCut",regionCutsDesc);
+  cutsDesc.add<edm::InputTag>("var");
   desc.addVPSet("cuts",cutsDesc);
  
   descriptions.add("egammaHLTFilteredSuperClusterProducer",desc);
@@ -133,7 +137,7 @@ produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
   for(auto& cut : cuts_) cut.getHandles(iEvent);
   auto candsHandle = getHandle(iEvent,candsToken_);
   
-  auto outputSCs = std::make_unique<reco::SuperClusterRefVector>();
+  auto outputSCs = std::make_unique<std::vector<reco::SuperClusterRef>>();
 
   for(size_t candNr=0;candNr<candsHandle->size();candNr++){
     reco::RecoEcalCandidateRef candRef(candsHandle,candNr);

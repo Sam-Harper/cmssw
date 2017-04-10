@@ -120,7 +120,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> verticesToken_; 
   edm::EDGetTokenT<reco::BeamSpot>  beamSpotToken_; 
   edm::EDGetTokenT<MeasurementTrackerEvent> measTrackerEventToken_;
-  std::vector<edm::EDGetTokenT<reco::SuperClusterRefVector> > superClustersTokens_;
+  std::vector<edm::EDGetTokenT<std::vector<reco::SuperClusterRef>> > superClustersTokens_;
 
 };
 
@@ -164,7 +164,7 @@ TrackingRegionsFromSuperClustersProducer(const edm::ParameterSet& cfg,
     measTrackerEventToken_ = iC.consumes<MeasurementTrackerEvent>(measTrackerEventTag);
   }
   for(const auto& tag : superClustersTags){
-    superClustersTokens_.emplace_back(iC.consumes<reco::SuperClusterRefVector>(tag));
+    superClustersTokens_.emplace_back(iC.consumes<std::vector<reco::SuperClusterRef>>(tag));
   }
 }   
 

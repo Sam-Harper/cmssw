@@ -16,8 +16,8 @@
 
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
-#include "DataFormats/EgammaReco/interface/ElectronSeed.h"
-#include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
+#include "DataFormats/EgammaReco/interface/ElectronNHitSeed.h"
+#include "DataFormats/EgammaReco/interface/ElectronNHitSeedFwd.h"
 
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateFwd.h"
@@ -29,6 +29,69 @@
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 #include "Geometry/Records/interface/TrackerTopologyRcd.h"
 #include "FWCore/Framework/interface/ESHandle.h"
+
+namespace {
+  //first 4 bits are sub detect of each hit (0=barrel, 1 = endcap) 
+  //next 4 bits are layer information (0=no hit, 1 = hit)
+  int makeSeedInfo(const reco::ElectronNHitSeed& seed){
+    int info = 0;
+    for(size_t hitNr=0;hitNr<seed.hitInfo().size();hitNr++){
+      int subDetBit = 0x1 <<hitNr;
+      int layerBit = 0x1 << 4 << seed.layerOrDisk(hitNr) ;
+      info |=subDetBit;
+      info |=layerBit;
+    }
+    return info;
+  }
+
+}
+
+struct PixelData {
+  
+public:
+  PixelData(std::string name,size_t hitNr,float (reco::ElectronNHitSeed::*func)(size_t)const,
+	    const edm::Handle<reco::RecoEcalCandidateCollection>& candHandle):
+    name_(std::move(name)),hitNr_(hitNr),func_(func),
+    val_(std::numeric_limits<float>::max()),
+    valInfo_(0)
+  {
+    valMap_=std::make_unique<reco::RecoEcalCandidateIsolationMap>(candHandle);
+    valInfoMap_=std::make_unique<reco::RecoEcalCandidateIsolationMap>(candHandle);
+  }
+  PixelData(PixelData&& rhs)=default;
+
+  void resetVal(){val_=std::numeric_limits<float>::max();valInfo_=0;}
+  void fill(const reco::ElectronNHitSeed& seed){
+    float seedVal = (seed.*func_)(hitNr_);
+    if(seedVal < val_){
+      val_ = seedVal;
+      valInfo_ = makeSeedInfo(seed);
+    }
+  }
+  void fill(const reco::RecoEcalCandidateRef& candRef){
+    valMap_->insert(candRef,val_);
+    valInfoMap_->insert(candRef,valInfo_);
+    val_ = std::numeric_limits<float>::max();
+    valInfo_ = 0;
+  }
+  
+  void putInto(edm::Event& event){
+    event.put(std::move(valMap_),name_+std::to_string(hitNr_+1));
+    event.put(std::move(valInfoMap_),name_+std::to_string(hitNr_+1)+"Info");
+  }
+
+private:
+  std::unique_ptr<reco::RecoEcalCandidateIsolationMap> valMap_;
+  std::unique_ptr<reco::RecoEcalCandidateIsolationMap> valInfoMap_;
+  std::string name_;
+  size_t hitNr_;
+  float (reco::ElectronNHitSeed::*func_)(size_t)const; 
+  float val_;
+  float valInfo_;
+
+};
+
+
 class EgammaHLTPixelMatchVarProducer : public edm::global::EDProducer<> {
 public:
 
@@ -37,29 +100,30 @@ public:
   
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
   void produce(edm::StreamID sid, edm::Event&, const edm::EventSetup&) const override;
-  std::array<float,4> calS2(const reco::ElectronSeed& seed,int charge)const;
+  std::array<float,4> calS2(const reco::ElectronNHitSeed& seed,int charge)const;
 
 private: 
   // ----------member data ---------------------------
   
   const edm::EDGetTokenT<reco::RecoEcalCandidateCollection> recoEcalCandidateToken_;
-  const edm::EDGetTokenT<reco::ElectronSeedCollection> pixelSeedsToken_;
+  const edm::EDGetTokenT<reco::ElectronNHitSeedCollection> pixelSeedsToken_;
 
-  egPM::Param<reco::ElectronSeed> dPhi1Para_;
-  egPM::Param<reco::ElectronSeed> dPhi2Para_;
-  egPM::Param<reco::ElectronSeed> dRZ2Para_;
+  egPM::Param<reco::ElectronNHitSeed> dPhi1Para_;
+  egPM::Param<reco::ElectronNHitSeed> dPhi2Para_;
+  egPM::Param<reco::ElectronNHitSeed> dRZ2Para_;
   
   int productsToWrite_;
-  
+  size_t nrHits_;
 };
 
 EgammaHLTPixelMatchVarProducer::EgammaHLTPixelMatchVarProducer(const edm::ParameterSet& config) : 
   recoEcalCandidateToken_(consumes<reco::RecoEcalCandidateCollection>(config.getParameter<edm::InputTag>("recoEcalCandidateProducer"))),
-  pixelSeedsToken_(consumes<reco::ElectronSeedCollection>(config.getParameter<edm::InputTag>("pixelSeedsProducer"))),
+  pixelSeedsToken_(consumes<reco::ElectronNHitSeedCollection>(config.getParameter<edm::InputTag>("pixelSeedsProducer"))),
   dPhi1Para_(config.getParameter<edm::ParameterSet>("dPhi1SParams")),
   dPhi2Para_(config.getParameter<edm::ParameterSet>("dPhi2SParams")),
   dRZ2Para_(config.getParameter<edm::ParameterSet>("dRZ2SParams")),
-  productsToWrite_(config.getParameter<int>("productsToWrite"))
+  productsToWrite_(config.getParameter<int>("productsToWrite")),
+  nrHits_(4)
   
 {
   //register your products  
@@ -70,21 +134,15 @@ EgammaHLTPixelMatchVarProducer::EgammaHLTPixelMatchVarProducer(const edm::Parame
     produces < reco::RecoEcalCandidateIsolationMap >("dzBestS2");
   }
   if(productsToWrite_>=2){
-    produces < reco::RecoEcalCandidateIsolationMap >("dPhi1");
-    produces < reco::RecoEcalCandidateIsolationMap >("dPhi2");
-    produces < reco::RecoEcalCandidateIsolationMap >("dz");
-    
-    produces < reco::RecoEcalCandidateIsolationMap >("dPhi1SubDet");
-    produces < reco::RecoEcalCandidateIsolationMap >("dPhi2SubDet");
-    produces < reco::RecoEcalCandidateIsolationMap >("dzSubDet");
-    
+    //note for product names we start from index 1
+    for(size_t hitNr=1;hitNr<=nrHits_;hitNr++){
+      produces < reco::RecoEcalCandidateIsolationMap >("dPhi"+std::to_string(hitNr));
+      produces < reco::RecoEcalCandidateIsolationMap >("dPhi"+std::to_string(hitNr)+"Info");
+      produces < reco::RecoEcalCandidateIsolationMap >("dRZ"+std::to_string(hitNr));
+      produces < reco::RecoEcalCandidateIsolationMap >("dRZ"+std::to_string(hitNr)+"Info");
+    } 
     produces < reco::RecoEcalCandidateIsolationMap >("nrClus");
     produces < reco::RecoEcalCandidateIsolationMap >("seedClusEFrac");
-    
-    produces < reco::RecoEcalCandidateIsolationMap >("seedHit1DetId1");
-    produces < reco::RecoEcalCandidateIsolationMap >("seedHit1DetId2");
-    produces < reco::RecoEcalCandidateIsolationMap >("seedHit2DetId1");
-    produces < reco::RecoEcalCandidateIsolationMap >("seedHit2DetId2");
   }
 
 }
@@ -142,7 +200,7 @@ void EgammaHLTPixelMatchVarProducer::produce(edm::StreamID sid, edm::Event& iEve
   iEvent.getByToken(recoEcalCandidateToken_,recoEcalCandHandle);
 
 
-  edm::Handle<reco::ElectronSeedCollection> pixelSeedsHandle;
+  edm::Handle<reco::ElectronNHitSeedCollection> pixelSeedsHandle;
   iEvent.getByToken(pixelSeedsToken_,pixelSeedsHandle);
 
   if(!recoEcalCandHandle.isValid() || !pixelSeedsHandle.isValid()) return;
@@ -150,39 +208,24 @@ void EgammaHLTPixelMatchVarProducer::produce(edm::StreamID sid, edm::Event& iEve
   edm::ESHandle<TrackerTopology> trackerTopoHandle;
   iSetup.get<TrackerTopologyRcd>().get(trackerTopoHandle);
   
-  
-
   auto dPhi1BestS2Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
   auto dPhi2BestS2Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
   auto dzBestS2Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
   auto s2Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
   
-  auto dPhi1Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
-  auto dPhi2Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
-  auto dzMap = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);  
-  auto dPhi1SubDetMap = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
-  auto dPhi2SubDetMap = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
-  auto dzSubDetMap = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
   auto nrClusMap = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
   auto seedClusEFracMap = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle); 
-  auto seed1DetId1Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
-  auto seed1DetId2Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
-  auto seed2DetId1Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
-  auto seed2DetId2Map = std::make_unique<reco::RecoEcalCandidateIsolationMap>(recoEcalCandHandle);
+  
+  std::vector<PixelData> pixelData;
+  for(size_t hitNr=0;hitNr<nrHits_;hitNr++){
+    pixelData.emplace_back(PixelData("dPhi",hitNr,&reco::ElectronNHitSeed::dPhiBest,recoEcalCandHandle));
+    pixelData.emplace_back(PixelData("dRZ",hitNr,&reco::ElectronNHitSeed::dRZBest,recoEcalCandHandle));
+  }
 
   for(unsigned int candNr = 0; candNr<recoEcalCandHandle->size(); candNr++) {
 
     reco::RecoEcalCandidateRef candRef(recoEcalCandHandle,candNr);
     reco::SuperClusterRef candSCRef = candRef->superCluster();
-
-    float bestDPhi1=std::numeric_limits<float>::max();
-    float bestDPhi2=bestDPhi1;
-    float bestDZ=bestDPhi1;
-    float bestDPhi1SubDet=-1;
-    float bestDPhi2SubDet=bestDPhi1SubDet;
-    float bestDZSubDet=bestDPhi1SubDet;
-    int bestSeed1DetId=0;
-    int bestSeed2DetId=0;
     
     std::array<float,4> bestS2{{std::numeric_limits<float>::max(),std::numeric_limits<float>::max(),std::numeric_limits<float>::max(),std::numeric_limits<float>::max()}};
     for(auto & seed : *pixelSeedsHandle){
@@ -196,24 +239,9 @@ void EgammaHLTPixelMatchVarProducer::produce(edm::StreamID sid, edm::Event& iEve
 	if(s2DataPos[0]<bestS2[0]) bestS2=s2DataPos;
 	
 	if(productsToWrite_>=2){
-	  
-	  auto getBestVal=[](float val1,float val2){return std::abs(val1)<std::abs(val2) ? val1 : val2;};
-	  float seedDPhi1 = getBestVal(seed.dPhi1(),seed.dPhi1Pos());
-	  float seedDPhi2 = getBestVal(seed.dPhi2(),seed.dPhi2Pos());
-	  float seedDRZ2 = getBestVal(seed.dRz2(),seed.dRz2Pos());
-	  float seedSubDet = seed.subDet1() + seed.subDet2()*10;
-	  
-	  auto recHitIt = seed.recHits().first;
-	  int seed1DetId = recHitIt!=seed.recHits().second ? recHitIt->geographicalId().rawId() : 0;
-	  ++recHitIt;
-	  int seed2DetId = recHitIt!=seed.recHits().second ? recHitIt->geographicalId().rawId() : 0;
-	  
-	  auto setBestVal=[](float newVal,float newSubDet,int detId,float& bestVal,float& bestSubDet,int& bestDetId)
-	    {if(std::abs(newVal)<std::abs(bestVal)){bestVal=newVal;bestSubDet=newSubDet;bestDetId=detId;}};
-	  
-	  setBestVal(seedDPhi1,seedSubDet,seed1DetId,bestDPhi1,bestDPhi1SubDet,bestSeed1DetId);
-	  setBestVal(seedDPhi2,seedSubDet,seed2DetId,bestDPhi2,bestDPhi2SubDet,bestSeed2DetId);
-	  setBestVal(seedDRZ2,seedSubDet,seed2DetId,bestDZ,bestDZSubDet,bestSeed2DetId);
+	  for(auto& pixelDatum : pixelData){
+	    pixelDatum.fill(seed);
+	  }
 	}
       }
     }
@@ -230,44 +258,10 @@ void EgammaHLTPixelMatchVarProducer::produce(edm::StreamID sid, edm::Event& iEve
        float seedClusEFrac = candSCRef->rawEnergy()>0 ? candSCRef->seed()->energy() / candSCRef->rawEnergy() : 0.;
        seedClusEFracMap->insert(candRef,seedClusEFrac);
        
-       
-       
-       dPhi1Map->insert(candRef,bestDPhi1);
-       dPhi2Map->insert(candRef,bestDPhi2);
-       dzMap->insert(candRef,bestDZ);
-       
-       dPhi1SubDetMap->insert(candRef,bestDPhi1SubDet);
-       dPhi2SubDetMap->insert(candRef,bestDPhi2SubDet);
-       dzSubDetMap->insert(candRef,bestDZSubDet);
-       
-       auto splitDetId=[](int detId,bool upper){ 
-	 if(upper) detId=detId>>16;
-	 detId&=0xFFFF;
-	 return detId;
-       };
-
-       // DetId seed1DetId(bestSeed1DetId);
-       // if(seed1DetId.subdetId()==PixelSubdetector::PixelBarrel){
-       // 	 int layer = trackerTopoHandle->pxbLayer(seed1DetId);
-       // 	 PXBDetId seed1PXDetId(seed1DetId);
-       // 	 std::cout <<" seed 1 bpix "<<seed1PXDetId<<" layer "<<layer<<std::endl;
-       // }else if(seed1DetId.subdetId()==PixelSubdetector::PixelEndcap){
-       // 	 int disk = trackerTopoHandle->pxfDisk(seed1DetId);
-       // 	 PXFDetId seed1PXDetId(seed1DetId);
-       // 	 std::cout <<" seed 1 fpix "<<seed1PXDetId<<" disk "<<disk<<std::endl;
-       // }
-       seed1DetId1Map->insert(candRef,splitDetId(bestSeed1DetId,false));
-       seed1DetId2Map->insert(candRef,splitDetId(bestSeed1DetId,true));
-       seed2DetId1Map->insert(candRef,splitDetId(bestSeed2DetId,false));
-       seed2DetId2Map->insert(candRef,splitDetId(bestSeed2DetId,true));
-
-       int test = splitDetId(bestSeed1DetId,false) | splitDetId(bestSeed1DetId,true)<<16;
-       if(test!=bestSeed1DetId){
-	 std::cout <<" miss match "<<test<<" "<<bestSeed1DetId<<std::endl;
+       for(auto& pixelDatum : pixelData){
+	 pixelDatum.fill(candRef);
        }
-
-    }
-    
+    } 
   }
 
   iEvent.put(std::move(s2Map),"s2");
@@ -277,31 +271,23 @@ void EgammaHLTPixelMatchVarProducer::produce(edm::StreamID sid, edm::Event& iEve
     iEvent.put(std::move(dzBestS2Map),"dzBestS2");
   }
   if(productsToWrite_>=2){
-    iEvent.put(std::move(dPhi1Map),"dPhi1");
-    iEvent.put(std::move(dPhi2Map),"dPhi2");
-    iEvent.put(std::move(dzMap),"dz");
-    iEvent.put(std::move(dPhi1SubDetMap),"dPhi1SubDet");
-    iEvent.put(std::move(dPhi2SubDetMap),"dPhi2SubDet");
-    iEvent.put(std::move(dzSubDetMap),"dzSubDet");
+    for(auto& pixelDatum : pixelData){
+      pixelDatum.putInto(iEvent);
+    }   
     iEvent.put(std::move(nrClusMap),"nrClus");
     iEvent.put(std::move(seedClusEFracMap),"seedClusEFrac");
-    iEvent.put(std::move(seed1DetId1Map),"seedHit1DetId1");
-    iEvent.put(std::move(seed1DetId2Map),"seedHit1DetId2");
-    iEvent.put(std::move(seed2DetId1Map),"seedHit2DetId1");
-    iEvent.put(std::move(seed2DetId2Map),"seedHit2DetId2");
-    
   }
 }
 
-std::array<float,4> EgammaHLTPixelMatchVarProducer::calS2(const reco::ElectronSeed& seed,int charge)const
+std::array<float,4> EgammaHLTPixelMatchVarProducer::calS2(const reco::ElectronNHitSeed& seed,int charge)const
 {
   const float dPhi1Const = dPhi1Para_(seed);	
   const float dPhi2Const = dPhi2Para_(seed);
   const float dRZ2Const = dRZ2Para_(seed);
   
-  float dPhi1 = (charge <0 ? seed.dPhi1() : seed.dPhi1Pos())/dPhi1Const;
-  float dPhi2 = (charge <0 ? seed.dPhi2() : seed.dPhi2Pos())/dPhi2Const;
-  float dRz2 = (charge <0 ? seed.dRz2() : seed.dRz2Pos())/dRZ2Const;
+  float dPhi1 = (charge <0 ? seed.dPhiNeg(0) : seed.dPhiPos(0))/dPhi1Const;
+  float dPhi2 = (charge <0 ? seed.dPhiNeg(1) : seed.dPhiPos(1))/dPhi2Const;
+  float dRz2 = (charge <0 ? seed.dRZNeg(1) : seed.dRZPos(1))/dRZ2Const;
   
   float s2 = dPhi1*dPhi1+dPhi2*dPhi2+dRz2*dRz2;
   return std::array<float,4>{{s2,dPhi1,dPhi2,dRz2}}; 
