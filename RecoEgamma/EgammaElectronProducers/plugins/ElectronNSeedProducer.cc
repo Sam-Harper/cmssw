@@ -76,7 +76,7 @@ namespace {
     reco::ElectronNHitSeed::PMVars pmVars;
     pmVars.setDet(matchInfo.detId,layerOrDisk);
     pmVars.setDPhi(matchInfo.dPhiPos,matchInfo.dPhiNeg);
-    pmVars.setDPhi(matchInfo.dRZPos,matchInfo.dRZNeg);
+    pmVars.setDRZ(matchInfo.dRZPos,matchInfo.dRZNeg);
     
     return pmVars;
   }  
