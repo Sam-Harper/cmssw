@@ -63,10 +63,12 @@ public:
 
   void resetVal(){val_=std::numeric_limits<float>::max();valInfo_=0;}
   void fill(const reco::ElectronNHitSeed& seed){
-    float seedVal = (seed.*func_)(hitNr_);
-    if(seedVal < val_){
-      val_ = seedVal;
-      valInfo_ = makeSeedInfo(seed);
+    if(hitNr_<seed.hitInfo().size()){
+      float seedVal = (seed.*func_)(hitNr_);
+      if(seedVal < val_){
+	val_ = seedVal;
+	valInfo_ = makeSeedInfo(seed);
+      }
     }
   }
   void fill(const reco::RecoEcalCandidateRef& candRef){
