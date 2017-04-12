@@ -65,7 +65,7 @@ public:
   void fill(const reco::ElectronNHitSeed& seed){
     if(hitNr_<seed.hitInfo().size()){
       float seedVal = (seed.*func_)(hitNr_);
-      if(seedVal < val_){
+      if(std::abs(seedVal) < std::abs(val_) ){
 	val_ = seedVal;
 	valInfo_ = makeSeedInfo(seed);
       }
