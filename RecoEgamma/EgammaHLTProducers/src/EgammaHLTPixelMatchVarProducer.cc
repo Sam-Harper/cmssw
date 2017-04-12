@@ -38,7 +38,7 @@ namespace {
     for(size_t hitNr=0;hitNr<seed.hitInfo().size();hitNr++){
       int subDetBit = 0x1 <<hitNr;
       if(seed.subDet(hitNr)==PixelSubdetector::PixelEndcap) info |=subDetBit;
-      int layerBit = 0x1 << 4 << seed.layerOrDisk(hitNr) ;
+      int layerBit = 0x1 << 3 << seed.layerOrDisk(hitNr) ;
    
       info |=layerBit;
     }
