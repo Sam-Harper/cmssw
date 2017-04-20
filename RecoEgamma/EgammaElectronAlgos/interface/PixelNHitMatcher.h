@@ -15,6 +15,9 @@
 #include "DataFormats/DetId/interface/DetId.h"
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 #include "TrackingTools/MaterialEffects/interface/PropagatorWithMaterial.h"
+#include "TrackingTools/DetLayers/interface/NavigationSchool.h"
+#include "TrackingTools/RecoGeometry/interface/GlobalDetLayerGeometry.h"
+#include "RecoTracker/MeasurementDet/interface/MeasurementTrackerEvent.h"
 
 #include <unordered_map>
 
@@ -141,6 +144,8 @@ public:
   std::vector<PixelNHitMatcher::SeedWithInfo>
   compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
 		  const GlobalPoint & vprim, const float energy);
+
+  void setMeasTkEvtHandle(edm::Handle<MeasurementTrackerEvent> handle){measTkEvt_=std::move(handle);}
   
 private:
   
@@ -170,7 +175,14 @@ private:
   void clearCache();
 
   bool passesMatchSel(const HitInfo& hit,const size_t hitNr)const;
+  int nrValidLayersAlongTraj(const DetId& hitId,
+			     const TrajectoryStateOnSurface& hitTrajState,
+			     const FreeTrajectoryState& hitFreeState)const;
+  bool layerHasValidHits(const DetLayer& layer,const TrajectoryStateOnSurface& hitSurState,
+			 const Propagator& propToLayerFromState)const;
   
+
+    
 private:
   static constexpr float kElectronMass_ = 0.000511;
   static constexpr float kPhiCut_ = std::cos(2.5);
@@ -178,6 +190,11 @@ private:
   std::unique_ptr<PropagatorWithMaterial> backwardPropagator_;
   unsigned long long cacheIDMagField_;
   edm::ESHandle<MagneticField> magField_;
+  edm::Handle<MeasurementTrackerEvent> measTkEvt_;
+  edm::ESHandle<NavigationSchool> navSchool_;
+  edm::ESHandle<DetLayerGeometry> detLayerGeom_;
+  std::string navSchoolLabel_;
+  std::string detLayerGeomLabel_;
 
   size_t nrHitsRequired_;
   bool useRecoVertex_;

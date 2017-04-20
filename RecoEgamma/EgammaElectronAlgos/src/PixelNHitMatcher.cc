@@ -10,14 +10,62 @@
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 
 #include "TrackingTools/TrajectoryState/interface/FreeTrajectoryState.h"
+#include "TrackingTools/RecoGeometry/interface/RecoGeometryRecord.h"
+#include "TrackingTools/KalmanUpdators/interface/Chi2MeasurementEstimator.h" //might remove
+
+#include "RecoTracker/Record/interface/NavigationSchoolRecord.h"
 
 #include "RecoEgamma/EgammaElectronAlgos/interface/FTSFromVertexToPointFactory.h"
 #include "RecoEgamma/EgammaElectronAlgos/interface/ElectronUtilities.h"
+
+class DetIdTools
+{
+public:
+  static const int kDetOffset = 28;
+  static const int kSubDetOffset = 25;
+
+  static const int kDetMask = 0xF << kDetOffset;
+  static const int kSubDetMask  = 0x7 << kSubDetOffset;
+  
+  static const int kBPXLayerOffset     = 20;
+  static const int kBPXLadderOffset    = 12;
+  static const int kBPXModuleOffset    = 2;
+  static const int kBPXLayerMask       = 0xF;
+  static const int kBPXLadderMask      = 0xFF;
+  static const int kBPXModuleMask      = 0xFF;
+  
+  static const int kFPXSideOffset      = 23;
+  static const int kFPXDiskOffset      = 18;
+  static const int kFPXBladeOffset     = 12;   
+  static const int kFPXPanelOffset     = 10; 
+  static const int kFPXModuleOffset    = 2;   
+  static const int kFPXSideMask        = 0x3;
+  static const int kFPXDiskMask        = 0xF;
+  static const int kFPXBladeMask       = 0x3F;   
+  static const int kFPXPanelMask       = 0x3; 
+  static const int kFPXModuleMask      = 0xFF; 
+
+   //pixel tools
+  static int getVal(int detId,int offset,int mask){return (detId>>offset)&mask;}
+  static int layerBPX(int detId){return getVal(detId,kBPXLayerOffset,kBPXLayerMask);}
+  static int ladderBPX(int detId){return getVal(detId,kBPXLadderOffset,kBPXLadderMask);}
+  static int moduleBPX(int detId){return getVal(detId,kBPXModuleOffset,kBPXModuleMask);}
+  static int sideFPX(int detId){return getVal(detId,kFPXSideOffset,kFPXSideMask);} 
+  static int diskFPX(int detId){return getVal(detId,kFPXDiskOffset,kFPXDiskMask);} 
+ 
+};
+namespace{
+  int getLayerOrDisk(DetId id){
+    return id.subdetId()==1 ? DetIdTools::layerBPX(id.rawId()) : DetIdTools::diskFPX(id.rawId());
+  }
+}
 
 PixelNHitMatcher::PixelNHitMatcher(const edm::ParameterSet& pset):
   cacheIDMagField_(0)
 {
   useRecoVertex_ = pset.getParameter<bool>("useRecoVertex");
+  navSchoolLabel_ = "SimpleNavigationSchool";
+  detLayerGeomLabel_ = "hltESPGlobalDetLayerGeometry";
   const auto cutsPSets=pset.getParameter<std::vector<edm::ParameterSet> >("matchingCuts");
   for(const auto & cutPSet : cutsPSets){
     matchingCuts_.push_back(MatchingCuts(cutPSet));
@@ -47,7 +95,10 @@ void PixelNHitMatcher::doEventSetup(const edm::EventSetup& iSetup)
     forwardPropagator_=std::make_unique<PropagatorWithMaterial>(alongMomentum,kElectronMass_,&*(magField_));
     backwardPropagator_=std::make_unique<PropagatorWithMaterial>(oppositeToMomentum,kElectronMass_,&*(magField_));
   }
+  iSetup.get<NavigationSchoolRecord>().get(navSchoolLabel_,navSchool_);
+  iSetup.get<RecoGeometryRecord>().get(detLayerGeomLabel_,detLayerGeom_);
 }
+
 
 std::vector<PixelNHitMatcher::SeedWithInfo>
 PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
@@ -102,11 +153,18 @@ PixelNHitMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& can
     //FIXME: rename this variable
     FreeTrajectoryState fts2 = FTSFromVertexToPointFactory::get(*magField_, firstHit.pos(), 
 								vertex, energy, charge) ;
-    
+ 
     GlobalPoint prevHitPos = firstHit.pos();
     for(size_t hitNr=1;hitNr<nrHitsRequired_;hitNr++){
       HitInfo hit = match2ndToNthHit(seed,fts2,hitNr,prevHitPos,vertex,*forwardPropagator_);
       if(passesMatchSel(hit,hitNr)){
+	if(hitNr==1){
+	  auto hitIt = seed.recHits().first+hitNr;
+	  const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(*hitIt,fts2,prevHitPos,*forwardPropagator_);
+	  int nrValidLayers = nrValidLayersAlongTraj(hitIt->geographicalId(),trajState,*trajState.freeState());
+	  std::cout <<"nr validLayers"<<nrValidLayers<<" charge "<<charge<<std::endl;
+	    
+	}
 	matchedHits.push_back(hit);
 	prevHitPos = hit.pos();
       }else break;
@@ -191,8 +249,9 @@ PixelNHitMatcher::HitInfo PixelNHitMatcher::match2ndToNthHit(const TrajectorySee
   
   if(hitIt->isValid()){
     const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(*hitIt,initialState,prevHitPos,propagator);
-    
-    if(trajState.isValid()) return HitInfo(vtxPos,trajState,*hitIt);  
+    if(trajState.isValid()){
+      return HitInfo(vtxPos,trajState,*hitIt);  
+    }
   }
   return HitInfo();
   
@@ -215,6 +274,72 @@ bool PixelNHitMatcher::passesMatchSel(const PixelNHitMatcher::HitInfo& hit,const
   }
   
 }
+
+int PixelNHitMatcher::getNrValidLayersAlongTraj(const TrackingRecHit& hit1,const TrackingRecHit& hit2,
+						const GlobalPoint& candPos,
+						const GlobalPoint & vprim, 
+						const float energy, const int charge)
+{
+  double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,firstHit.pos(),candPos);
+  GlobalPoint vertex(vprim.x(),vprim.y(),zVertex);
+  
+  //FIXME: rename this variable
+  FreeTrajectoryState fts2 = FTSFromVertexToPointFactory::get(*magField_, firstHit.pos(), 
+							     vertex, energy, charge) ;
+  const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(hit2,fts2,hit1.pos(),*forwardPropagator_);
+  int nrValidLayers = getNrValidLayersAlongTraj(hitIt->geographicalId(),trajState); 
+}
+
+int PixelNHitMatcher::getNrValidLayersAlongTraj(const DetId& hitId,const TrajectoryStateOnSurface& hitTrajState)const
+{
+  
+  const DetLayer* detLayer = detLayerGeom_->idToLayer(hitId);
+  if(detLayer==nullptr) return 0;
+
+  const FreeTrajectoryState& hitFreeState = hitTrajState.freeState();
+  const std::vector<const DetLayer*> inLayers  = navSchool_->compatibleLayers(*detLayer,hitFreeState,oppositeToMomentum); 
+  const std::vector<const DetLayer*> outLayers = navSchool_->compatibleLayers(*detLayer,hitFreeState,alongMomentum); 
+  
+  int nrValidLayers=1; //because our current hit is valid
+  int nrPixInLayers=0;
+  int nrPixOutLayers=0;
+  for(auto layer : inLayers){
+    if(GeomDetEnumerators::isTrackerPixel(layer->subDetector())){ 
+      nrPixInLayers++;
+      if(layerHasValidHits(*layer,hitTrajState,*backwardPropagator_)) nrValidLayers++;  
+    }
+  }
+  for(auto layer : outLayers){
+    if(GeomDetEnumerators::isTrackerPixel(layer->subDetector())){ 
+      nrPixOutLayers++;
+      if(layerHasValidHits(*layer,hitTrajState,*forwardPropagator_)) nrValidLayers++;  
+    }
+  }
+  int layerOrDisk=getLayerOrDisk(hitId);
+  std::cout <<"sub "<<hitId.subdetId()<<" for layer "<<layerOrDisk<<" nr valid "<<nrValidLayers<<" nr pix in "<<nrPixInLayers<<" nr pix out "<<nrPixOutLayers<<std::endl;
+  return nrValidLayers;
+}
+						 
+bool PixelNHitMatcher::layerHasValidHits(const DetLayer& layer,const TrajectoryStateOnSurface& hitSurState,
+					 const Propagator& propToLayerFromState)const
+					 //		    const Estimator& estimator,
+//					 const MeasurementTrackerEvent& measTkEvt)
+{
+  //FIXME: do not hardcode with werid magic numbers stolen from ancient tracking code
+  Chi2MeasurementEstimator estimator(30.,-3.0,0.5,2.0,0.5,1.e12);  // same as defauts....
+  
+  const auto& detWithState = layer.compatibleDets(hitSurState,propToLayerFromState,estimator);
+  if(detWithState.empty()) return false;
+  else{
+    DetId id = detWithState.front().first->geographicalId();
+    MeasurementDetWithData measDet = measTkEvt_->idToDet(id);
+    if(measDet.isActive()) return true;
+    else return false;
+  }
+}
+
+
+
 
 PixelNHitMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
 				   const TrajectoryStateOnSurface& trajState,

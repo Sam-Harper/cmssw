@@ -40,6 +40,7 @@ private:
   edm::EDGetTokenT<TrajectorySeedCollection> initialSeedsToken_ ;
   edm::EDGetTokenT<std::vector<reco::Vertex> > verticesToken_;
   edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_ ;
+  edm::EDGetTokenT<MeasurementTrackerEvent> measTkEvtToken_;
   
 };
 
@@ -87,7 +88,8 @@ ElectronNSeedProducer::ElectronNSeedProducer( const edm::ParameterSet& pset):
   matcher_(pset),
   initialSeedsToken_(consumes<TrajectorySeedCollection>(pset.getParameter<edm::InputTag>("initialSeeds"))),
   verticesToken_(consumes<std::vector<reco::Vertex> >(pset.getParameter<edm::InputTag>("vertices"))),
-  beamSpotToken_(consumes<reco::BeamSpot>(pset.getParameter<edm::InputTag>("beamSpot")))
+  beamSpotToken_(consumes<reco::BeamSpot>(pset.getParameter<edm::InputTag>("beamSpot"))),
+  measTkEvtToken_(consumes<MeasurementTrackerEvent>(pset.getParameter<edm::InputTag>("measTkEvt")))
 {
   const auto superClusTags = pset.getParameter<std::vector<edm::InputTag> >("superClusters");
   for(const auto& scTag : superClusTags){
@@ -103,6 +105,7 @@ void ElectronNSeedProducer::fillDescriptions(edm::ConfigurationDescriptions& des
   desc.add<edm::InputTag>("initialSeeds",edm::InputTag());
   desc.add<edm::InputTag>("vertices",edm::InputTag());
   desc.add<edm::InputTag>("beamSpot",edm::InputTag()); 
+  desc.add<edm::InputTag>("measTkEvt",edm::InputTag());
   desc.add<std::vector<edm::InputTag> >("superClusters");
   edm::ParameterSetDescription cutsDesc;
   cutsDesc.add<double>("dPhiMax",0.04);
@@ -123,6 +126,7 @@ void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
   iSetup.get<TrackerTopologyRcd>().get(trackerTopoHandle);
   
   matcher_.doEventSetup(iSetup);
+  matcher_.setMeasTkEvtHandle(getHandle(iEvent,measTkEvtToken_));
 
   auto eleSeeds = std::make_unique<reco::ElectronNHitSeedCollection>();
   
