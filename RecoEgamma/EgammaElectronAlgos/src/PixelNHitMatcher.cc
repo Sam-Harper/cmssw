@@ -114,11 +114,26 @@ PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const G
   for(const auto& seed : seeds) {
     std::vector<HitInfo> matchedHitsNeg = processSeed(seed,candPos,vprim,energy,-1);
     std::vector<HitInfo> matchedHitsPos = processSeed(seed,candPos,vprim,energy,+1);
+    int nrValidLayersPos = 0;
+    int nrValidLayersNeg = 0;
+    if(matchedHitsNeg.size()>=2){
+      nrValidLayersNeg = getNrValidLayersAlongTraj(matchedHitsNeg[0],
+						   matchedHitsNeg[1],
+						   candPos,vprim,energy,-1);
+    }
+    if(matchedHitsPos.size()>=2){
+      nrValidLayersPos = getNrValidLayersAlongTraj(matchedHitsPos[0],
+						   matchedHitsPos[1],
+						   candPos,vprim,energy,+1);
+    }
+    int nrValidLayers = std::max(nrValidLayersNeg,nrValidLayersPos);
     if(matchedHitsNeg.size()==nrHitsRequired_ ||
        matchedHitsPos.size()==nrHitsRequired_){
       //do the result
-      matchedSeeds.push_back({seed,matchedHitsPos,matchedHitsNeg});
+      matchedSeeds.push_back({seed,matchedHitsPos,matchedHitsNeg,nrValidLayers});
     }
+    
+
   }
   return matchedSeeds;
 }
@@ -158,13 +173,6 @@ PixelNHitMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& can
     for(size_t hitNr=1;hitNr<nrHitsRequired_;hitNr++){
       HitInfo hit = match2ndToNthHit(seed,fts2,hitNr,prevHitPos,vertex,*forwardPropagator_);
       if(passesMatchSel(hit,hitNr)){
-	if(hitNr==1){
-	  auto hitIt = seed.recHits().first+hitNr;
-	  const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(*hitIt,fts2,prevHitPos,*forwardPropagator_);
-	  int nrValidLayers = nrValidLayersAlongTraj(hitIt->geographicalId(),trajState,*trajState.freeState());
-	  std::cout <<"nr validLayers"<<nrValidLayers<<" charge "<<charge<<std::endl;
-	    
-	}
 	matchedHits.push_back(hit);
 	prevHitPos = hit.pos();
       }else break;
@@ -275,19 +283,19 @@ bool PixelNHitMatcher::passesMatchSel(const PixelNHitMatcher::HitInfo& hit,const
   
 }
 
-int PixelNHitMatcher::getNrValidLayersAlongTraj(const TrackingRecHit& hit1,const TrackingRecHit& hit2,
+int PixelNHitMatcher::getNrValidLayersAlongTraj(const HitInfo& hit1,const HitInfo& hit2,
 						const GlobalPoint& candPos,
 						const GlobalPoint & vprim, 
 						const float energy, const int charge)
 {
-  double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,firstHit.pos(),candPos);
+  double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,hit1.pos(),candPos);
   GlobalPoint vertex(vprim.x(),vprim.y(),zVertex);
   
   //FIXME: rename this variable
-  FreeTrajectoryState fts2 = FTSFromVertexToPointFactory::get(*magField_, firstHit.pos(), 
-							     vertex, energy, charge) ;
-  const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(hit2,fts2,hit1.pos(),*forwardPropagator_);
-  int nrValidLayers = getNrValidLayersAlongTraj(hitIt->geographicalId(),trajState); 
+  FreeTrajectoryState fts2 = FTSFromVertexToPointFactory::get(*magField_,hit1.pos(), 
+							      vertex, energy, charge) ;
+  const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(*hit2.hit(),fts2,hit1.pos(),*forwardPropagator_);
+  return getNrValidLayersAlongTraj(hit2.hit()->geographicalId(),trajState); 
 }
 
 int PixelNHitMatcher::getNrValidLayersAlongTraj(const DetId& hitId,const TrajectoryStateOnSurface& hitTrajState)const
@@ -296,7 +304,7 @@ int PixelNHitMatcher::getNrValidLayersAlongTraj(const DetId& hitId,const Traject
   const DetLayer* detLayer = detLayerGeom_->idToLayer(hitId);
   if(detLayer==nullptr) return 0;
 
-  const FreeTrajectoryState& hitFreeState = hitTrajState.freeState();
+  const FreeTrajectoryState& hitFreeState = *hitTrajState.freeState();
   const std::vector<const DetLayer*> inLayers  = navSchool_->compatibleLayers(*detLayer,hitFreeState,oppositeToMomentum); 
   const std::vector<const DetLayer*> outLayers = navSchool_->compatibleLayers(*detLayer,hitFreeState,alongMomentum); 
   
@@ -357,8 +365,9 @@ PixelNHitMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
 PixelNHitMatcher::SeedWithInfo::
 SeedWithInfo(const TrajectorySeed& seed,
 	     const std::vector<HitInfo>& posCharge,
-	     const std::vector<HitInfo>& negCharge):
-  seed_(seed)
+	     const std::vector<HitInfo>& negCharge,
+	     int nrValidLayers):
+  seed_(seed),nrValidLayers_(nrValidLayers)
 {
   size_t nrHitsMax = std::max(posCharge.size(),negCharge.size());
   for(size_t hitNr=0;hitNr<nrHitsMax;hitNr++){

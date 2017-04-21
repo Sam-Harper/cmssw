@@ -99,7 +99,8 @@ public:
   public:
     SeedWithInfo(const TrajectorySeed& seed,
 		 const std::vector<HitInfo>& posCharge,
-		 const std::vector<HitInfo>& negCharge);
+		 const std::vector<HitInfo>& negCharge,
+		 int nrValidLayers);
     ~SeedWithInfo()=default;
     
     const TrajectorySeed& seed()const{return seed_;}
@@ -119,6 +120,7 @@ public:
   private:
     const TrajectorySeed& seed_;
     std::vector<MatchInfo> matchInfo_;
+    int nrValidLayers_;
   };
 
   class MatchingCuts {
@@ -175,9 +177,14 @@ private:
   void clearCache();
 
   bool passesMatchSel(const HitInfo& hit,const size_t hitNr)const;
-  int nrValidLayersAlongTraj(const DetId& hitId,
-			     const TrajectoryStateOnSurface& hitTrajState,
-			     const FreeTrajectoryState& hitFreeState)const;
+  int getNrValidLayersAlongTraj(const HitInfo& hit1,const HitInfo& hit2,
+				const GlobalPoint& candPos,
+				const GlobalPoint & vprim, 
+				const float energy, const int charge);
+
+  int getNrValidLayersAlongTraj(const DetId& hitId,
+				const TrajectoryStateOnSurface& hitTrajState)const;
+				
   bool layerHasValidHits(const DetLayer& layer,const TrajectoryStateOnSurface& hitSurState,
 			 const Propagator& propToLayerFromState)const;
   
