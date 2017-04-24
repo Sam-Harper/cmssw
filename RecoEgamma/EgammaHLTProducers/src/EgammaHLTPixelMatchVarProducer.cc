@@ -44,8 +44,8 @@ namespace {
       int layerBit = 0x1 << layerOffset << seed.layerOrDisk(hitNr) ;
       info |=layerBit;
 
-      // int nrLayersAlongTrajShifted = seed.nrLayersAlongTraj()<<12;
-      //info |=nrLayersAlongTrajShifted;
+      int nrLayersAlongTrajShifted = seed.nrLayersAlongTraj()<<12;
+      info |=nrLayersAlongTrajShifted;
     }
     return info;
   }
