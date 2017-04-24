@@ -42,6 +42,7 @@ namespace reco
       void setDPhi(float pos,float neg){dPhiPos=pos;dPhiNeg=neg;}
       void setDRZ(float pos,float neg){dRZPos=pos;dRZNeg=neg;}
       void setDet(int iDetId,int iLayerOrDisk){detId=iDetId;layerOrDisk=iLayerOrDisk;}
+
     };
     
     
@@ -65,6 +66,7 @@ namespace reco
     void setCtfTrack( const CtfTrackRef & ) ;
     void setCaloCluster( const CaloClusterRef& clus){caloCluster_=clus;isEcalDriven_=true;}
     void addHitInfo(const PMVars& hitVars){hitInfo_.push_back(hitVars);}
+    void setNrLayersAlongTraj(int val){nrLayersAlongTraj_=val;}
     //! Accessors
     const CtfTrackRef& ctfTrack() const { return ctfTrack_ ; }
     const CaloClusterRef& caloCluster() const { return caloCluster_ ; }
@@ -84,7 +86,7 @@ namespace reco
     float dRZBest(size_t hitNr)const{return bestVal(dRZNeg(hitNr),dRZPos(hitNr));}
     int subDet(size_t hitNr)const{return DetId(hitInfo_[hitNr].detId).subdetId();}
     int layerOrDisk(size_t hitNr)const{return hitInfo_[hitNr].layerOrDisk;}
- 
+    int nrLayersAlongTraj()const{return nrLayersAlongTraj_;}
     
 
   private:
@@ -95,6 +97,7 @@ namespace reco
     CtfTrackRef ctfTrack_ ;
     CaloClusterRef caloCluster_ ;
     std::vector<PMVars> hitInfo_;
+    int nrLayersAlongTraj_;
     
     bool isEcalDriven_ ;
     bool isTrackerDriven_ ;

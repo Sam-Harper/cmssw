@@ -107,7 +107,8 @@
 
   
 
-  <class name="reco::ElectronNHitSeed" ClassVersion="10">
+  <class name="reco::ElectronNHitSeed" ClassVersion="11">
+    <version ClassVersion="11" checksum="2181698105"/> 
    <version ClassVersion="10" checksum="898295463"/> 
   </class>
   <class name="std::vector<reco::ElectronNHitSeed>"/>

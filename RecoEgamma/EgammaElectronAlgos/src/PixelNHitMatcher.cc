@@ -127,11 +127,16 @@ PixelNHitMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const G
 						   candPos,vprim,energy,+1);
     }
     int nrValidLayers = std::max(nrValidLayersNeg,nrValidLayersPos);
-    if(matchedHitsNeg.size()==nrHitsRequired_ ||
-       matchedHitsPos.size()==nrHitsRequired_){
+
+    size_t nrHitsRequired = nrValidLayers>=4 ? 3 : 2;
+    //   std::cout <<"nr valid layers "<<nrValidLayers<<" nr hits "<<matchedHitsNeg.size()<<" pos "<<matchedHitsPos.size();//<<std::endl;
+
+    if(matchedHitsNeg.size()==nrHitsRequired ||
+       matchedHitsPos.size()==nrHitsRequired){
       //do the result
+      //    std::cout <<"acceped "<<std::endl;
       matchedSeeds.push_back({seed,matchedHitsPos,matchedHitsNeg,nrValidLayers});
-    }
+    }//else std::cout <<"rejected "<<std::endl;
     
 
   }
@@ -146,9 +151,9 @@ PixelNHitMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& can
 			      const GlobalPoint & vprim, const float energy, const int charge )
 {
   
-  if(seed.nHits()!=nrHitsRequired_){
-    throw cms::Exception("Configuration") <<"PixelNHitMatcher is being fed seeds with "<<seed.nHits()<<" but requires "<<nrHitsRequired_<<" for a match, it is inconsistantly configured";
-  }
+  // if(seed.nHits()!=nrHitsRequired_){
+  //   throw cms::Exception("Configuration") <<"PixelNHitMatcher is being fed seeds with "<<seed.nHits()<<" but requires "<<nrHitsRequired_<<" for a match, it is inconsistantly configured";
+  // }
 
   
   FreeTrajectoryState trajStateFromVtx = FTSFromVertexToPointFactory::get(*magField_, candPos, vprim, energy, charge);
@@ -170,7 +175,7 @@ PixelNHitMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& can
 								vertex, energy, charge) ;
  
     GlobalPoint prevHitPos = firstHit.pos();
-    for(size_t hitNr=1;hitNr<nrHitsRequired_;hitNr++){
+    for(size_t hitNr=1;hitNr<nrHitsRequired_ && hitNr<seed.nHits();hitNr++){
       HitInfo hit = match2ndToNthHit(seed,fts2,hitNr,prevHitPos,vertex,*forwardPropagator_);
       if(passesMatchSel(hit,hitNr)){
 	matchedHits.push_back(hit);
@@ -270,7 +275,7 @@ void PixelNHitMatcher::clearCache()
   trajStateFromVtxPosChargeCache_.clear();
   trajStateFromVtxNegChargeCache_.clear();
   trajStateFromPointPosChargeCache_.clear();
-  trajStateFromPointPosChargeCache_.clear();
+  trajStateFromPointNegChargeCache_.clear();
 }
 
 bool PixelNHitMatcher::passesMatchSel(const PixelNHitMatcher::HitInfo& hit,const size_t hitNr)const
@@ -323,8 +328,8 @@ int PixelNHitMatcher::getNrValidLayersAlongTraj(const DetId& hitId,const Traject
       if(layerHasValidHits(*layer,hitTrajState,*forwardPropagator_)) nrValidLayers++;  
     }
   }
-  int layerOrDisk=getLayerOrDisk(hitId);
-  std::cout <<"sub "<<hitId.subdetId()<<" for layer "<<layerOrDisk<<" nr valid "<<nrValidLayers<<" nr pix in "<<nrPixInLayers<<" nr pix out "<<nrPixOutLayers<<std::endl;
+  //  int layerOrDisk=getLayerOrDisk(hitId);
+  //  std::cout <<"sub "<<hitId.subdetId()<<" for layer "<<layerOrDisk<<" nr valid "<<nrValidLayers<<" nr pix in "<<nrPixInLayers<<" nr pix out "<<nrPixOutLayers<<std::endl;
   return nrValidLayers;
 }
 						 
@@ -336,7 +341,7 @@ bool PixelNHitMatcher::layerHasValidHits(const DetLayer& layer,const TrajectoryS
   //FIXME: do not hardcode with werid magic numbers stolen from ancient tracking code
   Chi2MeasurementEstimator estimator(30.,-3.0,0.5,2.0,0.5,1.e12);  // same as defauts....
   
-  const auto& detWithState = layer.compatibleDets(hitSurState,propToLayerFromState,estimator);
+  const std::vector<GeometricSearchDet::DetWithState>& detWithState = layer.compatibleDets(hitSurState,propToLayerFromState,estimator);
   if(detWithState.empty()) return false;
   else{
     DetId id = detWithState.front().first->geographicalId();
