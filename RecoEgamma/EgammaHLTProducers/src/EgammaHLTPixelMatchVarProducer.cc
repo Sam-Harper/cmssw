@@ -32,15 +32,20 @@
 
 namespace {
   //first 4 bits are sub detect of each hit (0=barrel, 1 = endcap) 
-  //next 4 bits are layer information (0=no hit, 1 = hit)
+  //next 8 bits are layer information (0=no hit, 1 = hit), first 4 are barrel, next 4 are endcap (theres an empty bit here
+  //next 4 bits are nr of layers info
   int makeSeedInfo(const reco::ElectronNHitSeed& seed){
     int info = 0;
     for(size_t hitNr=0;hitNr<seed.hitInfo().size();hitNr++){
       int subDetBit = 0x1 <<hitNr;
       if(seed.subDet(hitNr)==PixelSubdetector::PixelEndcap) info |=subDetBit;
-      int layerBit = 0x1 << 3 << seed.layerOrDisk(hitNr) ;
-   
+      int layerOffset = 3;
+      if(seed.subDet(hitNr)==PixelSubdetector::PixelEndcap) layerOffset+=4;
+      int layerBit = 0x1 << layerOffset << seed.layerOrDisk(hitNr) ;
       info |=layerBit;
+
+      // int nrLayersAlongTrajShifted = seed.nrLayersAlongTraj()<<12;
+      //info |=nrLayersAlongTrajShifted;
     }
     return info;
   }
@@ -60,7 +65,7 @@ public:
     valInfoMap_=std::make_unique<reco::RecoEcalCandidateIsolationMap>(candHandle);
   }
   PixelData(PixelData&& rhs)=default;
-
+  
   void resetVal(){val_=std::numeric_limits<float>::max();valInfo_=0;}
   void fill(const reco::ElectronNHitSeed& seed){
     if(hitNr_<seed.hitInfo().size()){
