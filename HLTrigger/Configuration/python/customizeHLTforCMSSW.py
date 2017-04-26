@@ -74,13 +74,19 @@ def customiseFor18330(process):
 
      return process
 
+from RecoEgamma.EgammaHLTProducers.customizeEgPixelMatchingPhaseI import customizeEgPixelMatchingPhaseI 
+
 # CMSSW version specific customizations
 def customizeHLTforCMSSW(process, menuType="GRun"):
     # add call to action function in proper order: newest last!
     # process = customiseFor12718(process)
+
     process = customiseFor17771(process)
     process = customiseFor17792(process)
     process = customiseFor17794(process)
     process = customiseFor18330(process)
+
+    process = customizeEgPixelMatchingPhaseI(process)
+
 
     return process
