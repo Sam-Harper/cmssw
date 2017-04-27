@@ -3,6 +3,7 @@ import FWCore.ParameterSet.Config as cms
 
 def customizeEgPixelMatchingPhaseI(process):
     
+
     process.hltEgammaSuperClustersToPixelMatch = cms.EDProducer("EgammaHLTFilteredSuperClusterProducer",
                                                             cands = cms.InputTag("hltEgammaCandidates"),
                                                                 cuts = cms.VPSet(
@@ -68,4 +69,14 @@ def customizeEgPixelMatchingPhaseI(process):
                      ),
             )
                                                          )
+
+    process.hltEgammaSuperClustersToPixelMatchUnseeded  = process.hltEgammaSuperClustersToPixelMatch.clone()
+    process.hltEgammaSuperClustersToPixelMatchUnseeded.cands=cms.InputTag("hltEgammaCandidatesUnseeded")
+    process.hltEgammaSuperClustersToPixelMatchUnseeded.cuts[0].var=cms.InputTag("hltEgammaHoverEUnseeded")
+
+    process.hltEleSeedsTrackingRegionsUnseeded=process.hltEleSeedsTrackingRegions.clone()
+    process.hltEleSeedsTrackingRegionsUnseeded.RegionPSet.superClusters=cms.VInputTag('hltEgammaSuperClustersToPixelMatchUnseeded')
+
+    process.hltEgammaElectronPixelSeedsUnseeded = process.hltEgammaElectronPixelSeeds.clone(initialSeeds = cms.InputTag("hltElePixelSeedsCombinedUnseeded"),superClusters=cms.VInputTag('hltEgammaSuperClustersToPixelMatchUnseeded'))
+
     return process
