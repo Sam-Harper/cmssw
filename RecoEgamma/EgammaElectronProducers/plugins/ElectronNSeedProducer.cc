@@ -149,7 +149,7 @@ void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
       
       GlobalPoint caloPosition(GlobalPoint::Polar(superClusRef->seed()->position().theta(),superClusRef->position().phi(),superClusRef->position().r()));
       
-      const std::vector<TrajSeedMatcher::SeedWithInfo> matchedSeeds = 
+      const std::vector<PixelNHitMatcher::SeedWithInfo> matchedSeeds = 
 	matcher_.compatibleSeeds(*initialSeedsHandle,caloPosition,
 				 primVtxPos,superClusRef->energy());
 
