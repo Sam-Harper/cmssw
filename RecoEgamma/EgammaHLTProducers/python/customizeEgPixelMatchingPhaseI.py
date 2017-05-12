@@ -48,8 +48,7 @@ def customizeEgPixelMatchingPhaseI(process):
                                                          measTkEvt = cms.InputTag( "hltSiStripClusters" ),
                                                          superClusters=cms.VInputTag('hltEgammaSuperClustersToPixelMatch'),                                                    
                                                          useRecoVertex=cms.bool(False),
-                                                         matchingCuts=cms.VPSet( 
-            matchingCuts=cms.VPSet(  
+                                                         matchingCuts=cms.VPSet(
                 cms.PSet(dPhiMax=cms.double(0.03),
                          dRZMax=cms.double(-1),
                          dRZMaxLowEtThres=cms.double(-1),
@@ -70,7 +69,7 @@ def customizeEgPixelMatchingPhaseI(process):
                          ),
                 )
             )
-                                                         )
+                                                         
 
     process.hltEgammaSuperClustersToPixelMatchUnseeded  = process.hltEgammaSuperClustersToPixelMatch.clone()
     process.hltEgammaSuperClustersToPixelMatchUnseeded.cands=cms.InputTag("hltEgammaCandidatesUnseeded")
