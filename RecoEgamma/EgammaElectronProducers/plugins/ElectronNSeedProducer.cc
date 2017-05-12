@@ -146,9 +146,13 @@ void ElectronNSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
   for(const auto& superClustersToken : superClustersTokens_){
     auto superClustersHandle = getHandle(iEvent,superClustersToken);
     for(auto& superClusRef : *superClustersHandle){
-      const std::vector<PixelNHitMatcher::SeedWithInfo> matchedSeeds = 
-	matcher_.compatibleSeeds(*initialSeedsHandle,convertToGP(superClusRef->position()),
+      
+      GlobalPoint caloPosition(GlobalPoint::Polar(superClusRef->seed()->position().theta(),superClusRef->position().phi(),superClusRef->position().r()));
+      
+      const std::vector<TrajSeedMatcher::SeedWithInfo> matchedSeeds = 
+	matcher_.compatibleSeeds(*initialSeedsHandle,caloPosition,
 				 primVtxPos,superClusRef->energy());
+
       
       for(auto& matchedSeed : matchedSeeds){
 	reco::ElectronNHitSeed eleSeed(matchedSeed.seed()); 
