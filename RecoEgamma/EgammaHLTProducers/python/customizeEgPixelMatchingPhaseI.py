@@ -27,7 +27,6 @@ def customizeEgPixelMatchingPhaseI(process):
         if not hasattr(edproducer,'superClusters'):
             edproducer.superClusters=cms.VInputTag('hltEgammaSuperClustersToPixelMatch') 
             if edproducer.initialSeeds.moduleLabel.find("Unseeded")!=-1:
-                print "replacing unseeded",edproducer
                 edproducer.superClusters=cms.VInputTag('hltEgammaSuperClustersToPixelMatchUnseeded') 
     return process
 
