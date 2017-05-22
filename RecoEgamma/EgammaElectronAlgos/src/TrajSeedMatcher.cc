@@ -18,6 +18,8 @@
 #include "RecoEgamma/EgammaElectronAlgos/interface/FTSFromVertexToPointFactory.h"
 #include "RecoEgamma/EgammaElectronAlgos/interface/ElectronUtilities.h"
 
+constexpr float TrajSeedMatcher::kElectronMass_;
+
 TrajSeedMatcher::TrajSeedMatcher(const edm::ParameterSet& pset):
   cacheIDMagField_(0),
   minNrHits_(pset.getParameter<std::vector<unsigned int> >("minNrHits")),
@@ -52,7 +54,13 @@ edm::ParameterSetDescription TrajSeedMatcher::makePSetDescription()
   cutsDesc.add<double>("dRZMaxLowEtThres",20.);
   cutsDesc.add<std::vector<double> >("dRZMaxLowEtEtaBins",std::vector<double>{1.,1.5});
   cutsDesc.add<std::vector<double> >("dRZMaxLowEt",std::vector<double>{0.09,0.15,0.09});
-  desc.addVPSet("matchingCuts",cutsDesc);
+  edm::ParameterSet defaults;
+  defaults.addParameter<double>("dPhiMax",0.04);
+  defaults.addParameter<double>("dRZMax",0.09);
+  defaults.addParameter<double>("dRZMaxLowEtThres",0.09);
+  defaults.addParameter<std::vector<double> >("dRZMaxLowEtEtaBins",std::vector<double>{1.,1.5});
+  defaults.addParameter<std::vector<double> >("dRZMaxLowEt",std::vector<double>{0.09,0.09,0.09});
+  desc.addVPSet("matchingCuts",cutsDesc,std::vector<edm::ParameterSet>{defaults,defaults,defaults});
   return desc;
 }
 
