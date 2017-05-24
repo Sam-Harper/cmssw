@@ -36,17 +36,24 @@ class HLTTagAndProbeOfflineSource : public DQMEDAnalyzer {
 
   virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
   virtual void bookHistograms(DQMStore::IBooker &, edm::Run const & run, edm::EventSetup const & c) override;
-  virtual void dqmBeginRun(edm::Run const& run, edm::EventSetup const& c) override;
+  virtual void dqmBeginRun(edm::Run const& run, edm::EventSetup const& c) override{}
 
 private:
   std::vector<HLTTagAndProbeEff<reco::GsfElectron,reco::GsfElectronCollection> > tagAndProbeEffs_;
 
 };
 
+HLTTagAndProbeOfflineSource::HLTTagAndProbeOfflineSource(const edm::ParameterSet& config)
+{
+  
 
+}
+void HLTTagAndProbeOfflineSource::bookHistograms(DQMStore::IBooker& iBooker,const edm::Run& run,const edm::EventSetup& setup)
+{
+  for(auto& tpEff : tagAndProbeEffs_) tpEff.bookHists(iBooker);
+}
 
 void HLTTagAndProbeOfflineSource::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
   for(auto& tpEff : tagAndProbeEffs_) tpEff.fill(event,setup);
-  
 }

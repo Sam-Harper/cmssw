@@ -80,6 +80,7 @@ public:
 template <typename ObjType,typename ValType> 
 class HLTDQM1DHist : public HLTDQMHist<ObjType> {
 public:
+  HLTDQM1DHist(TH1* hist,std::function<ValType(const ObjType&)> func):var_(func),hist_(hist){}
   void fill(const ObjType& objType,const edm::Event& event,const edm::EventSetup& setup)override{
     hist_->Fill(var_(objType));
   }
@@ -93,8 +94,8 @@ template <typename ObjType>
 class HLTDQMHistColl {
 public:
   
-  explicit HLTDQMHistColl(const edm::ParameterSet& config){std::cout <<"placeholder"<<std::endl;}
-  void bookHists(DQMStore::IBooker& iBooker,const edm::ParameterSet& config,const std::string& baseName);
+  explicit HLTDQMHistColl(const edm::ParameterSet& config,const std::string& hltProcess);
+  void bookHists(DQMStore::IBooker& iBooker);
   void fillHists(const ObjType& obj,const edm::Event& event,
 		 const edm::EventSetup& setup,const trigger::TriggerEvent& trigEvt);
 private:
@@ -103,32 +104,35 @@ private:
   std::string filterName_;
   std::string baseHistName_;
   std::string hltProcess_;
-  edm::ParameterSet histsConfig_;		 
+  std::vector<edm::ParameterSet> histConfigs_;		 
 };
 
-template <typename ObjType>
-void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker,
-					const edm::ParameterSet& config,
-					const std::string& baseName)
+template <typename ObjType> 
+HLTDQMHistColl<ObjType>::HLTDQMHistColl(const edm::ParameterSet& config,const std::string& hltProcess):
+  hltProcess_(hltProcess)
 {
-  auto histConfigs = config.getParameter<std::vector<edm::ParameterSet> >("hists");
-  for(auto& histConfig : histConfigs){
-    auto binLowEdges = histConfig.getParameter<std::vector<double> >("binLowEdges");
+  filterName_ = config.getParameter<std::string>("filterToMonitor");
+  baseHistName_ = config.getParameter<std::string>("baseHistName");
+  histConfigs_ = config.getParameter<std::vector<edm::ParameterSet> >("histConfigs");
+}
+
+template <typename ObjType>
+void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker)
+{
+  for(auto& histConfig : histConfigs_){
+    auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
+    std::vector<float> binLowEdges;
+    for(double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
     auto nameSuffex = histConfig.getParameter<std::string>("nameSuffex");
-    auto me = iBooker.book1D((baseName+nameSuffex).c_str(),(baseName+nameSuffex).c_str(),
+    auto me = iBooker.book1D((baseHistName_+nameSuffex).c_str(),(baseHistName_+nameSuffex).c_str(),
 			     binLowEdges.size()-1,&binLowEdges[0]);
     std::unique_ptr<HLTDQMHist<ObjType> > hist;
     auto vsVar = histConfig.getParameter<std::string>("vsVar");
-    switch(vsVar){
-    case "et":hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::et);
-      break;
-    case "pt" : hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::pt);
-      break;
-    case "eta": hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::eta);
-      break;
-    case "scEta": hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&scEtaFunc);
-      break;
-    default:
+    if(vsVar=="et") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::et);
+    else if(vsVar=="pt") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::pt);
+    else if(vsVar=="eta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::eta);
+    // else if(vsVar=="scEta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&scEtaFunc);
+    else{
       throw cms::Exception("ConfigError") <<" vsVar "<<vsVar<<" not recognised"<<std::endl;
     }
        
@@ -143,7 +147,7 @@ void HLTDQMHistColl<ObjType>::fillHists(const ObjType& obj,
 					const trigger::TriggerEvent& trigEvt)
 {
   //we auto pass if no filter is fiven
-  if(filterName.empty() || passTrig(obj->eta(),obj->phi(),trigEvt,filterName_,hltProcess_)){
+  if(filterName_.empty() || passTrig(obj.eta(),obj.phi(),trigEvt,filterName_,hltProcess_)){
 
     for(auto& hist : hists_){
       hist->fill(obj,event,setup); 
@@ -153,20 +157,15 @@ void HLTDQMHistColl<ObjType>::fillHists(const ObjType& obj,
 
 template<typename ObjType>
 class RangeCuts {
+public:
   RangeCuts(const edm::ParameterSet& config){
     auto varName = config.getParameter<std::string>("rangeVar");
-    switch(varName){
-    case "et": varFunc_ = &ObjType::et;
-      break;
-    case "pt": varFunc_ = &ObjType::pt;
-      break;
-    case "eta": varFunc_ = &ObjType::eta;
-      break;
-    case "scEta": varFunc_ = &scEtaFunc;
-      break;
-    case "": //empty string, allow it to auto pass
-      break;
-    default:
+
+    if(varName=="et") varFunc_ = &ObjType::et;
+    else if(varName=="pt") varFunc_ = &ObjType::pt;
+    else if(varName=="eta") varFunc_ = &ObjType::eta;
+    else if(varName=="scEta") varFunc_ = &scEtaFunc;
+    else if(!varName.empty()){
       throw cms::Exception("ConfigError") <<" rangeVar "<<varName<<" not recognised"<<std::endl;
     }
     auto ranges = config.getParameter<std::vector<std::string> >("allowedRanges");
@@ -216,7 +215,7 @@ public:
     
   explicit HLTTagAndProbeEff(const edm::ParameterSet& pset,edm::ConsumesCollector && cc);
  
-  void bookMEs();
+  void bookHists(DQMStore::IBooker& iBooker);
   void fill(const edm::Event& event,const edm::EventSetup& setup);
   
 private:
@@ -275,6 +274,12 @@ HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSe
   minMass_ = pset.getParameter<double>("minMass");
   maxMass_ = pset.getParameter<double>("maxMass");
   requireOpSign_ = pset.getParameter<bool>("requireOpSign");
+
+  std::vector<edm::ParameterSet> histCollConfigs = pset.getParameter<std::vector<edm::ParameterSet> >("histColls");
+  for(auto& histCollConfig: histCollConfigs){
+    histColls_.emplace_back(HLTDQMHistColl<ObjType>(histCollConfig,hltProcess_));
+  }
+
 }
 
 template <typename ObjType,typename ObjCollType> 
@@ -329,7 +334,7 @@ void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const 
 	  ( !requireOpSign_ || tagRef->charge()!=probeRef->charge()) ){
 
 	for(auto& histColl : histColls_){
-	  histColl.fillHists(probeRef,event,setup,*trigEvtHandle);
+	  histColl.fillHists(*probeRef,event,setup,*trigEvtHandle);
 	}
 	      
       }//end of t&p pair cuts
@@ -337,5 +342,11 @@ void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const 
   }//end of tag loop
       
 }
+template <typename ObjType,typename ObjCollType> 
+void HLTTagAndProbeEff<ObjType,ObjCollType>::bookHists(DQMStore::IBooker& iBooker)
+{
+  for(auto& histColl:  histColls_) histColl.bookHists(iBooker);
+}
+
 
 #endif
