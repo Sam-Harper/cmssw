@@ -131,7 +131,7 @@ void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker)
     if(vsVar=="et") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::et);
     else if(vsVar=="pt") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::pt);
     else if(vsVar=="eta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::eta);
-    else if(vsVar=="scEta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),scEtaFunc);
+    else if(vsVar=="scEta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),scEtaFunc<ObjType>);
     else{
       throw cms::Exception("ConfigError") <<" vsVar "<<vsVar<<" not recognised"<<std::endl;
     }
@@ -164,7 +164,7 @@ public:
     if(varName=="et") varFunc_ = &ObjType::et;
     else if(varName=="pt") varFunc_ = &ObjType::pt;
     else if(varName=="eta") varFunc_ = &ObjType::eta;
-    //    else if(varName=="scEta") varFunc_ = &scEtaFunc;
+    else if(varName=="scEta") varFunc_ = scEtaFunc<ObjType>;
     else if(!varName.empty()){
       throw cms::Exception("ConfigError") <<" rangeVar "<<varName<<" not recognised"<<std::endl;
     }
