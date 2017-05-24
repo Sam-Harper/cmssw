@@ -95,12 +95,14 @@ public:
   
   explicit HLTDQMHistColl(const edm::ParameterSet& config){std::cout <<"placeholder"<<std::endl;}
   void bookHists(DQMStore::IBooker& iBooker,const edm::ParameterSet& config,const std::string& baseName);
-  void fillHists(const ObjType& objType,const edm::Event& event,const edm::EventSetup& setup);
+  void fillHists(const ObjType& obj,const edm::Event& event,
+		 const edm::EventSetup& setup,const trigger::TriggerEvent& trigEvt);
 private:
 
   std::vector<std::unique_ptr<HLTDQMHist<ObjType> > > hists_;
   std::string filterName_;
   std::string baseHistName_;
+  std::string hltProcess_;
   edm::ParameterSet histsConfig_;		 
 };
 
@@ -118,13 +120,13 @@ void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker,
     std::unique_ptr<HLTDQMHist<ObjType> > hist;
     auto vsVar = histConfig.getParameter<std::string>("vsVar");
     switch(vsVar){
-    case "et":hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),ObjType::et);
+    case "et":hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::et);
       break;
-    case "pt" : hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),ObjType::pt);
+    case "pt" : hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::pt);
       break;
-    case "eta": hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),ObjType::eta);
+    case "eta": hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::eta);
       break;
-    case "scEta": hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),scEtaFunc);
+    case "scEta": hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&scEtaFunc);
       break;
     default:
       throw cms::Exception("ConfigError") <<" vsVar "<<vsVar<<" not recognised"<<std::endl;
@@ -135,12 +137,17 @@ void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker,
 }
 
 template <typename ObjType>
-void HLTDQMHistColl<ObjType>::fillHists(const ObjType& objType,
+void HLTDQMHistColl<ObjType>::fillHists(const ObjType& obj,
 					const edm::Event& event,
-					const edm::EventSetup& setup)
+					const edm::EventSetup& setup,
+					const trigger::TriggerEvent& trigEvt)
 {
-  for(auto& hist : hists_){
-    hist->fill(objType,event,setup); 
+  //we auto pass if no filter is fiven
+  if(filterName.empty() || passTrig(obj->eta(),obj->phi(),trigEvt,filterName_,hltProcess_)){
+
+    for(auto& hist : hists_){
+      hist->fill(obj,event,setup); 
+    }
   }
 }
 
@@ -213,11 +220,11 @@ public:
   void fill(const edm::Event& event,const edm::EventSetup& setup);
   
 private:
-  std::vector<edm::Ref<ObjType> >
-  getPassingRefs(edm::Handle<ObjCollType>& objCollHandle,
-		 edm::Handle<bool>& vidHandle,
+  std::vector<edm::Ref<ObjCollType> >
+  getPassingRefs(const edm::Handle<ObjCollType>& objCollHandle,
 		 const trigger::TriggerEvent& trigEvt,
 		 const std::vector<std::string>& filterNames,
+		 const edm::Handle<edm::ValueMap<bool> >& vidHandle,
 		 const RangeCutsColl<ObjType>& rangeCuts);
 private:
   edm::EDGetTokenT<ObjCollType> objToken_;
@@ -271,16 +278,16 @@ HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSe
 }
 
 template <typename ObjType,typename ObjCollType> 
-std::vector<edm::Ref<ObjType> > HLTTagAndProbeEff<ObjType,ObjCollType>::
-getPassingRefs(edm::Handle<ObjCollType>& objCollHandle,
-	       edm::Handle<bool>& vidHandle,
+std::vector<edm::Ref<ObjCollType> > HLTTagAndProbeEff<ObjType,ObjCollType>::
+getPassingRefs(const edm::Handle<ObjCollType>& objCollHandle,
 	       const trigger::TriggerEvent& trigEvt,
 	       const std::vector<std::string>& filterNames,
+	       const edm::Handle<edm::ValueMap<bool> >& vidHandle,
 	       const RangeCutsColl<ObjType>& rangeCuts)
 {
-  std::vector<edm::Ref<ObjType> > passingRefs;
+  std::vector<edm::Ref<ObjCollType> > passingRefs;
   for(size_t objNr=0;objNr<objCollHandle->size();objNr++){
-    edm::Ref<ObjType> ref(objCollHandle,objNr);
+    edm::Ref<ObjCollType> ref(objCollHandle,objNr);
     if(rangeCuts(*ref) && 
        passTrig(ref->eta(),ref->phi(),trigEvt,filterNames,hltProcess_) && 
        (vidHandle.isValid()==false || (*vidHandle)[ref]==true)){
@@ -305,12 +312,12 @@ void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const 
   
   const edm::TriggerNames& trigNames = event.triggerNames(*trigResultsHandle);
 
-  std::vector<edm::Ref<ObjType> > tagRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
-							   tagFilters_,
-							   tagVIDHandle,tagRangeCuts_);
-  std::vector<edm::Ref<ObjType> > probeRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
-							     probeFilters_,
-							     probeVIDHandle,probeRangeCuts_);
+  std::vector<edm::Ref<ObjCollType> > tagRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
+							       tagFilters_,
+							       tagVIDHandle,tagRangeCuts_);
+  std::vector<edm::Ref<ObjCollType> > probeRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
+								 probeFilters_,
+								 probeVIDHandle,probeRangeCuts_);
   
   for(auto& tagRef : tagRefs){
     for(auto& probeRef : probeRefs){
@@ -322,7 +329,7 @@ void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const 
 	  ( !requireOpSign_ || tagRef->charge()!=probeRef->charge()) ){
 
 	for(auto& histColl : histColls_){
-	  histColl.fill(probeRef,event,setup,*trigEvtHandle);
+	  histColl.fillHists(probeRef,event,setup,*trigEvtHandle);
 	}
 	      
       }//end of t&p pair cuts

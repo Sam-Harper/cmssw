@@ -43,3 +43,10 @@ private:
 
 };
 
+
+
+void HLTTagAndProbeOfflineSource::analyze(const edm::Event& event, const edm::EventSetup& setup)
+{
+  for(auto& tpEff : tagAndProbeEffs_) tpEff.fill(event,setup);
+  
+}
