@@ -94,8 +94,10 @@ template <typename ObjType>
 class HLTDQMHistColl {
 public:
   
-  explicit HLTDQMHistColl(const edm::ParameterSet& config,const std::string& hltProcess);
-  void bookHists(DQMStore::IBooker& iBooker);
+  explicit HLTDQMHistColl(const std::string& filterName,
+			  const std::string& baseHistName,
+			  const std::string& hltProcess);
+  void bookHists(DQMStore::IBooker& iBooker,const std::vector<edm::ParameterSet>& histConfigs);
   void fillHists(const ObjType& obj,const edm::Event& event,
 		 const edm::EventSetup& setup,const trigger::TriggerEvent& trigEvt);
 private:
@@ -104,22 +106,23 @@ private:
   std::string filterName_;
   std::string baseHistName_;
   std::string hltProcess_;
-  std::vector<edm::ParameterSet> histConfigs_;		 
 };
 
 template <typename ObjType> 
-HLTDQMHistColl<ObjType>::HLTDQMHistColl(const edm::ParameterSet& config,const std::string& hltProcess):
+HLTDQMHistColl<ObjType>::HLTDQMHistColl(const std::string& filterName,
+					const std::string& baseHistName,
+					const std::string& hltProcess):
+  filterName_(filterName),
+  baseHistName_(baseHistName),
   hltProcess_(hltProcess)
 {
-  filterName_ = config.getParameter<std::string>("filterToMonitor");
-  baseHistName_ = config.getParameter<std::string>("baseHistName");
-  histConfigs_ = config.getParameter<std::vector<edm::ParameterSet> >("histConfigs");
+  
 }
 
 template <typename ObjType>
-void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker)
+void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker,const std::vector<edm::ParameterSet>& histConfigs)
 {
-  for(auto& histConfig : histConfigs_){
+  for(auto& histConfig : histConfigs){
     auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
     std::vector<float> binLowEdges;
     for(double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
@@ -246,6 +249,7 @@ private:
   float maxMass_;
   bool requireOpSign_;
 
+  std::vector<edm::ParameterSet> histConfigs_;
   std::vector<HLTDQMHistColl<ObjType> > histColls_;
     
 };
@@ -274,9 +278,11 @@ HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSe
   maxMass_ = pset.getParameter<double>("maxMass");
   requireOpSign_ = pset.getParameter<bool>("requireOpSign");
 
-  std::vector<edm::ParameterSet> histCollConfigs = pset.getParameter<std::vector<edm::ParameterSet> >("histColls");
-  for(auto& histCollConfig: histCollConfigs){
-    histColls_.emplace_back(HLTDQMHistColl<ObjType>(histCollConfig,hltProcess_));
+  histConfigs_ = pset.getParameter<std::vector<edm::ParameterSet> >("histConfigs");
+  std::string baseHistName = pset.getParameter<std::string>("baseHistName");
+  std::vector<std::string> filtersToMonitor = pset.getParameter<std::vector<std::string> >("filtersToMonitor");
+  for(auto& filter: filtersToMonitor){
+    histColls_.emplace_back(HLTDQMHistColl<ObjType>(filter,baseHistName,hltProcess_));
   }
 
 }
@@ -310,11 +316,18 @@ void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const 
   auto trigResultsHandle = getHandle(event,trigResultsToken_);
   auto tagVIDHandle = getHandle(event,tagVIDToken_);
   auto probeVIDHandle = getHandle(event,probeVIDToken_);
-  
+
   //we need the object collection and trigger info at the minimum
   if(!objCollHandle.isValid() || !trigEvtHandle.isValid() || !trigResultsHandle.isValid()) return;
   
-  const edm::TriggerNames& trigNames = event.triggerNames(*trigResultsHandle);
+  //now check if the tag trigger fired, return if not
+  //if no trigger specified it passes
+  if(!tagTrigger_.empty()){
+    const edm::TriggerNames& trigNames = event.triggerNames(*trigResultsHandle);
+    size_t pathIndex = trigNames.triggerIndex(tagTrigger_);
+    if(pathIndex>=trigResultsHandle->size()) return; //trigger not found
+    if(!trigResultsHandle->accept(pathIndex)) return; //trigger not accepted
+  }
 
   std::vector<edm::Ref<ObjCollType> > tagRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
 							       tagFilters_,
@@ -334,18 +347,16 @@ void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const 
 
 	for(auto& histColl : histColls_){
 	  histColl.fillHists(*probeRef,event,setup,*trigEvtHandle);
-	}
-	      
+	}	      
       }//end of t&p pair cuts
     }//end of probe loop
   }//end of tag loop
-      
 }
+
 template <typename ObjType,typename ObjCollType> 
 void HLTTagAndProbeEff<ObjType,ObjCollType>::bookHists(DQMStore::IBooker& iBooker)
 {
-  for(auto& histColl:  histColls_) histColl.bookHists(iBooker);
+  for(auto& histColl:  histColls_) histColl.bookHists(iBooker,histConfigs_);
 }
-
 
 #endif

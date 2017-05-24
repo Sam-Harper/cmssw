@@ -45,7 +45,7 @@ private:
 
 HLTTagAndProbeOfflineSource::HLTTagAndProbeOfflineSource(const edm::ParameterSet& config)
 {
-  auto histCollConfigs =  config.getParameter<std::vector<edm::ParameterSet> >("histCollConfigs");
+  auto histCollConfigs =  config.getParameter<std::vector<edm::ParameterSet> >("histCollections");
   for(auto& histCollConfig : histCollConfigs){
     tagAndProbeEffs_.emplace_back(HLTTagAndProbeEff<reco::GsfElectron,reco::GsfElectronCollection>(histCollConfig,consumesCollector()));
   }
@@ -60,3 +60,6 @@ void HLTTagAndProbeOfflineSource::analyze(const edm::Event& event, const edm::Ev
 {
   for(auto& tpEff : tagAndProbeEffs_) tpEff.fill(event,setup);
 }
+
+#include "FWCore/Framework/interface/MakerMacros.h"
+DEFINE_FWK_MODULE(HLTTagAndProbeOfflineSource);
