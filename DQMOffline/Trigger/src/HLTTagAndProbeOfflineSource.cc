@@ -45,7 +45,10 @@ private:
 
 HLTTagAndProbeOfflineSource::HLTTagAndProbeOfflineSource(const edm::ParameterSet& config)
 {
-  
+  auto histCollConfigs =  config.getParameter<std::vector<edm::ParameterSet> >("histCollConfigs");
+  for(auto& histCollConfig : histCollConfigs){
+    tagAndProbeEffs_.emplace_back(HLTTagAndProbeEff<reco::GsfElectron,reco::GsfElectronCollection>(histCollConfig,consumesCollector()));
+  }
 
 }
 void HLTTagAndProbeOfflineSource::bookHistograms(DQMStore::IBooker& iBooker,const edm::Run& run,const edm::EventSetup& setup)

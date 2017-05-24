@@ -164,7 +164,7 @@ public:
     if(varName=="et") varFunc_ = &ObjType::et;
     else if(varName=="pt") varFunc_ = &ObjType::pt;
     else if(varName=="eta") varFunc_ = &ObjType::eta;
-    else if(varName=="scEta") varFunc_ = &scEtaFunc;
+    //    else if(varName=="scEta") varFunc_ = &scEtaFunc;
     else if(!varName.empty()){
       throw cms::Exception("ConfigError") <<" rangeVar "<<varName<<" not recognised"<<std::endl;
     }
@@ -194,7 +194,7 @@ public:
 template<typename ObjType>
 class RangeCutsColl {
 public:
-  explicit RangeCutsColl(edm::ParameterSet& config){
+  explicit RangeCutsColl(const edm::ParameterSet& config){
     const auto cutsConfig = config.getParameter<std::vector<edm::ParameterSet> >("cuts");
     for(const auto & cutConfig : cutsConfig) rangeCuts_.emplace_back(RangeCuts<ObjType>(cutConfig));
   }
@@ -251,7 +251,9 @@ private:
 };
 
 template <typename ObjType,typename ObjCollType> 
-HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSet& pset,edm::ConsumesCollector && cc)
+HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSet& pset,edm::ConsumesCollector && cc):
+  tagRangeCuts_(pset.getParameter<edm::ParameterSet>("tagRangeCuts")),
+  probeRangeCuts_(pset.getParameter<edm::ParameterSet>("probeRangeCuts"))
 {
   edm::InputTag trigEvtTag = pset.getParameter<edm::InputTag>("trigEvent");
 
@@ -266,10 +268,7 @@ HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSe
   tagTrigger_ = pset.getParameter<std::string>("tagTrigger");
 
   tagFilters_ = pset.getParameter<std::vector<std::string> >("tagFilters");
-  tagRangeCuts_ = pset.getParameter<edm::ParameterSet>("tagRangeCuts");
-
   probeFilters_ = pset.getParameter<std::vector<std::string> >("probeFilters");
-  probeRangeCuts_ = pset.getParameter<edm::ParameterSet>("probeRangeCuts");
   
   minMass_ = pset.getParameter<double>("minMass");
   maxMass_ = pset.getParameter<double>("maxMass");
