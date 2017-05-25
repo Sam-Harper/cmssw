@@ -25,6 +25,20 @@
 //functions we wish to add that are not direct member functions
 namespace{
   template<typename ObjType> float scEtaFunc(const ObjType& obj){return obj.superCluster()->eta();}
+ 
+  template<typename ObjType>
+  std::function<float(const ObjType&)> getFunc(const std::string& varName){  
+    std::function<float(const ObjType&)> varFunc;
+    if(varName=="et") varFunc = &ObjType::et;
+    else if(varName=="pt") varFunc = &ObjType::pt;
+    else if(varName=="eta") varFunc = &ObjType::eta;
+    else if(varName=="phi") varFunc = &ObjType::phi;
+    else if(varName=="scEta") varFunc = scEtaFunc<ObjType>;
+    else if(!varName.empty()){
+      throw cms::Exception("ConfigError") <<"var "<<varName<<" not recognised"<<std::endl;
+    }
+    return varFunc;
+  }
 }
 
 namespace{
@@ -150,6 +164,13 @@ public:
     }
     return true;
   }
+  bool operator()(const ObjType& obj,const std::vector<std::string>& varsToSkip)const{
+    for(auto& cut : rangeCuts_){
+      if(std::find(varsToSkip.begin(),varsToSkip.end(),cut.varName())!=varsToSkip.end()) continue;
+      if(!cut(obj)) return false;
+    }
+    return true;
+  }
 private:
   std::vector<RangeCuts<ObjType> > rangeCuts_;
 };
@@ -195,11 +216,12 @@ public:
   HLTDQM2DHist(TH2* hist,const std::string& xVarName,const std::string& yVarName,
 	       std::function<XValType(const ObjType&)> xFunc,
 	       std::function<YValType(const ObjType&)> yFunc):
-    xVar_(xFunc),yVar_(yFunc),varName_(varName),hist_(hist){}
+    xVar_(xFunc),yVar_(yFunc),xVarName_(xVarName),yVarName_(yVarName),hist_(hist){}
+
   void fill(const ObjType& obj,const edm::Event& event,
 	    const edm::EventSetup& setup,const RangeCutsColl<ObjType>& rangeCuts)override{
-    if(rangeCuts(obj,varName_)){ 
-      hist_->Fill(var_(obj));
+    if(rangeCuts(obj,std::vector<std::string>{xVarName_,yVarName_})){ 
+      hist_->Fill(xVar_(obj),yVar_(obj));
     }
   }
 private:
@@ -220,7 +242,9 @@ public:
   void fillHists(const ObjType& obj,const edm::Event& event,
 		 const edm::EventSetup& setup,const trigger::TriggerEvent& trigEvt);
 private:
-
+  void book1D(DQMStore::IBooker& iBooker,const edm::ParameterSet& histConfig);
+  void book2D(DQMStore::IBooker& iBooker,const edm::ParameterSet& histConfig);
+private:
   std::vector<std::unique_ptr<HLTDQMHist<ObjType> > > hists_;
   RangeCutsColl<ObjType> rangeCuts_;
   std::string filterName_;
@@ -245,26 +269,61 @@ template <typename ObjType>
 void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker,const std::vector<edm::ParameterSet>& histConfigs)
 {
   for(auto& histConfig : histConfigs){
-    auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
-    std::vector<float> binLowEdges;
-    for(double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
-    auto nameSuffex = histConfig.getParameter<std::string>("nameSuffex");
-    auto me = iBooker.book1D((baseHistName_+filterName_+nameSuffex).c_str(),
-			     (histTitle_+nameSuffex).c_str(),
-			     binLowEdges.size()-1,&binLowEdges[0]);
-    std::unique_ptr<HLTDQMHist<ObjType> > hist;
-    auto vsVar = histConfig.getParameter<std::string>("vsVar");
-    if(vsVar=="et") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::et,vsVar);
-    else if(vsVar=="pt") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::pt,vsVar);
-    else if(vsVar=="eta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::eta,vsVar);
-    else if(vsVar=="phi") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::phi,vsVar);
-    else if(vsVar=="scEta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),scEtaFunc<ObjType>,vsVar);
-    else{
-      throw cms::Exception("ConfigError") <<" vsVar "<<vsVar<<" not recognised"<<std::endl;
+    std::string histType = histConfig.getParameter<std::string>("histType");
+    if(histType=="1D"){
+      book1D(iBooker,histConfig);
+    }else if(histType=="2D"){
+      book2D(iBooker,histConfig);
+    }else{
+      throw cms::Exception("ConfigError")<<" histType "<<histType<<" not recognised"<<std::endl;
     }
-       
-    hists_.emplace_back(std::move(hist));
   }
+}
+
+template <typename ObjType>
+void HLTDQMHistColl<ObjType>::book1D(DQMStore::IBooker& iBooker,const edm::ParameterSet& histConfig)
+{
+  auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
+  std::vector<float> binLowEdges;
+  for(double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
+  auto nameSuffex = histConfig.getParameter<std::string>("nameSuffex");
+  auto me = iBooker.book1D((baseHistName_+filterName_+nameSuffex).c_str(),
+			   (histTitle_+nameSuffex).c_str(),
+			   binLowEdges.size()-1,&binLowEdges[0]);
+  std::unique_ptr<HLTDQMHist<ObjType> > hist;
+  auto vsVar = histConfig.getParameter<std::string>("vsVar");
+  auto vsVarFunc = getFunc<ObjType>(vsVar);
+  if(!vsVarFunc) {
+    throw cms::Exception("ConfigError")<<" vsVar "<<vsVar<<" is giving null ptr (likely empty)"<<std::endl;
+  }
+  hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),vsVar,vsVarFunc); 
+  hists_.emplace_back(std::move(hist));
+}
+template <typename ObjType>
+void HLTDQMHistColl<ObjType>::book2D(DQMStore::IBooker& iBooker,const edm::ParameterSet& histConfig)
+{
+  auto xBinLowEdgesDouble = histConfig.getParameter<std::vector<double> >("xBinLowEdges");
+  auto yBinLowEdgesDouble = histConfig.getParameter<std::vector<double> >("yBinLowEdges");
+  std::vector<float> xBinLowEdges;
+  std::vector<float> yBinLowEdges;
+  for(double lowEdge : xBinLowEdgesDouble) xBinLowEdges.push_back(lowEdge);
+  for(double lowEdge : yBinLowEdgesDouble) yBinLowEdges.push_back(lowEdge);
+  auto nameSuffex = histConfig.getParameter<std::string>("nameSuffex");
+  auto me = iBooker.book2D((baseHistName_+filterName_+nameSuffex).c_str(),
+			   (histTitle_+nameSuffex).c_str(),
+			   xBinLowEdges.size()-1,&xBinLowEdges[0],
+			   yBinLowEdges.size()-1,&yBinLowEdges[0]);
+  std::unique_ptr<HLTDQMHist<ObjType> > hist;
+  auto xVar = histConfig.getParameter<std::string>("xVar");
+  auto yVar = histConfig.getParameter<std::string>("yVar");
+  auto xVarFunc = getFunc<ObjType>(xVar);
+  auto yVarFunc = getFunc<ObjType>(yVar);
+  if(!xVarFunc || !yVarFunc) {
+    throw cms::Exception("ConfigError")<<" xVar "<<xVar<<" or yVar "<<yVar<<" is giving null ptr (likely empty)"<<std::endl;
+  }
+  //really? really no MonitorElement::getTH2...sigh
+  hist = std::make_unique<HLTDQM2DHist<ObjType,float> >(static_cast<TH2*>(me->getTH1()),xVar,yVar,xVarFunc,yVarFunc); 
+  hists_.emplace_back(std::move(hist));
 }
 
 template <typename ObjType>
