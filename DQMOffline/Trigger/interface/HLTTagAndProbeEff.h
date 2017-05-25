@@ -4,6 +4,7 @@
 
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
+#include "FWCore/Utilities/interface/RegexMatch.h"
 
 #include "DQMServices/Core/interface/DQMStore.h"
 #include "DQMServices/Core/interface/MonitorElement.h"
@@ -50,10 +51,35 @@ namespace{
   bool passTrig(const float objEta,float objPhi, const trigger::TriggerEvent& trigEvt,
 		const std::vector<std::string>& filterNames,const std::string& processName){
     for(auto& filterName : filterNames){
-      if(!passTrig(objEta,objPhi,trigEvt,filterName,processName)) return false;
+      if(passTrig(objEta,objPhi,trigEvt,filterName,processName)==false) return false;
     }
     return true;
   }
+   //inspired by https://github.com/cms-sw/cmssw/blob/fc4f8bbe1258790e46e2d554aacea15c3e5d9afa/HLTrigger/HLTfilters/src/HLTHighLevel.cc#L124-L165
+   //triggers are ORed together
+   //empty pattern is auto pass
+  bool passTrig(const std::string& trigPattern,const edm::TriggerNames& trigNames,const edm::TriggerResults& trigResults){
+    
+    if(trigPattern.empty()) return true;
+    
+    std::vector<std::string> trigNamesToPass;
+    if(edm::is_glob(trigPattern)){
+     
+      //matches is vector of string iterators
+      const auto& matches = edm::regexMatch(trigNames.triggerNames(),trigPattern);
+      for(auto& name : matches) trigNamesToPass.push_back(*name);
+    }else{
+      trigNamesToPass.push_back(trigPattern); //not a pattern, much be a path
+    }
+    for(auto& trigName : trigNamesToPass){
+      size_t pathIndex = trigNames.triggerIndex(trigName);
+      if(pathIndex<trigResults.size() && 
+	 trigResults.accept(pathIndex)) return true; 
+    }
+    
+    return false;
+  }
+  
   template<typename T> edm::Handle<T> getHandle(const edm::Event& event,const edm::EDGetTokenT<T>& token){
     edm::Handle<T> handle;
     event.getByToken(token,handle);
@@ -302,11 +328,11 @@ getPassingRefs(const edm::Handle<ObjCollType>& objCollHandle,
        passTrig(ref->eta(),ref->phi(),trigEvt,filterNames,hltProcess_) && 
        (vidHandle.isValid()==false || (*vidHandle)[ref]==true)){
       passingRefs.push_back(ref);
-      
     }
   }
   return passingRefs;
 }
+
 
 template <typename ObjType,typename ObjCollType> 
 void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const edm::EventSetup& setup)
@@ -322,20 +348,16 @@ void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const 
   
   //now check if the tag trigger fired, return if not
   //if no trigger specified it passes
-  if(!tagTrigger_.empty()){
-    const edm::TriggerNames& trigNames = event.triggerNames(*trigResultsHandle);
-    size_t pathIndex = trigNames.triggerIndex(tagTrigger_);
-    if(pathIndex>=trigResultsHandle->size()) return; //trigger not found
-    if(!trigResultsHandle->accept(pathIndex)) return; //trigger not accepted
-  }
+  const edm::TriggerNames& trigNames = event.triggerNames(*trigResultsHandle);
+  if(passTrig(tagTrigger_,trigNames,*trigResultsHandle)==false) return;
 
+  
   std::vector<edm::Ref<ObjCollType> > tagRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
 							       tagFilters_,
 							       tagVIDHandle,tagRangeCuts_);
   std::vector<edm::Ref<ObjCollType> > probeRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
 								 probeFilters_,
 								 probeVIDHandle,probeRangeCuts_);
-  
   for(auto& tagRef : tagRefs){
     for(auto& probeRef : probeRefs){
       if(tagRef==probeRef) continue; //otherwise its the same object...
