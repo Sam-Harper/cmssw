@@ -103,14 +103,7 @@ class RangeCuts {
 public:
   RangeCuts(const edm::ParameterSet& config){
     varName_ = config.getParameter<std::string>("rangeVar");
-    if(varName_=="et") varFunc_ = &ObjType::et;
-    else if(varName_=="pt") varFunc_ = &ObjType::pt;
-    else if(varName_=="eta") varFunc_ = &ObjType::eta;
-    else if(varName_=="phi") varFunc_ = &ObjType::phi;
-    else if(varName_=="scEta") varFunc_ = scEtaFunc<ObjType>;
-    else if(!varName_.empty()){
-      throw cms::Exception("ConfigError") <<" rangeVar "<<varName_<<" not recognised"<<std::endl;
-    }
+    varFunc_ = getFunc<ObjType>(varName_);
     auto ranges = config.getParameter<std::vector<std::string> >("allowedRanges");
     for(auto range: ranges){
       std::vector<std::string> splitRange;
@@ -245,7 +238,7 @@ public:
 			  const std::string& baseHistName,
 			  const std::string& hltProcess);
   void bookHists(DQMStore::IBooker& iBooker,const std::vector<edm::ParameterSet>& histConfigs);
-  void fillHists(const ObjType& obj,const edm::Event& event,
+  void fillHists(const ObjType& tag,const ObjType& probe,const edm::Event& event,
 		 const edm::EventSetup& setup,const trigger::TriggerEvent& trigEvt);
 private:
   void book1D(DQMStore::IBooker& iBooker,const edm::ParameterSet& histConfig);
@@ -255,6 +248,7 @@ private:
   std::vector<std::unique_ptr<HLTDQMHist<ObjType> > > histsTot_;
   RangeCutsColl<ObjType> rangeCuts_;
   std::string filterName_;
+  std::string tagExtraFilter_;
   std::string baseHistName_;
   std::string histTitle_;
   std::string folderName_;
@@ -267,7 +261,8 @@ HLTDQMHistColl<ObjType>::HLTDQMHistColl(const edm::ParameterSet& config,
 					const std::string& baseHistName,
 					const std::string& hltProcess):
   rangeCuts_(config.getParameter<std::vector<edm::ParameterSet> >("rangeCuts")),
-  filterName_(config.getParameter<std::string>("filterName")),
+  filterName_(config.getParameter<std::string>("filterName")), 
+  tagExtraFilter_(config.getParameter<std::string>("tagExtraFilter")), 
   baseHistName_(baseHistName),
   histTitle_(config.getParameter<std::string>("histTitle")),
   folderName_(config.getParameter<std::string>("folderName")),
@@ -359,21 +354,23 @@ void HLTDQMHistColl<ObjType>::book2D(DQMStore::IBooker& iBooker,const edm::Param
 }
 
 template <typename ObjType>
-void HLTDQMHistColl<ObjType>::fillHists(const ObjType& obj,
+void HLTDQMHistColl<ObjType>::fillHists(const ObjType& tag,
+					const ObjType& probe,
 					const edm::Event& event,
 					const edm::EventSetup& setup,
 					const trigger::TriggerEvent& trigEvt)
 {
-
-  for(auto& hist : histsTot_){
-    hist->fill(obj,event,setup,rangeCuts_); 
-  }
-  
-  if(passTrig(obj.eta(),obj.phi(),trigEvt,filterName_,hltProcess_)){
-    for(auto& hist : histsPass_){
-      hist->fill(obj,event,setup,rangeCuts_); 
+  if(tagExtraFilter_.empty() || passTrig(tag.eta(),tag.phi(),trigEvt,tagExtraFilter_,hltProcess_)){
+    for(auto& hist : histsTot_){
+      hist->fill(probe,event,setup,rangeCuts_); 
     }
-	
+    
+    if(passTrig(probe.eta(),probe.phi(),trigEvt,filterName_,hltProcess_)){
+      for(auto& hist : histsPass_){
+	hist->fill(probe,event,setup,rangeCuts_); 
+      }
+      
+    }
   }
 }
 
@@ -487,30 +484,29 @@ void HLTTagAndProbeEff<ObjType,ObjCollType>::fill(const edm::Event& event,const 
 
   //we need the object collection and trigger info at the minimum
   if(!objCollHandle.isValid() || !trigEvtHandle.isValid() || !trigResultsHandle.isValid()) return;
-  
+
   //now check if the tag trigger fired, return if not
   //if no trigger specified it passes
   const edm::TriggerNames& trigNames = event.triggerNames(*trigResultsHandle);
   if(passTrig(tagTrigger_,trigNames,*trigResultsHandle)==false) return;
-
   
   std::vector<edm::Ref<ObjCollType> > tagRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
 							       tagFilters_,
 							       tagVIDHandle,tagRangeCuts_);
+
   std::vector<edm::Ref<ObjCollType> > probeRefs = getPassingRefs(objCollHandle,*trigEvtHandle,
 								 probeFilters_,
 								 probeVIDHandle,probeRangeCuts_);
+
   for(auto& tagRef : tagRefs){
     for(auto& probeRef : probeRefs){
       if(tagRef==probeRef) continue; //otherwise its the same object...
       float mass = (tagRef->p4()+probeRef->p4()).mag();
-      
       if( ( mass>minMass_ || minMass_<0 ) && 
 	  ( mass<maxMass_ || maxMass_<0 ) && 
 	  ( !requireOpSign_ || tagRef->charge()!=probeRef->charge()) ){
-
 	for(auto& histColl : histColls_){
-	  histColl.fillHists(*probeRef,event,setup,*trigEvtHandle);
+	  histColl.fillHists(*tagRef,*probeRef,event,setup,*trigEvtHandle);
 	}	      
       }//end of t&p pair cuts
     }//end of probe loop
