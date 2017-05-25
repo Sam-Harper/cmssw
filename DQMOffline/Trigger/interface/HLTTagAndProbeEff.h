@@ -24,11 +24,7 @@
 
 //functions we wish to add that are not direct member functions
 namespace{
-  template<typename ObjType> 
-    float scEtaFunc(const ObjType& obj)
-  {
-    return obj.superCluster()->eta();
-  }
+  template<typename ObjType> float scEtaFunc(const ObjType& obj){return obj.superCluster()->eta();}
 }
 
 namespace{
@@ -87,6 +83,77 @@ namespace{
   }
 }
 
+
+template<typename ObjType>
+class RangeCuts {
+public:
+  RangeCuts(const edm::ParameterSet& config){
+    varName_ = config.getParameter<std::string>("rangeVar");
+    std::cout <<"rangeVar "<<varName_<<std::endl;
+    if(varName_=="et") varFunc_ = &ObjType::et;
+    else if(varName_=="pt") varFunc_ = &ObjType::pt;
+    else if(varName_=="eta") varFunc_ = &ObjType::eta;
+    else if(varName_=="phi") varFunc_ = &ObjType::phi;
+    else if(varName_=="scEta") varFunc_ = scEtaFunc<ObjType>;
+    else if(!varName_.empty()){
+      throw cms::Exception("ConfigError") <<" rangeVar "<<varName_<<" not recognised"<<std::endl;
+    }
+    auto ranges = config.getParameter<std::vector<std::string> >("allowedRanges");
+    for(auto range: ranges){
+      std::vector<std::string> splitRange;
+      boost::split(splitRange,range,boost::is_any_of(":"));
+      if(splitRange.size()!=2) throw cms::Exception("ConfigError") <<"range "<<range<<" is not of format X:Y"<<std::endl;
+      allowedRanges_.push_back({std::stof(splitRange[0]),std::stof(splitRange[1])});
+      std::cout <<"range "<<std::stof(splitRange[0])<<" "<<std::stof(splitRange[1])<<std::endl;
+    }
+  }
+  bool operator()(const ObjType& obj)const{
+    if(!varFunc_) return true; //auto pass if we dont specify a variable function
+    else{ 
+      float varVal = varFunc_(obj);
+      for(auto& range : allowedRanges_){
+	if(varVal>=range.first && varVal<range.second) return true;
+      }
+      return false;
+    }
+  }
+  const std::string& varName()const{return varName_;}
+  private:
+  std::string varName_;
+  std::function<float(const ObjType&)> varFunc_;
+  std::vector<std::pair<float,float> > allowedRanges_;
+};
+
+template<typename ObjType>
+class RangeCutsColl {
+public:
+  explicit RangeCutsColl(const std::vector<edm::ParameterSet>& configs){
+    for(const auto & cutConfig : configs) rangeCuts_.emplace_back(RangeCuts<ObjType>(cutConfig));
+  }
+  //if no cuts are defined, it returns true
+  bool operator()(const ObjType& obj)const{
+    for(auto& cut : rangeCuts_){
+      if(!cut(obj)) return false;
+    }
+    return true;
+  }
+  //if no cuts are defined, it returns true
+  //this version allows us to skip a range check for a specificed variable
+  //okay this feature requirement was missed in the initial (very rushed) design phase
+  //and thats why its now hacked in 
+  //basically if you're applying an Et cut, you want to automatically turn it of
+  //when you're making a turn on curve...
+  bool operator()(const ObjType& obj,const std::string& varToSkip)const{
+    for(auto& cut : rangeCuts_){
+      if(cut.varName()==varToSkip) continue;
+      if(!cut(obj)) return false;
+    }
+    return true;
+  }
+private:
+  std::vector<RangeCuts<ObjType> > rangeCuts_;
+};
+
 //our base class for our histograms
 //takes an object, edm::Event,edm::EventSetup and fills the histogram
 //with the predetermined variable (or varaibles) 
@@ -95,7 +162,8 @@ class HLTDQMHist {
 public:
   HLTDQMHist()=default;
   virtual ~HLTDQMHist()=default;
-  virtual void fill(const ObjType& objType,const edm::Event& event,const edm::EventSetup& setup)=0;
+  virtual void fill(const ObjType& objType,const edm::Event& event,
+		    const edm::EventSetup& setup,const RangeCutsColl<ObjType>& rangeCuts)=0;
 };
 
 
@@ -106,22 +174,47 @@ public:
 template <typename ObjType,typename ValType> 
 class HLTDQM1DHist : public HLTDQMHist<ObjType> {
 public:
-  HLTDQM1DHist(TH1* hist,std::function<ValType(const ObjType&)> func):var_(func),hist_(hist){}
-  void fill(const ObjType& objType,const edm::Event& event,const edm::EventSetup& setup)override{
-    hist_->Fill(var_(objType));
+  HLTDQM1DHist(TH1* hist,const std::string& varName,
+	       std::function<ValType(const ObjType&)> func):
+    var_(func),varName_(varName),hist_(hist){}
+  void fill(const ObjType& obj,const edm::Event& event,
+	    const edm::EventSetup& setup,const RangeCutsColl<ObjType>& rangeCuts)override{
+    if(rangeCuts(obj,varName_)){ 
+      hist_->Fill(var_(obj));
+    }
   }
 private:
   std::function<ValType(const ObjType&)> var_;
+  std::string varName_;
   TH1* hist_; //we do not own this
 };
 
+template <typename ObjType,typename XValType,typename YValType=XValType> 
+class HLTDQM2DHist : public HLTDQMHist<ObjType> {
+public:
+  HLTDQM2DHist(TH2* hist,const std::string& xVarName,const std::string& yVarName,
+	       std::function<XValType(const ObjType&)> xFunc,
+	       std::function<YValType(const ObjType&)> yFunc):
+    xVar_(xFunc),yVar_(yFunc),varName_(varName),hist_(hist){}
+  void fill(const ObjType& obj,const edm::Event& event,
+	    const edm::EventSetup& setup,const RangeCutsColl<ObjType>& rangeCuts)override{
+    if(rangeCuts(obj,varName_)){ 
+      hist_->Fill(var_(obj));
+    }
+  }
+private:
+  std::function<XValType(const ObjType&)> xVar_;
+  std::function<YValType(const ObjType&)> yVar_;
+  std::string xVarName_;
+  std::string yVarName_;
+  TH2* hist_; //we do not own this
+};
 
 template <typename ObjType> 
 class HLTDQMHistColl {
 public:
   
-  explicit HLTDQMHistColl(const std::string& filterName,
-			  const std::string& baseHistName,
+  explicit HLTDQMHistColl(const edm::ParameterSet& config,
 			  const std::string& hltProcess);
   void bookHists(DQMStore::IBooker& iBooker,const std::vector<edm::ParameterSet>& histConfigs);
   void fillHists(const ObjType& obj,const edm::Event& event,
@@ -129,17 +222,20 @@ public:
 private:
 
   std::vector<std::unique_ptr<HLTDQMHist<ObjType> > > hists_;
+  RangeCutsColl<ObjType> rangeCuts_;
   std::string filterName_;
   std::string baseHistName_;
+  std::string histTitle_;
   std::string hltProcess_;
 };
 
 template <typename ObjType> 
-HLTDQMHistColl<ObjType>::HLTDQMHistColl(const std::string& filterName,
-					const std::string& baseHistName,
+HLTDQMHistColl<ObjType>::HLTDQMHistColl(const edm::ParameterSet& config,
 					const std::string& hltProcess):
-  filterName_(filterName),
-  baseHistName_(baseHistName),
+  rangeCuts_(config.getParameter<std::vector<edm::ParameterSet> >("rangeCuts")),
+  filterName_(config.getParameter<std::string>("filterName")),
+  baseHistName_(config.getParameter<std::string>("baseHistName")),
+  histTitle_(config.getParameter<std::string>("histTitle")),
   hltProcess_(hltProcess)
 {
   
@@ -153,14 +249,16 @@ void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker,const std::ve
     std::vector<float> binLowEdges;
     for(double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
     auto nameSuffex = histConfig.getParameter<std::string>("nameSuffex");
-    auto me = iBooker.book1D((baseHistName_+nameSuffex).c_str(),(baseHistName_+nameSuffex).c_str(),
+    auto me = iBooker.book1D((baseHistName_+filterName_+nameSuffex).c_str(),
+			     (histTitle_+nameSuffex).c_str(),
 			     binLowEdges.size()-1,&binLowEdges[0]);
     std::unique_ptr<HLTDQMHist<ObjType> > hist;
     auto vsVar = histConfig.getParameter<std::string>("vsVar");
-    if(vsVar=="et") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::et);
-    else if(vsVar=="pt") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::pt);
-    else if(vsVar=="eta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::eta);
-    else if(vsVar=="scEta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),scEtaFunc<ObjType>);
+    if(vsVar=="et") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::et,vsVar);
+    else if(vsVar=="pt") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::pt,vsVar);
+    else if(vsVar=="eta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::eta,vsVar);
+    else if(vsVar=="phi") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),&ObjType::phi,vsVar);
+    else if(vsVar=="scEta") hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),scEtaFunc<ObjType>,vsVar);
     else{
       throw cms::Exception("ConfigError") <<" vsVar "<<vsVar<<" not recognised"<<std::endl;
     }
@@ -179,64 +277,11 @@ void HLTDQMHistColl<ObjType>::fillHists(const ObjType& obj,
   if(filterName_.empty() || passTrig(obj.eta(),obj.phi(),trigEvt,filterName_,hltProcess_)){
 
     for(auto& hist : hists_){
-      hist->fill(obj,event,setup); 
+	hist->fill(obj,event,setup,rangeCuts_); 
     }
   }
 }
 
-template<typename ObjType>
-class RangeCuts {
-public:
-  RangeCuts(const edm::ParameterSet& config){
-    auto varName = config.getParameter<std::string>("rangeVar");
-
-    if(varName=="et") varFunc_ = &ObjType::et;
-    else if(varName=="pt") varFunc_ = &ObjType::pt;
-    else if(varName=="eta") varFunc_ = &ObjType::eta;
-    else if(varName=="scEta") varFunc_ = scEtaFunc<ObjType>;
-    else if(!varName.empty()){
-      throw cms::Exception("ConfigError") <<" rangeVar "<<varName<<" not recognised"<<std::endl;
-    }
-    auto ranges = config.getParameter<std::vector<std::string> >("allowedRanges");
-    for(auto range: ranges){
-      std::vector<std::string> splitRange;
-      boost::split(splitRange,range,boost::is_any_of(":"));
-      if(splitRange.size()!=2) throw cms::Exception("ConfigError") <<"range "<<range<<" is not of format X:Y"<<std::endl;
-      allowedRanges_.push_back({std::stof(splitRange[0]),std::stof(splitRange[1])});
-    }
-  }
-  bool operator()(const ObjType& obj)const{
-    if(!varFunc_) return true; //auto pass if we dont specify a variable function
-    else{ 
-      float varVal = varFunc_(obj);
-      for(auto& range : allowedRanges_){
-	if(varVal>=range.first && varVal<range.second) return true;
-      }
-      return false;
-    }
-  }
-  private:
-  std::function<float(const ObjType&)> varFunc_;
-  std::vector<std::pair<float,float> > allowedRanges_;
-};
-
-template<typename ObjType>
-class RangeCutsColl {
-public:
-  explicit RangeCutsColl(const edm::ParameterSet& config){
-    const auto cutsConfig = config.getParameter<std::vector<edm::ParameterSet> >("cuts");
-    for(const auto & cutConfig : cutsConfig) rangeCuts_.emplace_back(RangeCuts<ObjType>(cutConfig));
-  }
-  //if no cuts are defined, it returns true
-  bool operator()(const ObjType& obj)const{
-    for(auto& cut : rangeCuts_){
-      if(!cut(obj)) return false;
-    }
-    return true;
-  }
-private:
-  std::vector<RangeCuts<ObjType> > rangeCuts_;
-};
 
 template <typename ObjType,typename ObjCollType> 
 class HLTTagAndProbeEff {
@@ -282,8 +327,8 @@ private:
 
 template <typename ObjType,typename ObjCollType> 
 HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSet& pset,edm::ConsumesCollector && cc):
-  tagRangeCuts_(pset.getParameter<edm::ParameterSet>("tagRangeCuts")),
-  probeRangeCuts_(pset.getParameter<edm::ParameterSet>("probeRangeCuts"))
+  tagRangeCuts_(pset.getParameter<std::vector<edm::ParameterSet> >("tagRangeCuts")),
+  probeRangeCuts_(pset.getParameter<std::vector<edm::ParameterSet> >("probeRangeCuts"))
 {
   edm::InputTag trigEvtTag = pset.getParameter<edm::InputTag>("trigEvent");
 
@@ -305,10 +350,10 @@ HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSe
   requireOpSign_ = pset.getParameter<bool>("requireOpSign");
 
   histConfigs_ = pset.getParameter<std::vector<edm::ParameterSet> >("histConfigs");
-  std::string baseHistName = pset.getParameter<std::string>("baseHistName");
-  std::vector<std::string> filtersToMonitor = pset.getParameter<std::vector<std::string> >("filtersToMonitor");
-  for(auto& filter: filtersToMonitor){
-    histColls_.emplace_back(HLTDQMHistColl<ObjType>(filter,baseHistName,hltProcess_));
+  const auto& histCollConfigs = pset.getParameter<std::vector<edm::ParameterSet> >("histCollConfigs");
+  
+  for(auto& config: histCollConfigs){
+    histColls_.emplace_back(HLTDQMHistColl<ObjType>(config,hltProcess_));
   }
 
 }
