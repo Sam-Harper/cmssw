@@ -103,7 +103,6 @@ class RangeCuts {
 public:
   RangeCuts(const edm::ParameterSet& config){
     varName_ = config.getParameter<std::string>("rangeVar");
-    std::cout <<"rangeVar "<<varName_<<std::endl;
     if(varName_=="et") varFunc_ = &ObjType::et;
     else if(varName_=="pt") varFunc_ = &ObjType::pt;
     else if(varName_=="eta") varFunc_ = &ObjType::eta;
@@ -118,7 +117,6 @@ public:
       boost::split(splitRange,range,boost::is_any_of(":"));
       if(splitRange.size()!=2) throw cms::Exception("ConfigError") <<"range "<<range<<" is not of format X:Y"<<std::endl;
       allowedRanges_.push_back({std::stof(splitRange[0]),std::stof(splitRange[1])});
-      std::cout <<"range "<<std::stof(splitRange[0])<<" "<<std::stof(splitRange[1])<<std::endl;
     }
   }
   bool operator()(const ObjType& obj)const{
@@ -196,17 +194,19 @@ template <typename ObjType,typename ValType>
 class HLTDQM1DHist : public HLTDQMHist<ObjType> {
 public:
   HLTDQM1DHist(TH1* hist,const std::string& varName,
-	       std::function<ValType(const ObjType&)> func):
-    var_(func),varName_(varName),hist_(hist){}
+	       std::function<ValType(const ObjType&)> func,
+	       const RangeCutsColl<ObjType>& rangeCuts):
+    var_(func),varName_(varName),localRangeCuts_(rangeCuts),hist_(hist){}
   void fill(const ObjType& obj,const edm::Event& event,
-	    const edm::EventSetup& setup,const RangeCutsColl<ObjType>& rangeCuts)override{
-    if(rangeCuts(obj,varName_)){ 
+	    const edm::EventSetup& setup,const RangeCutsColl<ObjType>& globalRangeCuts)override{
+    if(globalRangeCuts(obj,varName_) && localRangeCuts_(obj)){  //local range cuts are specific to a histogram so dont ignore variables like global ones (all local cuts should be approprate)
       hist_->Fill(var_(obj));
     }
   }
 private:
   std::function<ValType(const ObjType&)> var_;
   std::string varName_;
+  RangeCutsColl<ObjType> localRangeCuts_;
   TH1* hist_; //we do not own this
 };
 
@@ -215,12 +215,16 @@ class HLTDQM2DHist : public HLTDQMHist<ObjType> {
 public:
   HLTDQM2DHist(TH2* hist,const std::string& xVarName,const std::string& yVarName,
 	       std::function<XValType(const ObjType&)> xFunc,
-	       std::function<YValType(const ObjType&)> yFunc):
-    xVar_(xFunc),yVar_(yFunc),xVarName_(xVarName),yVarName_(yVarName),hist_(hist){}
+	       std::function<YValType(const ObjType&)> yFunc,
+	       const RangeCutsColl<ObjType>& rangeCuts):
+    xVar_(xFunc),yVar_(yFunc),
+    xVarName_(xVarName),yVarName_(yVarName),
+    localRangeCuts_(rangeCuts),hist_(hist){}
 
   void fill(const ObjType& obj,const edm::Event& event,
-	    const edm::EventSetup& setup,const RangeCutsColl<ObjType>& rangeCuts)override{
-    if(rangeCuts(obj,std::vector<std::string>{xVarName_,yVarName_})){ 
+	    const edm::EventSetup& setup,const RangeCutsColl<ObjType>& globalRangeCuts)override{
+    if(globalRangeCuts(obj,std::vector<std::string>{xVarName_,yVarName_}) &&
+       localRangeCuts_(obj)){  //local range cuts are specific to a histogram so dont ignore variables like global ones (all local cuts should be approprate)
       hist_->Fill(xVar_(obj),yVar_(obj));
     }
   }
@@ -229,6 +233,7 @@ private:
   std::function<YValType(const ObjType&)> yVar_;
   std::string xVarName_;
   std::string yVarName_;
+  RangeCutsColl<ObjType> localRangeCuts_;
   TH2* hist_; //we do not own this
 };
 
@@ -237,6 +242,7 @@ class HLTDQMHistColl {
 public:
   
   explicit HLTDQMHistColl(const edm::ParameterSet& config,
+			  const std::string& baseHistName,
 			  const std::string& hltProcess);
   void bookHists(DQMStore::IBooker& iBooker,const std::vector<edm::ParameterSet>& histConfigs);
   void fillHists(const ObjType& obj,const edm::Event& event,
@@ -245,21 +251,26 @@ private:
   void book1D(DQMStore::IBooker& iBooker,const edm::ParameterSet& histConfig);
   void book2D(DQMStore::IBooker& iBooker,const edm::ParameterSet& histConfig);
 private:
-  std::vector<std::unique_ptr<HLTDQMHist<ObjType> > > hists_;
+  std::vector<std::unique_ptr<HLTDQMHist<ObjType> > > histsPass_;
+  std::vector<std::unique_ptr<HLTDQMHist<ObjType> > > histsTot_;
   RangeCutsColl<ObjType> rangeCuts_;
   std::string filterName_;
   std::string baseHistName_;
   std::string histTitle_;
+  std::string folderName_;
   std::string hltProcess_;
+
 };
 
 template <typename ObjType> 
 HLTDQMHistColl<ObjType>::HLTDQMHistColl(const edm::ParameterSet& config,
+					const std::string& baseHistName,
 					const std::string& hltProcess):
   rangeCuts_(config.getParameter<std::vector<edm::ParameterSet> >("rangeCuts")),
   filterName_(config.getParameter<std::string>("filterName")),
-  baseHistName_(config.getParameter<std::string>("baseHistName")),
+  baseHistName_(baseHistName),
   histTitle_(config.getParameter<std::string>("histTitle")),
+  folderName_(config.getParameter<std::string>("folderName")),
   hltProcess_(hltProcess)
 {
   
@@ -268,6 +279,7 @@ HLTDQMHistColl<ObjType>::HLTDQMHistColl(const edm::ParameterSet& config,
 template <typename ObjType>
 void HLTDQMHistColl<ObjType>::bookHists(DQMStore::IBooker& iBooker,const std::vector<edm::ParameterSet>& histConfigs)
 {
+  iBooker.setCurrentFolder(folderName_);
   for(auto& histConfig : histConfigs){
     std::string histType = histConfig.getParameter<std::string>("histType");
     if(histType=="1D"){
@@ -287,18 +299,26 @@ void HLTDQMHistColl<ObjType>::book1D(DQMStore::IBooker& iBooker,const edm::Param
   std::vector<float> binLowEdges;
   for(double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
   auto nameSuffex = histConfig.getParameter<std::string>("nameSuffex");
-  auto me = iBooker.book1D((baseHistName_+filterName_+nameSuffex).c_str(),
-			   (histTitle_+nameSuffex).c_str(),
-			   binLowEdges.size()-1,&binLowEdges[0]);
+  auto mePass = iBooker.book1D((baseHistName_+filterName_+nameSuffex+"_pass").c_str(),
+			       (histTitle_+nameSuffex+" Pass").c_str(),
+			       binLowEdges.size()-1,&binLowEdges[0]);
   std::unique_ptr<HLTDQMHist<ObjType> > hist;
   auto vsVar = histConfig.getParameter<std::string>("vsVar");
   auto vsVarFunc = getFunc<ObjType>(vsVar);
   if(!vsVarFunc) {
     throw cms::Exception("ConfigError")<<" vsVar "<<vsVar<<" is giving null ptr (likely empty)"<<std::endl;
   }
-  hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(me->getTH1(),vsVar,vsVarFunc); 
-  hists_.emplace_back(std::move(hist));
+  RangeCutsColl<ObjType> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
+  hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(mePass->getTH1(),vsVar,vsVarFunc,rangeCuts); 
+  histsPass_.emplace_back(std::move(hist));
+  auto meTot = iBooker.book1D((baseHistName_+filterName_+nameSuffex+"_tot").c_str(),
+			      (histTitle_+nameSuffex+" Total").c_str(),
+			      binLowEdges.size()-1,&binLowEdges[0]);
+  hist = std::make_unique<HLTDQM1DHist<ObjType,float> >(meTot->getTH1(),vsVar,vsVarFunc,rangeCuts); 
+  histsTot_.emplace_back(std::move(hist));
+  
 }
+
 template <typename ObjType>
 void HLTDQMHistColl<ObjType>::book2D(DQMStore::IBooker& iBooker,const edm::ParameterSet& histConfig)
 {
@@ -309,10 +329,10 @@ void HLTDQMHistColl<ObjType>::book2D(DQMStore::IBooker& iBooker,const edm::Param
   for(double lowEdge : xBinLowEdgesDouble) xBinLowEdges.push_back(lowEdge);
   for(double lowEdge : yBinLowEdgesDouble) yBinLowEdges.push_back(lowEdge);
   auto nameSuffex = histConfig.getParameter<std::string>("nameSuffex");
-  auto me = iBooker.book2D((baseHistName_+filterName_+nameSuffex).c_str(),
-			   (histTitle_+nameSuffex).c_str(),
-			   xBinLowEdges.size()-1,&xBinLowEdges[0],
-			   yBinLowEdges.size()-1,&yBinLowEdges[0]);
+  auto mePass = iBooker.book2D((baseHistName_+filterName_+nameSuffex+"_pass").c_str(),
+			       (histTitle_+nameSuffex+" Pass").c_str(),
+ 			       xBinLowEdges.size()-1,&xBinLowEdges[0],
+			       yBinLowEdges.size()-1,&yBinLowEdges[0]);
   std::unique_ptr<HLTDQMHist<ObjType> > hist;
   auto xVar = histConfig.getParameter<std::string>("xVar");
   auto yVar = histConfig.getParameter<std::string>("yVar");
@@ -321,9 +341,21 @@ void HLTDQMHistColl<ObjType>::book2D(DQMStore::IBooker& iBooker,const edm::Param
   if(!xVarFunc || !yVarFunc) {
     throw cms::Exception("ConfigError")<<" xVar "<<xVar<<" or yVar "<<yVar<<" is giving null ptr (likely empty)"<<std::endl;
   }
+  RangeCutsColl<ObjType> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
+  
+
   //really? really no MonitorElement::getTH2...sigh
-  hist = std::make_unique<HLTDQM2DHist<ObjType,float> >(static_cast<TH2*>(me->getTH1()),xVar,yVar,xVarFunc,yVarFunc); 
-  hists_.emplace_back(std::move(hist));
+  hist = std::make_unique<HLTDQM2DHist<ObjType,float> >(static_cast<TH2*>(mePass->getTH1()),xVar,yVar,xVarFunc,yVarFunc,rangeCuts); 
+  histsPass_.emplace_back(std::move(hist));
+  
+  auto meTot = iBooker.book2D((baseHistName_+filterName_+nameSuffex+"_tot").c_str(),
+			      (histTitle_+nameSuffex+" Total").c_str(),
+			      xBinLowEdges.size()-1,&xBinLowEdges[0],
+			      yBinLowEdges.size()-1,&yBinLowEdges[0]);
+
+  hist = std::make_unique<HLTDQM2DHist<ObjType,float> >(static_cast<TH2*>(meTot->getTH1()),xVar,yVar,xVarFunc,yVarFunc,rangeCuts); 
+  
+  histsTot_.emplace_back(std::move(hist));
 }
 
 template <typename ObjType>
@@ -332,12 +364,16 @@ void HLTDQMHistColl<ObjType>::fillHists(const ObjType& obj,
 					const edm::EventSetup& setup,
 					const trigger::TriggerEvent& trigEvt)
 {
-  //we auto pass if no filter is fiven
-  if(filterName_.empty() || passTrig(obj.eta(),obj.phi(),trigEvt,filterName_,hltProcess_)){
 
-    for(auto& hist : hists_){
-	hist->fill(obj,event,setup,rangeCuts_); 
+  for(auto& hist : histsTot_){
+    hist->fill(obj,event,setup,rangeCuts_); 
+  }
+  
+  if(passTrig(obj.eta(),obj.phi(),trigEvt,filterName_,hltProcess_)){
+    for(auto& hist : histsPass_){
+      hist->fill(obj,event,setup,rangeCuts_); 
     }
+	
   }
 }
 
@@ -411,8 +447,10 @@ HLTTagAndProbeEff<ObjType,ObjCollType>::HLTTagAndProbeEff(const edm::ParameterSe
   histConfigs_ = pset.getParameter<std::vector<edm::ParameterSet> >("histConfigs");
   const auto& histCollConfigs = pset.getParameter<std::vector<edm::ParameterSet> >("histCollConfigs");
   
+  std::string baseHistName = pset.getParameter<std::string>("baseHistName");
+
   for(auto& config: histCollConfigs){
-    histColls_.emplace_back(HLTDQMHistColl<ObjType>(config,hltProcess_));
+    histColls_.emplace_back(HLTDQMHistColl<ObjType>(config,baseHistName,hltProcess_));
   }
 
 }
