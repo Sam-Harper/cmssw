@@ -1,16 +1,10 @@
 import FWCore.ParameterSet.Config as cms
 
+#this is the config to define t&p based DQM offline monitoring for e/gamma
 
-etBinsLow=cms.PSet(
-    vsVar=cms.string("et"),
-    nameSuffex=cms.string("_vsEt"),
-    binLowEdges=cms.vdouble(5,10,15,20,25,30,35,40,45,50,60,80,100),
-    )
-scEtaBins=cms.PSet(
-    vsVar=cms.string("scEta"),
-    nameSuffex=cms.string("_vsSCEta"),
-    binLowEdges=cms.vdouble(-2.5,-2.4,-2.3,-2.2,-2.1,-2.0,-1.8,-1.566,-1.4442,-1.3,-1.,-0.5,0,0.5,1,1.3,1.4442,1.566,1.8,2.0,2.1,2.2,2.3,2.4,2.5)
-    )
+etBinsStd=cms.vdouble(5,10,15,20,25,30,35,40,45,50,60,80,100,150,200,250,300,350,400)
+scEtaBinsStd = cms.vdouble(-2.5,-2.4,-2.3,-2.2,-2.1,-2.0,-1.9,-1.8,-1.7,-1.566,-1.4442,-1.3,-1.2,-1.1,-1.0,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,1.1,1.2,1.3,1.4442,1.566,1.7,1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5)
+phiBinsStd = cms.vdouble(-3.32,-2.97,-2.62,-2.27,-1.92,-1.57,-1.22,-0.87,-0.52,-0.18,0.18,0.52,0.87,1.22,1.57,1.92,2.27,2.62,2.97,3.32)
 
 etRangeCut= cms.PSet(
     rangeVar=cms.string("et"),
@@ -24,6 +18,12 @@ ecalEndcapEtaCut=cms.PSet(
     rangeVar=cms.string("scEta"),
     allowedRanges=cms.vstring("-2.5:-1.556","1.556:2.5")
     )
+ecalBarrelAndEndcapEtaCut = cms.PSet(
+    rangeVar=cms.string("scEta"),
+    allowedRanges=cms.vstring("-1.4442:1.4442","-2.5:-1.556","1.556:2.5"),
+    )
+        
+
 hcalPosEtaCut= cms.PSet(
     rangeVar=cms.string("scEta"),
     allowedRanges=cms.vstring("1.3:1.4442","1.556:2.5"),
@@ -43,25 +43,13 @@ tagAndProbeConfigEle27WPTight = cms.PSet(
     trigEvent = cms.InputTag("hltTriggerSummaryAOD","","HLTX"),
     objColl = cms.InputTag("gedGsfElectrons"),
     trigResults = cms.InputTag("TriggerResults","","HLTX"),
-    tagVIDCuts = cms.InputTag("egmGsfElectronIDs2","cutBasedElectronID-Spring15-25ns-V1-standalone-tight"),
-    probeVIDCuts = cms.InputTag("egmGsfElectronIDs2","cutBasedElectronID-Spring15-25ns-V1-standalone-tight"),
+    tagVIDCuts = cms.InputTag("egHLTDQMSelection"),
+    probeVIDCuts = cms.InputTag("egHLTDQMSelection"),
     tagTrigger = cms.string("HLT_Ele27_WPTight_Gsf_v*"),
     tagFilters = cms.vstring("hltEle27WPTightGsfTrackIsoFilter"),
-    tagRangeCuts = cms.VPSet(
-        cms.PSet(
-            rangeVar=cms.string("scEta"),
-            allowedRanges=cms.vstring("-1.4442:1.4442"),
-            ),
-        
-        ),
+    tagRangeCuts = cms.VPSet(ecalBarrelEtaCut),
     probeFilters = cms.vstring(),
-    probeRangeCuts = cms.VPSet(
-        cms.PSet(
-            rangeVar=cms.string("scEta"),
-            allowedRanges=cms.vstring("-1.4442:1.4442","-2.5:-1.556","1.556:2.5"),
-            ),
-        
-        ),
+    probeRangeCuts = cms.VPSet(ecalBarrelAndEndcapEtaCut),
     minMass = cms.double(70.0),
     maxMass = cms.double(110.0),
     requireOpSign = cms.bool(False),
@@ -86,35 +74,35 @@ egammaStdHistConfigs = cms.VPSet(
         vsVar=cms.string("et"),
         nameSuffex=cms.string("_EBvsEt"),
         rangeCuts=cms.VPSet(ecalBarrelEtaCut),
-        binLowEdges=cms.vdouble(5,10,15,20,25,30,35,40,45,50,60,80,100,150,200,250,300,350,400),
+        binLowEdges=etBinsStd,
         ),
     cms.PSet(
         histType=cms.string("1D"),
         vsVar=cms.string("et"),
         nameSuffex=cms.string("_EEvsEt"),
         rangeCuts=cms.VPSet(ecalEndcapEtaCut),
-        binLowEdges=cms.vdouble(5,10,15,20,25,30,35,40,45,50,60,80,100,150,200,250,300,350,400),
+        binLowEdges=etBinsStd,
         ),
     cms.PSet(
         histType=cms.string("1D"),
         vsVar=cms.string("scEta"),
         nameSuffex=cms.string("_vsSCEta"),
         rangeCuts=cms.VPSet(),
-        binLowEdges=cms.vdouble(-2.5,-2.4,-2.3,-2.2,-2.1,-2.0,-1.8,-1.566,-1.4442,-1.3,-1.,-0.5,0,0.5,1,1.3,1.4442,1.566,1.8,2.0,2.1,2.2,2.3,2.4,2.5)
+        binLowEdges=scEtaBinsStd,
         ),
     cms.PSet(
         histType=cms.string("1D"),
         vsVar=cms.string("phi"),
         nameSuffex=cms.string("_EBvsPhi"),
         rangeCuts=cms.VPSet(ecalBarrelEtaCut),
-        binLowEdges=cms.vdouble(-3.15,-2.5,-2.0,-1.5,-1.0,-0.5,0,0.5,1.0,1.5,2.0,2.5,3.15)
+        binLowEdges=phiBinsStd,
         ),
     cms.PSet(
         histType=cms.string("1D"),
         vsVar=cms.string("phi"),
         nameSuffex=cms.string("_EEvsPhi"),
         rangeCuts=cms.VPSet(ecalEndcapEtaCut),
-        binLowEdges=cms.vdouble(-3.15,-2.5,-2.0,-1.5,-1.0,-0.5,0,0.5,1.0,1.5,2.0,2.5,3.15)
+        binLowEdges=phiBinsStd,
         ),
     cms.PSet(
         histType=cms.string("2D"),
@@ -122,8 +110,8 @@ egammaStdHistConfigs = cms.VPSet(
         yVar=cms.string("phi"),
         nameSuffex=cms.string("_vsSCEtaPhi"), 
         rangeCuts=cms.VPSet(),
-        xBinLowEdges=cms.vdouble(-2.5,-2.4,-2.3,-2.2,-2.1,-2.0,-1.8,-1.566,-1.4442,-1.3,-1.,-0.5,0,0.5,1,1.3,1.4442,1.566,1.8,2.0,2.1,2.2,2.3,2.4,2.5),
-        yBinLowEdges=cms.vdouble(-3.15,-2.5,-2.0,-1.5,-1.0,-0.87,-0.52,0,0.52,0.87,1.0,1.5,2.0,2.5,3.15)
+        xBinLowEdges=scEtaBinsStd,
+        yBinLowEdges=phiBinsStd,
         ),
     
     )
@@ -305,8 +293,8 @@ egammaStdFiltersToMonitor= cms.VPSet(
   
  
 
-hltEgTPOfflineSource = cms.EDAnalyzer("HLTTagAndProbeOfflineSource",
-                                      histCollections = cms.VPSet(
+egHLTDQMOfflineTPSource = cms.EDAnalyzer("HLTTagAndProbeOfflineSource",
+                                         histCollections = cms.VPSet(
         cms.PSet( 
             tagAndProbeConfigEle27WPTight,
             histConfigs = egammaStdHistConfigs,
@@ -317,7 +305,7 @@ hltEgTPOfflineSource = cms.EDAnalyzer("HLTTagAndProbeOfflineSource",
             tagAndProbeConfigEle27WPTightHEM17,
             histConfigs = egammaStdHistConfigs,
             baseHistName = cms.string("ele27Tag_HEM17_"),
-             histCollConfigs = egammaStdFiltersToMonitor,
+            histCollConfigs = egammaStdFiltersToMonitor,
         ),
         cms.PSet(
             tagAndProbeConfigEle27WPTightHEP17,
@@ -327,5 +315,11 @@ hltEgTPOfflineSource = cms.EDAnalyzer("HLTTagAndProbeOfflineSource",
         ),
            
         )
-                                      )
+                                         )
+
+#will be replaced by  VID asap
+egHLTDQMSelection = cms.EDProducer("HLTDQMGsfEleSelector",
+                                   objs=cms.InputTag("gedGsfElectrons"),
+                                   selection=cms.string("et>5 && hcalOverEcal<0.298 && full5x5_sigmaIetaIeta<0.011 && abs(deltaEtaSeedClusterTrackAtVtx)<0.00477 && abs(deltaPhiSuperClusterTrackAtVtx)<0.222")
+                                   )
 
