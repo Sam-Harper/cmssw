@@ -84,14 +84,14 @@ egammaStdHistConfigs = cms.VPSet(
     cms.PSet(
         histType=cms.string("1D"),
         vsVar=cms.string("et"),
-        nameSuffex=cms.string("_EB_vsEt"),
+        nameSuffex=cms.string("_EBvsEt"),
         rangeCuts=cms.VPSet(ecalBarrelEtaCut),
         binLowEdges=cms.vdouble(5,10,15,20,25,30,35,40,45,50,60,80,100,150,200,250,300,350,400),
         ),
     cms.PSet(
         histType=cms.string("1D"),
         vsVar=cms.string("et"),
-        nameSuffex=cms.string("_EE_vsEt"),
+        nameSuffex=cms.string("_EEvsEt"),
         rangeCuts=cms.VPSet(ecalEndcapEtaCut),
         binLowEdges=cms.vdouble(5,10,15,20,25,30,35,40,45,50,60,80,100,150,200,250,300,350,400),
         ),
@@ -105,14 +105,14 @@ egammaStdHistConfigs = cms.VPSet(
     cms.PSet(
         histType=cms.string("1D"),
         vsVar=cms.string("phi"),
-        nameSuffex=cms.string("_EB_vsPhi"),
+        nameSuffex=cms.string("_EBvsPhi"),
         rangeCuts=cms.VPSet(ecalBarrelEtaCut),
         binLowEdges=cms.vdouble(-3.15,-2.5,-2.0,-1.5,-1.0,-0.5,0,0.5,1.0,1.5,2.0,2.5,3.15)
         ),
     cms.PSet(
         histType=cms.string("1D"),
         vsVar=cms.string("phi"),
-        nameSuffex=cms.string("_EE_vsPhi"),
+        nameSuffex=cms.string("_EEvsPhi"),
         rangeCuts=cms.VPSet(ecalEndcapEtaCut),
         binLowEdges=cms.vdouble(-3.15,-2.5,-2.0,-1.5,-1.0,-0.5,0,0.5,1.0,1.5,2.0,2.5,3.15)
         ),
@@ -130,7 +130,7 @@ egammaStdHistConfigs = cms.VPSet(
 
 egammaTestFiltersToMonitor = cms.VPSet(
     cms.PSet(
-        folderName = cms.string("HLT/TagAndProbeEffs/HLT_Ele5_WPLoose_Gsf"),
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Ele5_WPLoose_Gsf"),
         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("5:99999")),),
         filterName = cms.string("hltEle5CaloIdLGsfTrkIdVLDPhiFilter"),
         histTitle = cms.string("hltEle5CaloIdLGsfTrkIdVLDPhiFilter"),
@@ -252,9 +252,51 @@ egammaStdFiltersToMonitor= cms.VPSet(
          tagExtraFilter = cms.string(""),
          ),
      cms.PSet(
-         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Photon5"),
-         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),),
-         filterName = cms.string("hltEG33L1EG26HEFilter"),
+         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Photon50"),
+         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("55:99999")),),
+         filterName = cms.string("hltEG50HEFilter"),
+         histTitle = cms.string(""),
+         tagExtraFilter = cms.string(""),
+         ),  
+     cms.PSet(
+         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Photon75"),
+         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("80:99999")),),
+         filterName = cms.string("hltEG75HEFilter"),
+         histTitle = cms.string(""),
+         tagExtraFilter = cms.string(""),
+         ),
+     cms.PSet(
+         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Photon90"),
+         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("95:99999")),),
+         filterName = cms.string("hltEG90HEFilter"),
+         histTitle = cms.string(""),
+         tagExtraFilter = cms.string(""),
+         ), 
+     cms.PSet(
+         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Photon120"),
+         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("95:99999")),),
+         filterName = cms.string("hltEG120HEFilter"),
+         histTitle = cms.string(""),
+         tagExtraFilter = cms.string(""),
+         ),
+     cms.PSet(
+         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Photon150"),
+         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("160:99999")),),
+         filterName = cms.string("hltEG150HEFilter"),
+         histTitle = cms.string(""),
+         tagExtraFilter = cms.string(""),
+         ), 
+     cms.PSet(
+         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Photon175"),
+         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("180:99999")),),
+         filterName = cms.string("hltEG175HEFilter"),
+         histTitle = cms.string(""),
+         tagExtraFilter = cms.string(""),
+         ),
+     cms.PSet(
+         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Photon200"),
+         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("220:99999")),),
+         filterName = cms.string("hltEG200HEFilter"),
          histTitle = cms.string(""),
          tagExtraFilter = cms.string(""),
          ),
