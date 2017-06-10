@@ -23,7 +23,6 @@ from Validation.HcalRecHits.HLTHcalRecHitParam_cfi import *
 # offline dqm:
 # from DQMOffline.Trigger.DQMOffline_Trigger_cff.py import *
 from DQMOffline.Trigger.HLTTauDQMOffline_cff import *
-from DQMOffline.Trigger.EgHLTOfflineSource_cfi import *
 from DQMOffline.Trigger.topHLTOfflineDQM_cff import *
 #from DQMOffline.Trigger.MuonTrigRateAnalyzer_cfi import *
 # online dqm:
@@ -80,7 +79,6 @@ hltvalidation_prod = cms.Sequence(
 
 trigdqm_forValidation = cms.Sequence(
     hltMonTauReco+HLTTauDQMOffline
-    +egHLTOffDQMSource
     )
 
 hltvalidation_withDQM = cms.Sequence(

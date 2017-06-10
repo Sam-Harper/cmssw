@@ -36,8 +36,6 @@ import FWCore.ParameterSet.Config as cms
 
 # HLT Offline -----------------------------------
 from DQMOffline.Trigger.HLTGeneralOffline_cfi import *
-# EGamma
-from DQMOffline.Trigger.EgHLTOfflineSource_cfi import *
 # Muon
 from DQMOffline.Trigger.HLTMuonOfflineAnalyzer_cosmics_cff import *
 # Top
@@ -55,7 +53,6 @@ dqmEnvHLT.subSystemFolder = 'HLT'
 
 offlineHLTSource = cms.Sequence(
     hltResults *
-    egHLTOffDQMSource *
     hltMuonOfflineAnalyzers *
     HLTTauDQMOffline *
     jetMETHLTOfflineSource *

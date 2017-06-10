@@ -1,7 +1,4 @@
 
-#include "DQMOffline/Trigger/interface/EgHLTOfflineSource.h"
-#include "DQMOffline/Trigger/interface/EgHLTOfflineClient.h"
-#include "DQMOffline/Trigger/interface/EgHLTOfflineSummaryClient.h"
 #include "DQMOffline/Trigger/interface/HLTTauRefProducer.h"
 #include "DQMOffline/Trigger/interface/HLTTauDQMOfflineSource.h"
 #include "DQMOffline/Trigger/interface/HLTTauPostProcessor.h"
@@ -17,9 +14,6 @@
 #include "DQMOffline/Trigger/interface/BTVHLTOfflineSource.h"
 
 #include "FWCore/Framework/interface/MakerMacros.h"
-DEFINE_FWK_MODULE(EgHLTOfflineSource);
-DEFINE_FWK_MODULE(EgHLTOfflineClient);
-DEFINE_FWK_MODULE(EgHLTOfflineSummaryClient);
 DEFINE_FWK_MODULE(HLTTauRefProducer);
 DEFINE_FWK_MODULE(HLTTauDQMOfflineSource);
 DEFINE_FWK_MODULE(HLTTauPostProcessor);

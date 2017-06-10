@@ -5,10 +5,9 @@ from DQM.HLTEvF.HLTObjectsMonitor_cfi import *
 
 # lumi
 from DQMOffline.Trigger.DQMOffline_LumiMontiroring_cff import *
-# Egamma
+# HLT General
 from DQMOffline.Trigger.HLTGeneralOffline_cfi import *
 # Egamma
-from DQMOffline.Trigger.EgHLTOfflineSource_cfi import *
 from DQMOffline.Trigger.EgammaMonitoring_cff import *
 # Muon
 from DQMOffline.Trigger.MuonOffline_Trigger_cff import *
@@ -85,7 +84,6 @@ offlineHLTSource = cms.Sequence(
     hltResults *
     lumiMonitorHLTsequence *
     hcalMonitoringSequence *
-    egHLTOffDQMSource *
     muonFullOfflineDQM *
     HLTTauDQMOffline *
     jetMETHLTOfflineAnalyzer * 
