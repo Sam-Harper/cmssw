@@ -30,11 +30,24 @@ TrajSeedMatcher::TrajSeedMatcher(const edm::ParameterSet& pset):
   detLayerGeomLabel_ = pset.getParameter<std::string>("detLayerGeom");
   const auto cutsPSets=pset.getParameter<std::vector<edm::ParameterSet> >("matchingCuts");
   for(const auto & cutPSet : cutsPSets){
-    matchingCuts_.push_back(MatchingCuts(cutPSet));
+    int version=cutPSet.getParameter<int>("version");
+    switch(version){
+    case 1:
+      matchingCuts_.emplace_back(std::make_unique<MatchingCutsV1>(cutPSet));
+      break;
+    case 2:
+      matchingCuts_.emplace_back(std::make_unique<MatchingCutsV2>(cutPSet));
+      break;
+    case 3:
+      matchingCuts_.emplace_back(std::make_unique<MatchingCutsV3>(cutPSet));
+      break;
+    default:
+      throw cms::Exception("InvalidConfig") <<" Error TrajSeedMatcher::TrajSeedMatcher pixel match cuts version "<<version<<" not recognised"<<std::endl;
+    }
   }
  
   if(minNrHitsValidLayerBins_.size()+1!=minNrHits_.size()){  
-    throw cms::Exception("InvalidConfig")<<" minNrHitsValidLayerBins should be 1 less than minNrHits when its "<<minNrHitsValidLayerBins_.size()<<" vs "<<minNrHits_.size();
+    throw cms::Exception("InvalidConfig")<<" TrajSeedMatcher::TrajSeedMatcher minNrHitsValidLayerBins should be 1 less than minNrHits when its "<<minNrHitsValidLayerBins_.size()<<" vs "<<minNrHits_.size();
   }
 }
 
@@ -47,19 +60,40 @@ edm::ParameterSetDescription TrajSeedMatcher::makePSetDescription()
   desc.add<std::vector<int> >("minNrHitsValidLayerBins",{4});
   desc.add<std::vector<unsigned int> >("minNrHits",{2,3});
   
+  edm::ParameterSetDescription cutsV2Desc;  
+  edm::ParameterSetDescription binParamDesc = egPM::makeParamBinsDesc();
+  cutsV2Desc.addVPSet("bins",binParamDesc);
 
   edm::ParameterSetDescription cutsDesc;
-  cutsDesc.add<double>("dPhiMax",0.04);
-  cutsDesc.add<double>("dRZMax",0.09);
-  cutsDesc.add<double>("dRZMaxLowEtThres",20.);
-  cutsDesc.add<std::vector<double> >("dRZMaxLowEtEtaBins",std::vector<double>{1.,1.5});
-  cutsDesc.add<std::vector<double> >("dRZMaxLowEt",std::vector<double>{0.09,0.15,0.09});
+  auto cutDescCases = 
+    1 >> 
+    (edm::ParameterDescription<double>("dPhiMax",0.04,true) and
+     edm::ParameterDescription<double>("dRZMax",0.09,true) and
+     edm::ParameterDescription<double>("dRZMaxLowEtThres",20.,true) and
+     edm::ParameterDescription<std::vector<double> >("dRZMaxLowEtEtaBins",std::vector<double>{1.,1.5},true) and
+     edm::ParameterDescription<std::vector<double> >("dRZMaxLowEt",std::vector<double>{0.09,0.15,0.09},true)) or
+    2 >> 
+    (edm::ParameterDescription<edm::ParameterSetDescription>("dPhiMin",cutsV2Desc,true) and
+     edm::ParameterDescription<edm::ParameterSetDescription>("dPhiMax",cutsV2Desc,true) and
+     edm::ParameterDescription<edm::ParameterSetDescription>("dRZMin",cutsV2Desc,true) and
+     edm::ParameterDescription<edm::ParameterSetDescription>("dRZMax",cutsV2Desc,true)) or
+    3 >> 
+    (edm::ParameterDescription<std::vector<double> >("dPhiMaxHighEt",{0.003},true) and
+     edm::ParameterDescription<std::vector<double> >("dPhiMaxHighEtThres",{0.0},true) and
+     edm::ParameterDescription<std::vector<double> >("dPhiMaxLowEtGrad",{0.0},true) and
+     edm::ParameterDescription<std::vector<double> >("dRZMaxHighEt",{0.005},true) and
+     edm::ParameterDescription<std::vector<double> >("dRZMaxHighEtThres",{30},true) and
+     edm::ParameterDescription<std::vector<double> >("dRZMaxLowEtGrad",{-0.002},true) and
+     edm::ParameterDescription<std::vector<double> >("etaBins",{},true));
+  cutsDesc.ifValue(edm::ParameterDescription<int>("version",1,true), std::move(cutDescCases));
+
   edm::ParameterSet defaults;
   defaults.addParameter<double>("dPhiMax",0.04);
   defaults.addParameter<double>("dRZMax",0.09);
   defaults.addParameter<double>("dRZMaxLowEtThres",0.09);
   defaults.addParameter<std::vector<double> >("dRZMaxLowEtEtaBins",std::vector<double>{1.,1.5});
   defaults.addParameter<std::vector<double> >("dRZMaxLowEt",std::vector<double>{0.09,0.09,0.09});
+  defaults.addParameter<int>("version",1);
   desc.addVPSet("matchingCuts",cutsDesc,std::vector<edm::ParameterSet>{defaults,defaults,defaults});
   return desc;
 }
@@ -142,22 +176,24 @@ TrajSeedMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& cand
  
   std::vector<HitInfo> matchedHits;
   HitInfo firstHit = matchFirstHit(seed,initialTrajState,vprim,*backwardPropagator_);
+  firstHit.setExtra(candEt,candEta,candPos.phi(),charge,1);
   if(passesMatchSel(firstHit,0,candEt,candEta)){
     matchedHits.push_back(firstHit);
 
     //now we can figure out the z vertex
-    double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,firstHit.pos(),candPos);
+    double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,firstHit.hitPos(),candPos);
     GlobalPoint vertex(vprim.x(),vprim.y(),zVertex);
     
-    FreeTrajectoryState firstHitFreeTraj = FTSFromVertexToPointFactory::get(*magField_, firstHit.pos(), 
+    FreeTrajectoryState firstHitFreeTraj = FTSFromVertexToPointFactory::get(*magField_, firstHit.hitPos(), 
 									    vertex, energy, charge) ;
  
-    GlobalPoint prevHitPos = firstHit.pos();
+    GlobalPoint prevHitPos = firstHit.hitPos();
     for(size_t hitNr=1;hitNr<matchingCuts_.size() && hitNr<seed.nHits();hitNr++){
       HitInfo hit = match2ndToNthHit(seed,firstHitFreeTraj,hitNr,prevHitPos,vertex,*forwardPropagator_);
+      hit.setExtra(candEt,candEta,candPos.phi(),charge,1);
       if(passesMatchSel(hit,hitNr,candEt,candEta)){
 	matchedHits.push_back(hit);
-	prevHitPos = hit.pos();
+	prevHitPos = hit.hitPos();
       }else break;
     }
   }
@@ -229,17 +265,18 @@ TrajSeedMatcher::HitInfo TrajSeedMatcher::matchFirstHit(const TrajectorySeed& se
 }
 
 TrajSeedMatcher::HitInfo TrajSeedMatcher::match2ndToNthHit(const TrajectorySeed& seed,
-							     const FreeTrajectoryState& initialState,
-							     const size_t hitNr,
-							     const GlobalPoint& prevHitPos,
-							     const GlobalPoint& vtxPos,
-							     const PropagatorWithMaterial& propagator)
+							   const FreeTrajectoryState& initialState,
+							   const size_t hitNr,
+							   const GlobalPoint& prevHitPos,
+							   const GlobalPoint& vtxPos,
+							   const PropagatorWithMaterial& propagator)
 {
   const TrajectorySeed::range& hits = seed.recHits();
   auto hitIt = hits.first+hitNr;
   
   if(hitIt->isValid()){
     const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(*hitIt,initialState,prevHitPos,propagator);
+    
     if(trajState.isValid()){
       return HitInfo(vtxPos,trajState,*hitIt);  
     }
@@ -259,7 +296,7 @@ void TrajSeedMatcher::clearCache()
 bool TrajSeedMatcher::passesMatchSel(const TrajSeedMatcher::HitInfo& hit,const size_t hitNr,float scEt,float scEta)const
 {
   if(hitNr<matchingCuts_.size()){
-    return matchingCuts_[hitNr](hit,scEt,scEta);
+    return (*matchingCuts_[hitNr])(hit,scEt,scEta);
   }else{
     throw cms::Exception("LogicError") <<" Error, attempting to apply selection to hit "<<hitNr<<" but only cuts for "<<matchingCuts_.size()<<" defined";
   }
@@ -271,12 +308,12 @@ int TrajSeedMatcher::getNrValidLayersAlongTraj(const HitInfo& hit1,const HitInfo
 						const GlobalPoint & vprim, 
 						const float energy, const int charge)
 {
-  double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,hit1.pos(),candPos);
+  double zVertex = useRecoVertex_ ? vprim.z() : getZVtxFromExtrapolation(vprim,hit1.hitPos(),candPos);
   GlobalPoint vertex(vprim.x(),vprim.y(),zVertex);
   
-  FreeTrajectoryState firstHitFreeTraj = FTSFromVertexToPointFactory::get(*magField_,hit1.pos(), 
+  FreeTrajectoryState firstHitFreeTraj = FTSFromVertexToPointFactory::get(*magField_,hit1.hitPos(), 
 									  vertex, energy, charge);
-  const TrajectoryStateOnSurface& secondHitTraj = getTrajStateFromPoint(*hit2.hit(),firstHitFreeTraj,hit1.pos(),*forwardPropagator_);
+  const TrajectoryStateOnSurface& secondHitTraj = getTrajStateFromPoint(*hit2.hit(),firstHitFreeTraj,hit1.hitPos(),*forwardPropagator_);
   return getNrValidLayersAlongTraj(hit2.hit()->geographicalId(),secondHitTraj); 
 }
 
@@ -340,10 +377,11 @@ TrajSeedMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
 				   const TrajectoryStateOnSurface& trajState,
 				   const TrackingRecHit& hit):
   detId_(hit.geographicalId()),
-  pos_(hit.globalPosition()),
-  hit_(&hit)
+  hitPos_(hit.globalPosition()),
+  hit_(&hit),
+  et_(0),eta_(0),phi_(0),charge_(0),nrClus_(0)
 {
-  EleRelPointPair pointPair(pos_,trajState.globalParameters().position(),vtxPos);
+  EleRelPointPair pointPair(hitPos_,trajState.globalParameters().position(),vtxPos);
   dRZ_ = detId_.subdetId()==PixelSubdetector::PixelBarrel ? pointPair.dZ() : pointPair.dPerp();
   dPhi_ = pointPair.dPhi();
 }
@@ -374,7 +412,7 @@ SeedWithInfo(const TrajectorySeed& seed,
   }
 }
 
-TrajSeedMatcher::MatchingCuts::MatchingCuts(const edm::ParameterSet& pset):
+TrajSeedMatcher::MatchingCutsV1::MatchingCutsV1(const edm::ParameterSet& pset):
   dPhiMax_(pset.getParameter<double>("dPhiMax")),
   dRZMax_(pset.getParameter<double>("dRZMax")),
   dRZMaxLowEtThres_(pset.getParameter<double>("dRZMaxLowEtThres")),
@@ -386,7 +424,7 @@ TrajSeedMatcher::MatchingCuts::MatchingCuts(const edm::ParameterSet& pset):
   }
 }
 
-bool TrajSeedMatcher::MatchingCuts::operator()(const TrajSeedMatcher::HitInfo& hit,const float scEt,const float scEta)const
+bool TrajSeedMatcher::MatchingCutsV1::operator()(const TrajSeedMatcher::HitInfo& hit,const float scEt,const float scEta)const
 {
   if(dPhiMax_>=0 && std::abs(hit.dPhi()) > dPhiMax_) return false;
   
@@ -396,7 +434,7 @@ bool TrajSeedMatcher::MatchingCuts::operator()(const TrajSeedMatcher::HitInfo& h
   return true;
 }
 
-float TrajSeedMatcher::MatchingCuts::getDRZCutValue(const float scEt,const float scEta)const
+float TrajSeedMatcher::MatchingCutsV1::getDRZCutValue(const float scEt,const float scEta)const
 {
   if(scEt>=dRZMaxLowEtThres_) return dRZMax_;
   else{
@@ -407,3 +445,83 @@ float TrajSeedMatcher::MatchingCuts::getDRZCutValue(const float scEt,const float
     return dRZMaxLowEt_.back();
   }
 }
+
+TrajSeedMatcher::MatchingCutsV2::MatchingCutsV2(const edm::ParameterSet& pset):
+  dPhiMin_(pset.getParameter<edm::ParameterSet>("dPhiMin")),
+  dPhiMax_(pset.getParameter<edm::ParameterSet>("dPhiMax")),
+  dRZMin_(pset.getParameter<edm::ParameterSet>("dRZMin")),
+  dRZMax_(pset.getParameter<edm::ParameterSet>("dRZMax"))
+{
+
+}
+
+bool TrajSeedMatcher::MatchingCutsV2::operator()(const TrajSeedMatcher::HitInfo& hit,const float scEt,const float scEta)const
+{
+  if(std::abs(hit.dPhi())<-1){
+    std::cout <<"et "<<scEt<<" eta "<<scEta<<" hit "<<hit.et()<<" "<<hit.eta()<<std::endl;
+    std::cout <<"cut values dPhi "<<dPhiMin_(hit)<<" - "<<dPhiMax_(hit)<<" dPhi "<<hit.dPhi()<<std::endl;
+    std::cout <<"cut values dRZ "<<dRZMin_(hit)<<" - "<<dRZMax_(hit)<<" dRZ "<<hit.dRZ()<<std::endl;
+    std::cout <<"passed ";
+  }
+  if(hit.dPhi() >= dPhiMin_(hit) &&
+     hit.dPhi() <= dPhiMax_(hit) && 
+     hit.dRZ() >= dRZMin_(hit) && 
+     hit.dRZ() <= dRZMax_(hit) ){
+    if(std::abs(hit.dPhi())<-1) std::cout <<" true "<<std::endl;
+    return true;
+  }else{
+    if(std::abs(hit.dPhi())<-1)std::cout <<" false "<<std::endl;
+    return false;
+  }
+}
+ 
+
+TrajSeedMatcher::MatchingCutsV3::MatchingCutsV3(const edm::ParameterSet& pset):
+  dPhiHighEt_(pset.getParameter<std::vector<double> >("dPhiMaxHighEt")),
+  dPhiHighEtThres_(pset.getParameter<std::vector<double> >("dPhiMaxHighEtThres")),
+  dPhiLowEtGrad_(pset.getParameter<std::vector<double> >("dPhiMaxLowEtGrad")),
+  dRZHighEt_(pset.getParameter<std::vector<double> >("dRZMaxHighEt")),
+  dRZHighEtThres_(pset.getParameter<std::vector<double> >("dRZMaxHighEtThres")),
+  dRZLowEtGrad_(pset.getParameter<std::vector<double> >("dRZMaxLowEtGrad")),
+  etaBins_(pset.getParameter<std::vector<double> >("etaBins"))
+{
+  auto binSizeCheck = [](size_t sizeEtaBins,const std::vector<double>& vec,const std::string& name){
+    if(vec.size()!=sizeEtaBins+1){ 
+      throw cms::Exception("InvalidConfig")<<" when constructing TrajSeedMatcher::MatchingCutsV3 "<< name<<" has "<<vec.size()<<" bins, it should be equal to #bins of etaBins+1"<<sizeEtaBins+1;
+    }
+  };
+  binSizeCheck(etaBins_.size(),dPhiHighEt_,"dPhiMaxHighEt");
+  binSizeCheck(etaBins_.size(),dPhiHighEtThres_,"dPhiMaxHighEtThres");
+  binSizeCheck(etaBins_.size(),dPhiLowEtGrad_,"dPhiMaxLowEtGrad");
+  binSizeCheck(etaBins_.size(),dRZHighEt_,"dRZMaxHighEt");
+  binSizeCheck(etaBins_.size(),dRZHighEtThres_,"dRZMaxHighEtThres");
+  binSizeCheck(etaBins_.size(),dRZLowEtGrad_,"dRZMaxLowEtGrad");
+}
+
+bool TrajSeedMatcher::MatchingCutsV3::operator()(const TrajSeedMatcher::HitInfo& hit,const float scEt,const float scEta)const
+{
+  size_t binNr=getBinNr(scEta);
+  float dPhiMax = getCutValue(scEt,dPhiHighEt_[binNr],dPhiHighEtThres_[binNr],dPhiLowEtGrad_[binNr]); 
+  if(std::abs(hit.dPhi())<-1){
+    std::cout <<"bin nr "<<binNr<<" dPhiCut "<<dPhiMax<<" dPhi "<<hit.dPhi()<<" high et "<<dPhiHighEt_[binNr]<<" "<<dPhiHighEtThres_[binNr]<<" "<<dPhiLowEtGrad_[binNr]<<std::endl;
+  }
+  if(dPhiMax>=0 && std::abs(hit.dPhi()) > dPhiMax) return false;  
+  float dRZMax = getCutValue(scEt,dRZHighEt_[binNr],dRZHighEtThres_[binNr],dRZLowEtGrad_[binNr]);
+  if(std::abs(hit.dPhi())<-1){
+    std::cout <<"bin nr "<<binNr<<" dRZCut "<<dRZMax<<" dPhi "<<hit.dRZ()<<std::endl;
+  }
+  if(dRZMax>=0 && std::abs(hit.dRZ()) > dRZMax) return false;
+  
+  return true;
+}
+
+//eta bins is exactly 1 smaller than the vectors which will be accessed by this bin nr
+size_t TrajSeedMatcher::MatchingCutsV3::getBinNr(float eta)const
+{
+  const float absEta = std::abs(eta);
+  for(size_t etaNr=0;etaNr<etaBins_.size();etaNr++){
+    if(absEta<etaBins_[etaNr]) return etaNr;
+  }
+  return etaBins_.size();
+}
+
