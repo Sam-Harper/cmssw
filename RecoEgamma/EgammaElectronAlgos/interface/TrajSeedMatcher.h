@@ -38,6 +38,8 @@
 #include "TrackingTools/RecoGeometry/interface/GlobalDetLayerGeometry.h"
 #include "RecoTracker/MeasurementDet/interface/MeasurementTrackerEvent.h"
 
+#include "RecoEgamma/EgammaHLTProducers/interface/EgammaHLTPixelMatchParamObjects.h"
+
 #include <unordered_map>
 
 namespace edm{
@@ -81,18 +83,30 @@ public:
     HitInfo():detId_(0),
 	      dRZ_(std::numeric_limits<float>::max()),
 	      dPhi_(std::numeric_limits<float>::max()),
-	      hit_(nullptr){}
-	      
+	      hit_(nullptr),
+	      et_(0),charge_(0),nrClus_(0){}
+
+    //does not set charge,et,nrclus
     HitInfo(const GlobalPoint& vtxPos,
 	    const TrajectoryStateOnSurface& trajState,
-	    const TrackingRecHit& hit);
+	    const TrackingRecHit& hit
+	    );
     ~HitInfo()=default;
+
+    void setExtra(float et,int charge,int nrClus){
+      et_=et;charge_=charge;nrClus_=nrClus;
+    }
     
     int subdetId()const{return detId_.subdetId();}
     DetId detId()const{return detId_;}
     float dRZ()const{return dRZ_;}
     float dPhi()const{return dPhi_;}
     const GlobalPoint& pos()const{return pos_;}
+    float et()const{return et_;}
+    float eta()const{return pos().eta();}
+    float phi()const{return pos().phi();}
+    int charge()const{return charge_;}
+    int nrClus()const{return nrClus_;}
     const TrackingRecHit* hit()const{return hit_;}
   private:
     DetId detId_;
@@ -100,7 +114,13 @@ public:
     float dRZ_;
     float dPhi_;    
     const TrackingRecHit* hit_; //we do not own this
+    //extra quanities which are set later
+    float et_;
+    int charge_;
+    int nrClus_;
   };
+
+ 
 
   struct MatchInfo {
   public:
@@ -145,7 +165,14 @@ public:
 
   class MatchingCuts {
   public:
-    explicit MatchingCuts(const edm::ParameterSet& pset);
+    MatchingCuts(){}
+    virtual ~MatchingCuts(){}
+    virtual bool operator()(const HitInfo& hit,const float scEt,const float scEta)const=0;
+  };
+
+  class MatchingCutsV1 : public MatchingCuts {
+  public:
+    explicit MatchingCutsV1(const edm::ParameterSet& pset);
     bool operator()(const HitInfo& hit,const float scEt,const float scEta)const;
   private:
     float getDRZCutValue(const float scEt,const float scEta)const;
@@ -155,6 +182,16 @@ public:
     const double dRZMaxLowEtThres_;
     const std::vector<double> dRZMaxLowEtEtaBins_; 
     const std::vector<double> dRZMaxLowEt_; 
+  };
+  class MatchingCutsV2 : public MatchingCuts {
+  public:
+    explicit MatchingCutsV2(const edm::ParameterSet& pset);
+    bool operator()(const HitInfo& hit,const float scEt,const float scEta)const;
+  private:
+    const egPM::Param<HitInfo> dPhiMin_;
+    const egPM::Param<HitInfo> dPhiMax_;
+    const egPM::Param<HitInfo> dRZMin_;
+    const egPM::Param<HitInfo> dRZMax_;
   };
 
 public:  
@@ -226,7 +263,7 @@ private:
   std::string detLayerGeomLabel_;
 
   bool useRecoVertex_;
-  std::vector<MatchingCuts> matchingCuts_;
+  std::vector<std::unique_ptr<MatchingCuts> > matchingCuts_;
   
   //these two varibles determine how hits we require 
   //based on how many valid layers we had

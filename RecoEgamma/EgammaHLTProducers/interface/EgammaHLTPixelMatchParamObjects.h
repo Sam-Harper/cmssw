@@ -28,6 +28,9 @@
 //    so for now this isnt done. Note we might move to the standard CMSSW of dealing 
 //    with this
 
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "DataFormats/EgammaReco/interface/SuperCluster.h"
+#include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
 
 #include "TF1.h"
@@ -36,30 +39,55 @@
 
 namespace egPM {
 
-
+  template<typename T>
   struct AbsEtaNrClus{
     float x;
     size_t y;
     
-    AbsEtaNrClus(const reco::ElectronSeed& seed){
-      reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
-      x = std::abs(scRef->eta());
-      y = scRef->clustersSize();
+    AbsEtaNrClus(const T& seed){
+      x = std::abs(seed.eta());
+      y = seed.nrClus();
     }
     bool pass(float absEtaMin,float absEtaMax,size_t nrClusMin,size_t nrClusMax)const{
       return x>=absEtaMin && x<absEtaMax && y>=nrClusMin && y<=nrClusMax;
     }
   };
+  template<>
+  AbsEtaNrClus<reco::ElectronSeed>::AbsEtaNrClus(const reco::ElectronSeed& seed){
+    reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
+    x = std::abs(scRef->eta());
+    y = scRef->clustersSize();
+  }
+
+  template<typename T>
+  struct AbsEtaCharge{
+    float x;
+    int y;
+    AbsEtaCharge(const T& seed){
+      x = std::abs(seed.eta());
+      y = seed.charge();
+    }
+    bool pass(float absEtaMin,float absEtaMax,int chargeMin,int chargeMax)const{
+      return x>=absEtaMin && x<absEtaMax && y>=chargeMin && y<=chargeMax;
+    }
+  };
+  template<>
+  AbsEtaCharge<reco::ElectronSeed>::AbsEtaCharge(const reco::ElectronSeed& seed){
+    reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
+    x = std::abs(scRef->eta());
+    y = seed.getCharge();
+  }
+
+  template<typename T>
   struct AbsEtaNrClusPhi{
     float x;
     size_t y;
     float z;
 
-    AbsEtaNrClusPhi(const reco::ElectronSeed& seed){
-      reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
-      x = std::abs(scRef->eta());
-      y = scRef->clustersSize();
-      z = scRef->phi();
+    AbsEtaNrClusPhi(const T& seed){
+      x = std::abs(seed.eta());
+      y = seed.nrClus();
+      z = seed.phi();
     }
     bool pass(float absEtaMin,float absEtaMax,size_t nrClusMin,size_t nrClusMax,
 	      float phiMin,float phiMax)const{
@@ -67,17 +95,24 @@ namespace egPM {
 	&& z>=phiMin && z < phiMax;
     }
   };
-
+  template<>
+  AbsEtaNrClusPhi<reco::ElectronSeed>::AbsEtaNrClusPhi(const reco::ElectronSeed& seed){
+    reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
+    x = std::abs(scRef->eta());
+    y = scRef->clustersSize();
+    z = scRef->phi();
+  }
+  
+  template<typename T>
   struct AbsEtaNrClusEt {
     float x;
     size_t y;
     float z;
 
-    AbsEtaNrClusEt(const reco::ElectronSeed& seed){
-      reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
-      x = std::abs(scRef->eta());
-      y = scRef->clustersSize();
-      z = scRef->energy()*sin(scRef->position().Theta());
+    AbsEtaNrClusEt(const T& seed){
+      x = std::abs(seed.eta());
+      y = seed.nrClus();
+      z = seed.et();
     }
     bool pass(float absEtaMin,float absEtaMax,size_t nrClusMin,size_t nrClusMax,
 	      float etMin,float etMax)const{
@@ -85,7 +120,13 @@ namespace egPM {
 	&& z>=etMin && z < etMax;
     }
   };
-  
+  template<>
+  AbsEtaNrClusEt<reco::ElectronSeed>::AbsEtaNrClusEt(const reco::ElectronSeed& seed){  
+    reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
+    x = std::abs(scRef->eta());
+    y = scRef->clustersSize();
+    z = scRef->energy()*sin(scRef->position().Theta());
+  }
 
   //these structs wrap the TF1 object
   //also if the ParamType doesnt have a high enough dimension
@@ -209,7 +250,7 @@ namespace egPM {
       if(funcType.first=="TF1" && has1D<ParamType>(0)) return TF1Wrap<ParamType,has1D<ParamType>(0)>(funcType.second,funcParams);
       else if(funcType.first=="TF2" && has2D<ParamType>(0)) return TF2Wrap<ParamType,has2D<ParamType>(0)>(funcType.second,funcParams);
       else if(funcType.first=="TF3" && has3D<ParamType>(0)) return TF3Wrap<ParamType,has3D<ParamType>(0)>(funcType.second,funcParams);
-      else throw cms::Exception("InvalidConfig") << " type "<<funcType.first<<" is not recognised or is imcompatable with the ParamType, configuration is invalid and needs to be fixed"<<std::endl;
+      else throw cms::Exception("InvalidConfig") << " type "<<funcType.first<<" is not recognised or is imcompatable with the ParamType, configuration is invalid and needs to be fixed "<<std::endl;
     }
   };
 
@@ -317,9 +358,10 @@ namespace egPM {
   private:
     std::unique_ptr<ParamBin<InputType> > createParamBin_(const edm::ParameterSet& config){
       std::string type = config.getParameter<std::string>("binType");
-      if(type=="AbsEtaClus") return std::make_unique<ParamBin2D<InputType,AbsEtaNrClus>>(config);
-      else if(type=="AbsEtaClusPhi") return std::make_unique<ParamBin3D<InputType,AbsEtaNrClusPhi>>(config);
-      else if(type=="AbsEtaClusEt") return std::make_unique<ParamBin3D<InputType,AbsEtaNrClusEt>>(config);
+      if(type=="AbsEtaClus") return std::make_unique<ParamBin2D<InputType,AbsEtaNrClus<InputType> > >(config);
+      else if(type=="AbsEtaClusPhi") return std::make_unique<ParamBin3D<InputType,AbsEtaNrClusPhi<InputType> > >(config);
+      else if(type=="AbsEtaClusEt") return std::make_unique<ParamBin3D<InputType,AbsEtaNrClusEt<InputType> > >(config);
+      else if(type=="AbsEtaCharge") return std::make_unique<ParamBin2D<InputType,AbsEtaCharge<InputType> > >(config);
       else throw cms::Exception("InvalidConfig") << " type "<<type<<" is not recognised, configuration is invalid and needs to be fixed"<<std::endl;
     }
   };
