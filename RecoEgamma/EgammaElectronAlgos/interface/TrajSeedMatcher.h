@@ -84,7 +84,7 @@ public:
 	      dRZ_(std::numeric_limits<float>::max()),
 	      dPhi_(std::numeric_limits<float>::max()),
 	      hit_(nullptr),
-	      et_(0),charge_(0),nrClus_(0){}
+	      et_(0),eta_(0),phi_(0),charge_(0),nrClus_(0){}
 
     //does not set charge,et,nrclus
     HitInfo(const GlobalPoint& vtxPos,
@@ -93,29 +93,31 @@ public:
 	    );
     ~HitInfo()=default;
 
-    void setExtra(float et,int charge,int nrClus){
-      et_=et;charge_=charge;nrClus_=nrClus;
+    void setExtra(float et,float eta,float phi,int charge,int nrClus){
+      et_=et;eta_=eta;phi_=phi;charge_=charge;nrClus_=nrClus;
     }
     
     int subdetId()const{return detId_.subdetId();}
     DetId detId()const{return detId_;}
     float dRZ()const{return dRZ_;}
     float dPhi()const{return dPhi_;}
-    const GlobalPoint& pos()const{return pos_;}
+    const GlobalPoint& hitPos()const{return hitPos_;}
     float et()const{return et_;}
-    float eta()const{return pos().eta();}
-    float phi()const{return pos().phi();}
+    float eta()const{return eta_;}
+    float phi()const{return phi_;}
     int charge()const{return charge_;}
     int nrClus()const{return nrClus_;}
     const TrackingRecHit* hit()const{return hit_;}
   private:
     DetId detId_;
-    GlobalPoint pos_;
+    GlobalPoint hitPos_;
     float dRZ_;
     float dPhi_;    
     const TrackingRecHit* hit_; //we do not own this
     //extra quanities which are set later
     float et_;
+    float eta_;
+    float phi_;
     int charge_;
     int nrClus_;
   };
@@ -192,7 +194,23 @@ public:
     const egPM::Param<HitInfo> dPhiMax_;
     const egPM::Param<HitInfo> dRZMin_;
     const egPM::Param<HitInfo> dRZMax_;
+  }; 
+
+  class MatchingCutsV3 : public MatchingCuts {
+  public:
+    explicit MatchingCutsV3(const edm::ParameterSet& pset);
+    bool operator()(const HitInfo& hit,const float scEt,const float scEta)const;
+  private:
+    size_t getBinNr(float eta)const;
+    float getCutValue(float et,float highEt,float highEtThres,float lowEtGrad)const{
+      return  highEt + std::min(0.f,et-highEtThres)*lowEtGrad;
+    }
+  private:
+    std::vector<double> dPhiHighEt_,dPhiHighEtThres_,dPhiLowEtGrad_;
+    std::vector<double> dRZHighEt_,dRZHighEtThres_,dRZLowEtGrad_;
+    std::vector<double> etaBins_;
   };
+
 
 public:  
   explicit TrajSeedMatcher(const edm::ParameterSet& pset);

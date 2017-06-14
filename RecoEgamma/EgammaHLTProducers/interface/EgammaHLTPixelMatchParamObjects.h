@@ -39,6 +39,7 @@
 
 namespace egPM {
 
+  
   template<typename T>
   struct AbsEtaNrClus{
     float x;
@@ -126,6 +127,51 @@ namespace egPM {
     x = std::abs(scRef->eta());
     y = scRef->clustersSize();
     z = scRef->energy()*sin(scRef->position().Theta());
+  };
+  
+  template<typename T>
+  struct EtAbsEta {
+    float x;
+    float y;
+    
+    EtAbsEta(const T& seed){
+      x = seed.et();
+      y = std::abs(seed.eta());
+    }
+    bool pass(float etMin,float etMax,float absEtaMin,float absEtaMax){
+      return  x>=etMin && (x < etMax || etMax<0) && y>=absEtaMin && y<absEtaMax;
+    }
+  };
+  
+  template<>
+  EtAbsEta<reco::ElectronSeed>::EtAbsEta(const reco::ElectronSeed& seed){  
+    reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
+    x = scRef->energy()*sin(scRef->position().Theta());
+    y = std::abs(scRef->eta());
+  };
+    
+  template<typename T>
+  struct EtAbsEtaCharge {
+    float x;
+    float y;
+    int z;
+    
+    EtAbsEtaCharge(const T& seed){
+      x = seed.et();
+      y = std::abs(seed.eta());
+      z = seed.charge();
+    }
+    bool pass(float etMin,float etMax,float absEtaMin,float absEtaMax,int chargeMin,int chargeMax){
+      return  x>=etMin && (x < etMax || etMax<0) && y>=absEtaMin && y<absEtaMax && z>=chargeMin && z<=chargeMax;
+    }
+  };
+  
+  template<>
+  EtAbsEtaCharge<reco::ElectronSeed>::EtAbsEtaCharge(const reco::ElectronSeed& seed){  
+    reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
+    x = scRef->energy()*sin(scRef->position().Theta());
+    y = std::abs(scRef->eta());
+    z = seed.getCharge();
   }
 
   //these structs wrap the TF1 object
@@ -254,6 +300,23 @@ namespace egPM {
     }
   };
 
+  //a constant bin of 0th dimension, ignores the input and just returns a const value
+  template<typename InputType>
+  class ParamBin0D : public ParamBin<InputType> {
+  private:
+    float val_;
+  public: 
+    ParamBin0D(const edm::ParameterSet& config):
+      val_(config.getParameter<double>("val")){} 
+    bool pass(const InputType&)const override {
+      return true;
+    }
+    float operator()(const InputType& input)const override{
+      return val_;
+    }
+  };
+    
+
   template<typename InputType,typename ParamType>
   class ParamBin1D : public ParamBin<InputType> {
   private:
@@ -362,6 +425,9 @@ namespace egPM {
       else if(type=="AbsEtaClusPhi") return std::make_unique<ParamBin3D<InputType,AbsEtaNrClusPhi<InputType> > >(config);
       else if(type=="AbsEtaClusEt") return std::make_unique<ParamBin3D<InputType,AbsEtaNrClusEt<InputType> > >(config);
       else if(type=="AbsEtaCharge") return std::make_unique<ParamBin2D<InputType,AbsEtaCharge<InputType> > >(config);
+      else if(type=="EtAbsEta") return std::make_unique<ParamBin2D<InputType,EtAbsEta<InputType> > >(config);
+      else if(type=="EtAbsEtaCharge") return std::make_unique<ParamBin3D<InputType,EtAbsEtaCharge<InputType> > >(config);
+      else if(type=="Const") return std::make_unique<ParamBin0D<InputType> >(config);
       else throw cms::Exception("InvalidConfig") << " type "<<type<<" is not recognised, configuration is invalid and needs to be fixed"<<std::endl;
     }
   };
