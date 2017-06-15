@@ -52,6 +52,15 @@ edm::ParameterSetDescription egPM::makeParamBinsDesc()
      edm::ParameterDescription<int>("zMax",1,true) and
      edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
      edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or
+    "EtAbsEtaPhi" >>
+    (edm::ParameterDescription<double>("xMin",0,true) and
+     edm::ParameterDescription<double>("xMax",-1,true) and
+     edm::ParameterDescription<double>("yMin",0,true) and
+     edm::ParameterDescription<double>("yMax",3.0,true) and
+     edm::ParameterDescription<double>("zMin",-4,true) and
+     edm::ParameterDescription<double>("zMax",4,true) and
+     edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
+     edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or
     "Const" >>
     (edm::ParameterDescription<double>("val",0,true));
   binParamDesc.ifValue(edm::ParameterDescription<std::string>("binType","EtAbsEtaCharge",true),std::move(binDescCases));

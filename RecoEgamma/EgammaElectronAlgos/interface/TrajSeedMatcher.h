@@ -78,20 +78,20 @@ namespace std{
 
 class TrajSeedMatcher {
 public:
-  class HitInfo {
+  class SCHitMatch {
   public:
-    HitInfo():detId_(0),
+    SCHitMatch():detId_(0),
 	      dRZ_(std::numeric_limits<float>::max()),
 	      dPhi_(std::numeric_limits<float>::max()),
 	      hit_(nullptr),
 	      et_(0),eta_(0),phi_(0),charge_(0),nrClus_(0){}
 
     //does not set charge,et,nrclus
-    HitInfo(const GlobalPoint& vtxPos,
+    SCHitMatch(const GlobalPoint& vtxPos,
 	    const TrajectoryStateOnSurface& trajState,
 	    const TrackingRecHit& hit
 	    );
-    ~HitInfo()=default;
+    ~SCHitMatch()=default;
 
     void setExtra(float et,float eta,float phi,int charge,int nrClus){
       et_=et;eta_=eta;phi_=phi;charge_=charge;nrClus_=nrClus;
@@ -140,8 +140,8 @@ public:
   class SeedWithInfo {
   public:
     SeedWithInfo(const TrajectorySeed& seed,
-		 const std::vector<HitInfo>& posCharge,
-		 const std::vector<HitInfo>& negCharge,
+		 const std::vector<SCHitMatch>& posCharge,
+		 const std::vector<SCHitMatch>& negCharge,
 		 int nrValidLayers);
     ~SeedWithInfo()=default;
     
@@ -169,13 +169,13 @@ public:
   public:
     MatchingCuts(){}
     virtual ~MatchingCuts(){}
-    virtual bool operator()(const HitInfo& hit,const float scEt,const float scEta)const=0;
+    virtual bool operator()(const SCHitMatch& scHitMatch)const=0;
   };
 
   class MatchingCutsV1 : public MatchingCuts {
   public:
     explicit MatchingCutsV1(const edm::ParameterSet& pset);
-    bool operator()(const HitInfo& hit,const float scEt,const float scEta)const;
+    bool operator()(const SCHitMatch& scHitMatch)const;
   private:
     float getDRZCutValue(const float scEt,const float scEta)const;
   private:
@@ -188,18 +188,18 @@ public:
   class MatchingCutsV2 : public MatchingCuts {
   public:
     explicit MatchingCutsV2(const edm::ParameterSet& pset);
-    bool operator()(const HitInfo& hit,const float scEt,const float scEta)const;
+    bool operator()(const SCHitMatch& scHitMatch)const;
   private:
-    const egPM::Param<HitInfo> dPhiMin_;
-    const egPM::Param<HitInfo> dPhiMax_;
-    const egPM::Param<HitInfo> dRZMin_;
-    const egPM::Param<HitInfo> dRZMax_;
+    const egPM::Param<SCHitMatch> dPhiMin_;
+    const egPM::Param<SCHitMatch> dPhiMax_;
+    const egPM::Param<SCHitMatch> dRZMin_;
+    const egPM::Param<SCHitMatch> dRZMax_;
   }; 
 
   class MatchingCutsV3 : public MatchingCuts {
   public:
     explicit MatchingCutsV3(const edm::ParameterSet& pset);
-    bool operator()(const HitInfo& hit,const float scEt,const float scEta)const;
+    bool operator()(const SCHitMatch& scHitMatch)const;
   private:
     size_t getBinNr(float eta)const;
     float getCutValue(float et,float highEt,float highEtThres,float lowEtGrad)const{
@@ -228,7 +228,7 @@ public:
   
 private:
   
-  std::vector<HitInfo> processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
+  std::vector<SCHitMatch> processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
 				   const GlobalPoint & vprim, const float energy, const int charge );
 
   static float getZVtxFromExtrapolation(const GlobalPoint& primeVtxPos,const GlobalPoint& hitPos,
@@ -236,12 +236,12 @@ private:
   
   bool passTrajPreSel(const GlobalPoint& hitPos,const GlobalPoint& candPos)const;
   
-  TrajSeedMatcher::HitInfo matchFirstHit(const TrajectorySeed& seed,
+  TrajSeedMatcher::SCHitMatch matchFirstHit(const TrajectorySeed& seed,
 					 const TrajectoryStateOnSurface& trajState,
 					 const GlobalPoint& vtxPos,
 					 const PropagatorWithMaterial& propagator);
 
-  TrajSeedMatcher::HitInfo match2ndToNthHit(const TrajectorySeed& seed,
+  TrajSeedMatcher::SCHitMatch match2ndToNthHit(const TrajectorySeed& seed,
 					    const FreeTrajectoryState& trajState,
 					    const size_t hitNr,	
 					    const GlobalPoint& prevHitPos,
@@ -253,8 +253,8 @@ private:
 
   void clearCache();
 
-  bool passesMatchSel(const HitInfo& hit,const size_t hitNr,const float scEt,const float scEta)const;
-  int getNrValidLayersAlongTraj(const HitInfo& hit1,const HitInfo& hit2,
+  bool passesMatchSel(const SCHitMatch& hit,const size_t hitNr)const;
+  int getNrValidLayersAlongTraj(const SCHitMatch& hit1,const SCHitMatch& hit2,
 				const GlobalPoint& candPos,
 				const GlobalPoint & vprim, 
 				const float energy, const int charge);

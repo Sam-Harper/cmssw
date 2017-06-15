@@ -177,6 +177,28 @@ namespace egPM {
     x = scRef->energy()*sin(scRef->position().Theta());
     y = std::abs(scRef->eta());
     z = seed.getCharge();
+  } 
+  template<typename T>
+  struct EtAbsEtaPhi {
+    float x;
+    float y;
+    float z;
+    
+    EtAbsEtaPhi(const T& seed){
+      x = seed.et();
+      y = std::abs(seed.eta());
+      z = seed.phi();
+    }
+    bool pass(float etMin,float etMax,float absEtaMin,float absEtaMax,float phiMin,float phiMax){
+      return  x>=etMin && (x < etMax || etMax<0) && y>=absEtaMin && y<absEtaMax && z>=phiMin && z < phiMax;
+    }
+  };  
+  template<>
+  inline EtAbsEtaPhi<reco::ElectronSeed>::EtAbsEtaPhi(const reco::ElectronSeed& seed){  
+    reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
+    x = scRef->energy()*sin(scRef->position().Theta());
+    y = std::abs(scRef->eta());
+    z = scRef->phi();
   }
 
   //these structs wrap the TF1 object
@@ -431,7 +453,8 @@ namespace egPM {
       else if(type=="AbsEtaClusEt") return std::make_unique<ParamBin3D<InputType,AbsEtaNrClusEt<InputType> > >(config);
       else if(type=="AbsEtaCharge") return std::make_unique<ParamBin2D<InputType,AbsEtaCharge<InputType> > >(config);
       else if(type=="EtAbsEta") return std::make_unique<ParamBin2D<InputType,EtAbsEta<InputType> > >(config);
-      else if(type=="EtAbsEtaCharge") return std::make_unique<ParamBin3D<InputType,EtAbsEtaCharge<InputType> > >(config);
+      else if(type=="EtAbsEtaCharge") return std::make_unique<ParamBin3D<InputType,EtAbsEtaCharge<InputType> > >(config);   
+      else if(type=="EtAbsEtaPhi") return std::make_unique<ParamBin3D<InputType,EtAbsEtaPhi<InputType> > >(config);
       else if(type=="Const") return std::make_unique<ParamBin0D<InputType> >(config);
       else throw cms::Exception("InvalidConfig") << " type "<<type<<" is not recognised, configuration is invalid and needs to be fixed"<<std::endl;
     }

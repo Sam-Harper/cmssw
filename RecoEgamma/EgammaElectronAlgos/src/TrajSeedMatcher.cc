@@ -123,8 +123,8 @@ TrajSeedMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const Gl
   
   std::vector<SeedWithInfo> matchedSeeds;
   for(const auto& seed : seeds) {
-    std::vector<HitInfo> matchedHitsNeg = processSeed(seed,candPos,vprim,energy,-1);
-    std::vector<HitInfo> matchedHitsPos = processSeed(seed,candPos,vprim,energy,+1);
+    std::vector<SCHitMatch> matchedHitsNeg = processSeed(seed,candPos,vprim,energy,-1);
+    std::vector<SCHitMatch> matchedHitsPos = processSeed(seed,candPos,vprim,energy,+1);
     int nrValidLayersPos = 0;
     int nrValidLayersNeg = 0;
     if(matchedHitsNeg.size()>=2){
@@ -162,7 +162,7 @@ TrajSeedMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const Gl
 //checks if the hits of the seed match within requested selection
 //matched hits are required to be consecutive, as soon as hit isnt matched,
 //the function returns, it doesnt allow skipping hits
-std::vector<TrajSeedMatcher::HitInfo>
+std::vector<TrajSeedMatcher::SCHitMatch>
 TrajSeedMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
 			      const GlobalPoint & vprim, const float energy, const int charge )
 {
@@ -174,10 +174,10 @@ TrajSeedMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& cand
   TrajectoryStateOnSurface initialTrajState(trajStateFromVtx,*bpb(trajStateFromVtx.position(), 
 								  trajStateFromVtx.momentum()));
  
-  std::vector<HitInfo> matchedHits;
-  HitInfo firstHit = matchFirstHit(seed,initialTrajState,vprim,*backwardPropagator_);
+  std::vector<SCHitMatch> matchedHits;
+  SCHitMatch firstHit = matchFirstHit(seed,initialTrajState,vprim,*backwardPropagator_);
   firstHit.setExtra(candEt,candEta,candPos.phi(),charge,1);
-  if(passesMatchSel(firstHit,0,candEt,candEta)){
+  if(passesMatchSel(firstHit,0)){
     matchedHits.push_back(firstHit);
 
     //now we can figure out the z vertex
@@ -189,9 +189,9 @@ TrajSeedMatcher::processSeed(const TrajectorySeed& seed, const GlobalPoint& cand
  
     GlobalPoint prevHitPos = firstHit.hitPos();
     for(size_t hitNr=1;hitNr<matchingCuts_.size() && hitNr<seed.nHits();hitNr++){
-      HitInfo hit = match2ndToNthHit(seed,firstHitFreeTraj,hitNr,prevHitPos,vertex,*forwardPropagator_);
+      SCHitMatch hit = match2ndToNthHit(seed,firstHitFreeTraj,hitNr,prevHitPos,vertex,*forwardPropagator_);
       hit.setExtra(candEt,candEta,candPos.phi(),charge,1);
-      if(passesMatchSel(hit,hitNr,candEt,candEta)){
+      if(passesMatchSel(hit,hitNr)){
 	matchedHits.push_back(hit);
 	prevHitPos = hit.hitPos();
       }else break;
@@ -252,19 +252,19 @@ const TrajectoryStateOnSurface& TrajSeedMatcher::getTrajStateFromPoint(const Tra
   }
 }
 
-TrajSeedMatcher::HitInfo TrajSeedMatcher::matchFirstHit(const TrajectorySeed& seed,const TrajectoryStateOnSurface& initialState,const GlobalPoint& vtxPos,const PropagatorWithMaterial& propagator)
+TrajSeedMatcher::SCHitMatch TrajSeedMatcher::matchFirstHit(const TrajectorySeed& seed,const TrajectoryStateOnSurface& initialState,const GlobalPoint& vtxPos,const PropagatorWithMaterial& propagator)
 {
   const TrajectorySeed::range& hits = seed.recHits();
   auto hitIt = hits.first;
 
   if(hitIt->isValid()){
     const TrajectoryStateOnSurface& trajStateFromVtx = getTrajStateFromVtx(*hitIt,initialState,propagator);
-    if(trajStateFromVtx.isValid()) return HitInfo(vtxPos,trajStateFromVtx,*hitIt);  
+    if(trajStateFromVtx.isValid()) return SCHitMatch(vtxPos,trajStateFromVtx,*hitIt);  
   }
-  return HitInfo();
+  return SCHitMatch();
 }
 
-TrajSeedMatcher::HitInfo TrajSeedMatcher::match2ndToNthHit(const TrajectorySeed& seed,
+TrajSeedMatcher::SCHitMatch TrajSeedMatcher::match2ndToNthHit(const TrajectorySeed& seed,
 							   const FreeTrajectoryState& initialState,
 							   const size_t hitNr,
 							   const GlobalPoint& prevHitPos,
@@ -278,10 +278,10 @@ TrajSeedMatcher::HitInfo TrajSeedMatcher::match2ndToNthHit(const TrajectorySeed&
     const TrajectoryStateOnSurface& trajState = getTrajStateFromPoint(*hitIt,initialState,prevHitPos,propagator);
     
     if(trajState.isValid()){
-      return HitInfo(vtxPos,trajState,*hitIt);  
+      return SCHitMatch(vtxPos,trajState,*hitIt);  
     }
   }
-  return HitInfo();
+  return SCHitMatch();
   
 }
 
@@ -293,17 +293,16 @@ void TrajSeedMatcher::clearCache()
   trajStateFromPointNegChargeCache_.clear();
 }
 
-bool TrajSeedMatcher::passesMatchSel(const TrajSeedMatcher::HitInfo& hit,const size_t hitNr,float scEt,float scEta)const
+bool TrajSeedMatcher::passesMatchSel(const TrajSeedMatcher::SCHitMatch& hit,const size_t hitNr)const
 {
   if(hitNr<matchingCuts_.size()){
-    return (*matchingCuts_[hitNr])(hit,scEt,scEta);
+    return (*matchingCuts_[hitNr])(hit);
   }else{
     throw cms::Exception("LogicError") <<" Error, attempting to apply selection to hit "<<hitNr<<" but only cuts for "<<matchingCuts_.size()<<" defined";
   }
-  
 }
 
-int TrajSeedMatcher::getNrValidLayersAlongTraj(const HitInfo& hit1,const HitInfo& hit2,
+int TrajSeedMatcher::getNrValidLayersAlongTraj(const SCHitMatch& hit1,const SCHitMatch& hit2,
 						const GlobalPoint& candPos,
 						const GlobalPoint & vprim, 
 						const float energy, const int charge)
@@ -373,7 +372,7 @@ size_t TrajSeedMatcher::getNrHitsRequired(const int nrValidLayers)const
   
 }
 
-TrajSeedMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
+TrajSeedMatcher::SCHitMatch::SCHitMatch(const GlobalPoint& vtxPos,
 				   const TrajectoryStateOnSurface& trajState,
 				   const TrackingRecHit& hit):
   detId_(hit.geographicalId()),
@@ -389,8 +388,8 @@ TrajSeedMatcher::HitInfo::HitInfo(const GlobalPoint& vtxPos,
 
 TrajSeedMatcher::SeedWithInfo::
 SeedWithInfo(const TrajectorySeed& seed,
-	     const std::vector<HitInfo>& posCharge,
-	     const std::vector<HitInfo>& negCharge,
+	     const std::vector<SCHitMatch>& posCharge,
+	     const std::vector<SCHitMatch>& negCharge,
 	     int nrValidLayers):
   seed_(seed),nrValidLayers_(nrValidLayers)
 {
@@ -424,12 +423,12 @@ TrajSeedMatcher::MatchingCutsV1::MatchingCutsV1(const edm::ParameterSet& pset):
   }
 }
 
-bool TrajSeedMatcher::MatchingCutsV1::operator()(const TrajSeedMatcher::HitInfo& hit,const float scEt,const float scEta)const
+bool TrajSeedMatcher::MatchingCutsV1::operator()(const TrajSeedMatcher::SCHitMatch& scHitMatch)const
 {
-  if(dPhiMax_>=0 && std::abs(hit.dPhi()) > dPhiMax_) return false;
+  if(dPhiMax_>=0 && std::abs(scHitMatch.dPhi()) > dPhiMax_) return false;
   
-  const float dRZMax = getDRZCutValue(scEt,scEta);
-  if(dRZMax_>=0 && std::abs(hit.dRZ()) > dRZMax) return false;
+  const float dRZMax = getDRZCutValue(scHitMatch.et(),scHitMatch.eta());
+  if(dRZMax_>=0 && std::abs(scHitMatch.dRZ()) > dRZMax) return false;
 	       
   return true;
 }
@@ -455,22 +454,14 @@ TrajSeedMatcher::MatchingCutsV2::MatchingCutsV2(const edm::ParameterSet& pset):
 
 }
 
-bool TrajSeedMatcher::MatchingCutsV2::operator()(const TrajSeedMatcher::HitInfo& hit,const float scEt,const float scEta)const
+bool TrajSeedMatcher::MatchingCutsV2::operator()(const TrajSeedMatcher::SCHitMatch& scHitMatch)const
 {
-  if(std::abs(hit.dPhi())<-1){
-    std::cout <<"et "<<scEt<<" eta "<<scEta<<" hit "<<hit.et()<<" "<<hit.eta()<<std::endl;
-    std::cout <<"cut values dPhi "<<dPhiMin_(hit)<<" - "<<dPhiMax_(hit)<<" dPhi "<<hit.dPhi()<<std::endl;
-    std::cout <<"cut values dRZ "<<dRZMin_(hit)<<" - "<<dRZMax_(hit)<<" dRZ "<<hit.dRZ()<<std::endl;
-    std::cout <<"passed ";
-  }
-  if(hit.dPhi() >= dPhiMin_(hit) &&
-     hit.dPhi() <= dPhiMax_(hit) && 
-     hit.dRZ() >= dRZMin_(hit) && 
-     hit.dRZ() <= dRZMax_(hit) ){
-    if(std::abs(hit.dPhi())<-1) std::cout <<" true "<<std::endl;
+  if(scHitMatch.dPhi() >= dPhiMin_(scHitMatch) &&
+     scHitMatch.dPhi() <= dPhiMax_(scHitMatch) && 
+     scHitMatch.dRZ() >= dRZMin_(scHitMatch) && 
+     scHitMatch.dRZ() <= dRZMax_(scHitMatch) ){
     return true;
   }else{
-    if(std::abs(hit.dPhi())<-1)std::cout <<" false "<<std::endl;
     return false;
   }
 }
@@ -498,19 +489,13 @@ TrajSeedMatcher::MatchingCutsV3::MatchingCutsV3(const edm::ParameterSet& pset):
   binSizeCheck(etaBins_.size(),dRZLowEtGrad_,"dRZMaxLowEtGrad");
 }
 
-bool TrajSeedMatcher::MatchingCutsV3::operator()(const TrajSeedMatcher::HitInfo& hit,const float scEt,const float scEta)const
+bool TrajSeedMatcher::MatchingCutsV3::operator()(const TrajSeedMatcher::SCHitMatch& scHitMatch)const
 {
-  size_t binNr=getBinNr(scEta);
-  float dPhiMax = getCutValue(scEt,dPhiHighEt_[binNr],dPhiHighEtThres_[binNr],dPhiLowEtGrad_[binNr]); 
-  if(std::abs(hit.dPhi())<-1){
-    std::cout <<"bin nr "<<binNr<<" dPhiCut "<<dPhiMax<<" dPhi "<<hit.dPhi()<<" high et "<<dPhiHighEt_[binNr]<<" "<<dPhiHighEtThres_[binNr]<<" "<<dPhiLowEtGrad_[binNr]<<std::endl;
-  }
-  if(dPhiMax>=0 && std::abs(hit.dPhi()) > dPhiMax) return false;  
-  float dRZMax = getCutValue(scEt,dRZHighEt_[binNr],dRZHighEtThres_[binNr],dRZLowEtGrad_[binNr]);
-  if(std::abs(hit.dPhi())<-1){
-    std::cout <<"bin nr "<<binNr<<" dRZCut "<<dRZMax<<" dPhi "<<hit.dRZ()<<std::endl;
-  }
-  if(dRZMax>=0 && std::abs(hit.dRZ()) > dRZMax) return false;
+  size_t binNr=getBinNr(scHitMatch.eta());
+  float dPhiMax = getCutValue(scHitMatch.et(),dPhiHighEt_[binNr],dPhiHighEtThres_[binNr],dPhiLowEtGrad_[binNr]); 
+  if(dPhiMax>=0 && std::abs(scHitMatch.dPhi()) > dPhiMax) return false;  
+  float dRZMax = getCutValue(scHitMatch.et(),dRZHighEt_[binNr],dRZHighEtThres_[binNr],dRZLowEtGrad_[binNr]);
+  if(dRZMax>=0 && std::abs(scHitMatch.dRZ()) > dRZMax) return false;
   
   return true;
 }
