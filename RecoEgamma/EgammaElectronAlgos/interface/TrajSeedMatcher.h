@@ -38,7 +38,7 @@
 #include "TrackingTools/RecoGeometry/interface/GlobalDetLayerGeometry.h"
 #include "RecoTracker/MeasurementDet/interface/MeasurementTrackerEvent.h"
 
-#include "RecoEgamma/EgammaHLTProducers/interface/EgammaHLTPixelMatchParamObjects.h"
+#include "RecoEgamma/EgammaElectronAlgos/interface/EgammaPixelMatchParamObjects.h"
 
 #include <unordered_map>
 

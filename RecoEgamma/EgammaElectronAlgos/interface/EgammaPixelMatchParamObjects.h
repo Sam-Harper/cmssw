@@ -1,3 +1,7 @@
+#ifndef RecoEgamma_EgammaElectronAlgos_EgammaPixelMatchParamObjects_h
+#define RecoEgamma_EgammaElectronAlgos_EgammaPixelMatchParamObjects_h
+
+
 //These objects allow an arbitary parameristisation to be used
 //design:
 //    the function and parameterisation can be changing without having to change the interface
@@ -56,7 +60,7 @@ namespace egPM {
     }
   };
   template<>
-  AbsEtaNrClus<reco::ElectronSeed>::AbsEtaNrClus(const reco::ElectronSeed& seed){
+  inline AbsEtaNrClus<reco::ElectronSeed>::AbsEtaNrClus(const reco::ElectronSeed& seed){
     reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
     x = std::abs(scRef->eta());
     y = scRef->clustersSize();
@@ -75,7 +79,7 @@ namespace egPM {
     }
   };
   template<>
-  AbsEtaCharge<reco::ElectronSeed>::AbsEtaCharge(const reco::ElectronSeed& seed){
+  inline AbsEtaCharge<reco::ElectronSeed>::AbsEtaCharge(const reco::ElectronSeed& seed){
     reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
     x = std::abs(scRef->eta());
     y = seed.getCharge();
@@ -99,7 +103,7 @@ namespace egPM {
     }
   };
   template<>
-  AbsEtaNrClusPhi<reco::ElectronSeed>::AbsEtaNrClusPhi(const reco::ElectronSeed& seed){
+  inline AbsEtaNrClusPhi<reco::ElectronSeed>::AbsEtaNrClusPhi(const reco::ElectronSeed& seed){
     reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
     x = std::abs(scRef->eta());
     y = scRef->clustersSize();
@@ -124,7 +128,7 @@ namespace egPM {
     }
   };
   template<>
-  AbsEtaNrClusEt<reco::ElectronSeed>::AbsEtaNrClusEt(const reco::ElectronSeed& seed){  
+  inline AbsEtaNrClusEt<reco::ElectronSeed>::AbsEtaNrClusEt(const reco::ElectronSeed& seed){  
     reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
     x = std::abs(scRef->eta());
     y = scRef->clustersSize();
@@ -146,7 +150,7 @@ namespace egPM {
   };
   
   template<>
-  EtAbsEta<reco::ElectronSeed>::EtAbsEta(const reco::ElectronSeed& seed){  
+  inline EtAbsEta<reco::ElectronSeed>::EtAbsEta(const reco::ElectronSeed& seed){  
     reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
     x = scRef->energy()*sin(scRef->position().Theta());
     y = std::abs(scRef->eta());
@@ -168,7 +172,7 @@ namespace egPM {
     }
   };  
   template<>
-  EtAbsEtaCharge<reco::ElectronSeed>::EtAbsEtaCharge(const reco::ElectronSeed& seed){  
+  inline EtAbsEtaCharge<reco::ElectronSeed>::EtAbsEtaCharge(const reco::ElectronSeed& seed){  
     reco::SuperClusterRef scRef = seed.caloCluster().castTo<reco::SuperClusterRef>();
     x = scRef->energy()*sin(scRef->position().Theta());
     y = std::abs(scRef->eta());
@@ -433,62 +437,7 @@ namespace egPM {
     }
   };
 
-  inline edm::ParameterSetDescription makeParamBinsDesc()
-  {
-    edm::ParameterSetDescription binParamDesc;
-    auto binDescCases = 
-      "AbsEtaClus" >>
-      (edm::ParameterDescription<double>("xMin",0,true) and
-       edm::ParameterDescription<double>("xMax",3.0,true) and
-       edm::ParameterDescription<int>("yMin",0,true) and
-       edm::ParameterDescription<int>("yMax",9999,true) and
-       edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
-       edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or
-      "AbsEtaCharge" >>
-      (edm::ParameterDescription<double>("xMin",0,true) and
-       edm::ParameterDescription<double>("xMax",3.0,true) and
-       edm::ParameterDescription<int>("yMin",-1,true) and
-       edm::ParameterDescription<int>("yMax",1,true) and
-       edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
-       edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or
-      "AbsEtaClusPhi" >>
-      (edm::ParameterDescription<double>("xMin",0,true) and
-       edm::ParameterDescription<double>("xMax",3.0,true) and
-       edm::ParameterDescription<int>("yMin",0,true) and
-       edm::ParameterDescription<int>("yMax",9999,true) and
-       edm::ParameterDescription<double>("zMin",-4,true) and
-       edm::ParameterDescription<double>("zMax",4,true) and
-       edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
-       edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or 
-      "AbsEtaClusEt" >>
-      (edm::ParameterDescription<double>("xMin",0,true) and
-       edm::ParameterDescription<double>("xMax",3.0,true) and
-       edm::ParameterDescription<int>("yMin",0,true) and
-       edm::ParameterDescription<int>("yMax",9999,true) and
-       edm::ParameterDescription<double>("zMin",0,true) and
-       edm::ParameterDescription<double>("zMax",-1,true) and
-       edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
-       edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or 
-      "EtAbsEta" >>
-      (edm::ParameterDescription<double>("xMin",0,true) and
-       edm::ParameterDescription<double>("xMax",-1,true) and
-       edm::ParameterDescription<double>("yMin",0,true) and
-       edm::ParameterDescription<double>("yMax",3.0,true) and
-       edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
-       edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or
-      "EtAbsEtaCharge" >>
-      (edm::ParameterDescription<double>("xMin",0,true) and
-       edm::ParameterDescription<double>("xMax",-1,true) and
-       edm::ParameterDescription<double>("yMin",0,true) and
-       edm::ParameterDescription<double>("yMax",3.0,true) and
-       edm::ParameterDescription<int>("zMin",-1,true) and
-       edm::ParameterDescription<int>("zMax",1,true) and
-       edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
-       edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or
-      "Const" >>
-      (edm::ParameterDescription<double>("val",0,true));
-    binParamDesc.ifValue(edm::ParameterDescription<std::string>("binType","EtAbsEtaCharge",true),std::move(binDescCases));
-   
-    return binParamDesc;
-  }
+  edm::ParameterSetDescription makeParamBinsDesc();
 }
+
+#endif
