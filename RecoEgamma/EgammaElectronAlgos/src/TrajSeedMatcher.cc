@@ -47,7 +47,7 @@ TrajSeedMatcher::TrajSeedMatcher(const edm::ParameterSet& pset):
   }
  
   if(minNrHitsValidLayerBins_.size()+1!=minNrHits_.size()){  
-    throw cms::Exception("InvalidConfig")<<" minNrHitsValidLayerBins should be 1 less than minNrHits when its "<<minNrHitsValidLayerBins_.size()<<" vs "<<minNrHits_.size();
+    throw cms::Exception("InvalidConfig")<<" TrajSeedMatcher::TrajSeedMatcher minNrHitsValidLayerBins should be 1 less than minNrHits when its "<<minNrHitsValidLayerBins_.size()<<" vs "<<minNrHits_.size();
   }
 }
 
@@ -60,34 +60,11 @@ edm::ParameterSetDescription TrajSeedMatcher::makePSetDescription()
   desc.add<std::vector<int> >("minNrHitsValidLayerBins",{4});
   desc.add<std::vector<unsigned int> >("minNrHits",{2,3});
   
-  edm::ParameterSetDescription cutsV2Desc;
-  
-  edm::ParameterSetDescription binParamDesc;
-  auto binDescCases = 
-    "EtAbsEtaCharge" >>
-    (edm::ParameterDescription<double>("xMin",0,true) and
-     edm::ParameterDescription<double>("xMax",-1,true) and
-     edm::ParameterDescription<double>("yMin",0,true) and
-     edm::ParameterDescription<double>("yMax",3.0,true) and
-     edm::ParameterDescription<int>("zMin",-1,true) and
-     edm::ParameterDescription<int>("zMax",1,true) and
-     edm::ParameterDescription<std::string>("funcType","TF1:pol0",true) and
-     edm::ParameterDescription<std::vector<double> >("funcParams",{0.},true)) or
-    "Const" >>
-    (edm::ParameterDescription<double>("val",0,true));
-  // binParamDesc.add<std::string>("binType","EtAbsEtaCharge");
-  // binParamDesc.add<double>("xMin",0.0);
-  // binParamDesc.add<double>("xMax",3.0);
-  // binParamDesc.add<double>("yMin",0); //fix me, this is broken
-  // binParamDesc.add<double>("yMax",99999); //fix me, this is broken
-  // binParamDesc.add<int>("zMin",0); //fix me, this is broken
-  // binParamDesc.add<int>("zMax",99999); //fix me, this is broken
-  // binParamDesc.add<std::string>("funcType","TF1:pol0");
-  // binParamDesc.add<std::vector<double> >("funcParams",{0.});
-  binParamDesc.ifValue(edm::ParameterDescription<std::string>("binType","EtAbsEtaCharge",true),std::move(binDescCases));
-  edm::ParameterSetDescription cutsDesc;
+  edm::ParameterSetDescription cutsV2Desc;  
+  edm::ParameterSetDescription binParamDesc = egPM::makeParamBinsDesc();
   cutsV2Desc.addVPSet("bins",binParamDesc);
-  
+
+  edm::ParameterSetDescription cutsDesc;
   auto cutDescCases = 
     1 >> 
     (edm::ParameterDescription<double>("dPhiMax",0.04,true) and
