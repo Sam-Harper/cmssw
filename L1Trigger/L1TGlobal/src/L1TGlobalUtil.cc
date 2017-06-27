@@ -205,7 +205,7 @@ void l1t::L1TGlobalUtil::retrieveL1Event(const edm::Event& iEvent, const edm::Ev
 					 edm::EDGetToken gtAlgToken) {
 
 // Get the Global Trigger Output Algorithm block
-     iEvent.getByToken(gtAlgToken,m_uGtAlgBlk);
+     if(!gtAlgToken.isUninitialized()) iEvent.getByToken(gtAlgToken,m_uGtAlgBlk);
      m_finalOR = false;
 
     //Make sure we have a valid AlgBlk
