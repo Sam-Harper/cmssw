@@ -22,7 +22,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateFwd.h"
 
-#include "RecoEgamma/EgammaElectronAlgos/interface/EgammaPixelMatchParamObjects.h"
+#include "RecoEgamma/EgammaHLTProducers/interface/EgammaHLTPixelMatchParamObjects.h"
 
 #include "DataFormats/SiPixelDetId/interface/PXBDetId.h" 
 #include "DataFormats/SiPixelDetId/interface/PXFDetId.h" 
@@ -167,7 +167,34 @@ void EgammaHLTPixelMatchVarProducer::fillDescriptions(edm::ConfigurationDescript
   desc.add<edm::InputTag>(("pixelSeedsProducer"), edm::InputTag("electronPixelSeeds"));
   
   edm::ParameterSetDescription varParamDesc;
-  edm::ParameterSetDescription binParamDesc = egPM::makeParamBinsDesc();
+  edm::ParameterSetDescription binParamDesc;
+  
+  auto binDescCases = 
+    "AbsEtaClus" >> 
+    (edm::ParameterDescription<double>("xMin",0.0,true) and
+     edm::ParameterDescription<double>("xMax",3.0,true) and
+     edm::ParameterDescription<int>("yMin",0,true) and
+     edm::ParameterDescription<int>("yMax",99999,true) and
+     edm::ParameterDescription<std::string>("funcType","pol0",true) and
+     edm::ParameterDescription<std::vector<double>>("funcParams",{0.},true)) or
+    "AbsEtaClusPhi" >>
+    (edm::ParameterDescription<double>("xMin",0.0,true) and
+     edm::ParameterDescription<double>("xMax",3.0,true) and
+     edm::ParameterDescription<int>("yMin",0,true) and
+     edm::ParameterDescription<int>("yMax",99999,true) and
+     edm::ParameterDescription<std::string>("funcType","pol0",true) and
+     edm::ParameterDescription<std::vector<double>>("funcParams",{0.},true)) or 
+     "AbsEtaClusEt" >>
+    (edm::ParameterDescription<double>("xMin",0.0,true) and
+     edm::ParameterDescription<double>("xMax",3.0,true) and
+     edm::ParameterDescription<int>("yMin",0,true) and
+     edm::ParameterDescription<int>("yMax",99999,true) and
+     edm::ParameterDescription<std::string>("funcType","pol0",true) and
+     edm::ParameterDescription<std::vector<double>>("funcParams",{0.},true));
+  
+  binParamDesc.ifValue(edm::ParameterDescription<std::string>("binType","AbsEtaClus",true), std::move(binDescCases));
+  
+  
   varParamDesc.addVPSet("bins",binParamDesc);
   desc.add("dPhi1SParams",varParamDesc);
   desc.add("dPhi2SParams",varParamDesc);

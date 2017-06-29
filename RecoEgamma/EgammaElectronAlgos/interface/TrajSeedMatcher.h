@@ -38,8 +38,6 @@
 #include "TrackingTools/RecoGeometry/interface/GlobalDetLayerGeometry.h"
 #include "RecoTracker/MeasurementDet/interface/MeasurementTrackerEvent.h"
 
-#include "RecoEgamma/EgammaElectronAlgos/interface/EgammaPixelMatchParamObjects.h"
-
 #include <unordered_map>
 
 namespace edm{
@@ -93,8 +91,12 @@ public:
 	    );
     ~SCHitMatch()=default;
 
-    void setExtra(float et,float eta,float phi,int charge,int nrClus){
-      et_=et;eta_=eta;phi_=phi;charge_=charge;nrClus_=nrClus;
+    void setExtra(float et, float eta, float phi, int charge, int nrClus){
+      et_=et;
+      eta_=eta;
+      phi_=phi;
+      charge_=charge;
+      nrClus_=nrClus;
     }
     
     int subdetId()const{return detId_.subdetId();}
@@ -131,8 +133,8 @@ public:
     float dPhiPos,dPhiNeg;
     
     MatchInfo(const DetId& iDetId,
-	      float iDRZPos,float iDRZNeg,
-	      float iDPhiPos,float iDPhiNeg):
+	      float iDRZPos, float iDRZNeg,
+	      float iDPhiPos, float iDPhiNeg):
       detId(iDetId),dRZPos(iDRZPos),dRZNeg(iDRZNeg),
       dPhiPos(iDPhiPos),dPhiNeg(iDPhiNeg){}
   };
@@ -177,7 +179,7 @@ public:
     explicit MatchingCutsV1(const edm::ParameterSet& pset);
     bool operator()(const SCHitMatch& scHitMatch)const;
   private:
-    float getDRZCutValue(const float scEt,const float scEta)const;
+    float getDRZCutValue(const float scEt, const float scEta)const;
   private:
     const double dPhiMax_;
     const double dRZMax_;
@@ -185,24 +187,14 @@ public:
     const std::vector<double> dRZMaxLowEtEtaBins_; 
     const std::vector<double> dRZMaxLowEt_; 
   };
+
   class MatchingCutsV2 : public MatchingCuts {
   public:
     explicit MatchingCutsV2(const edm::ParameterSet& pset);
     bool operator()(const SCHitMatch& scHitMatch)const;
   private:
-    const egPM::Param<SCHitMatch> dPhiMin_;
-    const egPM::Param<SCHitMatch> dPhiMax_;
-    const egPM::Param<SCHitMatch> dRZMin_;
-    const egPM::Param<SCHitMatch> dRZMax_;
-  }; 
-
-  class MatchingCutsV3 : public MatchingCuts {
-  public:
-    explicit MatchingCutsV3(const edm::ParameterSet& pset);
-    bool operator()(const SCHitMatch& scHitMatch)const;
-  private:
     size_t getBinNr(float eta)const;
-    float getCutValue(float et,float highEt,float highEtThres,float lowEtGrad)const{
+    float getCutValue(float et, float highEt, float highEtThres, float lowEtGrad)const{
       return  highEt + std::min(0.f,et-highEtThres)*lowEtGrad;
     }
   private:
@@ -231,30 +223,37 @@ private:
   std::vector<SCHitMatch> processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
 				   const GlobalPoint & vprim, const float energy, const int charge );
 
-  static float getZVtxFromExtrapolation(const GlobalPoint& primeVtxPos,const GlobalPoint& hitPos,
+  static float getZVtxFromExtrapolation(const GlobalPoint& primeVtxPos, const GlobalPoint& hitPos,
 					const GlobalPoint& candPos);
   
   bool passTrajPreSel(const GlobalPoint& hitPos,const GlobalPoint& candPos)const;
   
   TrajSeedMatcher::SCHitMatch matchFirstHit(const TrajectorySeed& seed,
-					 const TrajectoryStateOnSurface& trajState,
-					 const GlobalPoint& vtxPos,
-					 const PropagatorWithMaterial& propagator);
-
-  TrajSeedMatcher::SCHitMatch match2ndToNthHit(const TrajectorySeed& seed,
-					    const FreeTrajectoryState& trajState,
-					    const size_t hitNr,	
-					    const GlobalPoint& prevHitPos,
+					    const TrajectoryStateOnSurface& trajState,
 					    const GlobalPoint& vtxPos,
 					    const PropagatorWithMaterial& propagator);
+
+  TrajSeedMatcher::SCHitMatch match2ndToNthHit(const TrajectorySeed& seed,
+					       const FreeTrajectoryState& trajState,
+					       const size_t hitNr,	
+					       const GlobalPoint& prevHitPos,
+					       const GlobalPoint& vtxPos,
+					       const PropagatorWithMaterial& propagator);
   
-  const TrajectoryStateOnSurface& getTrajStateFromVtx(const TrackingRecHit& hit,const TrajectoryStateOnSurface& initialState,const PropagatorWithMaterial& propagator);
-  const TrajectoryStateOnSurface& getTrajStateFromPoint(const TrackingRecHit& hit,const FreeTrajectoryState& initialState,const GlobalPoint& point,const PropagatorWithMaterial& propagator);
+  const TrajectoryStateOnSurface& getTrajStateFromVtx(const TrackingRecHit& hit,
+						      const TrajectoryStateOnSurface& initialState,
+						      const PropagatorWithMaterial& propagator);
+
+  const TrajectoryStateOnSurface& getTrajStateFromPoint(const TrackingRecHit& hit,
+							const FreeTrajectoryState& initialState,
+							const GlobalPoint& point,
+							const PropagatorWithMaterial& propagator);
 
   void clearCache();
 
-  bool passesMatchSel(const SCHitMatch& hit,const size_t hitNr)const;
-  int getNrValidLayersAlongTraj(const SCHitMatch& hit1,const SCHitMatch& hit2,
+  bool passesMatchSel(const SCHitMatch& hit, const size_t hitNr)const;
+
+  int getNrValidLayersAlongTraj(const SCHitMatch& hit1, const SCHitMatch& hit2,
 				const GlobalPoint& candPos,
 				const GlobalPoint & vprim, 
 				const float energy, const int charge);
