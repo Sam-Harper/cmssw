@@ -567,7 +567,109 @@ egammaPhoHighEtaFiltersToMonitor= cms.VPSet(
         ),
   
 ) 
+egammaPhoFiltersToMonitor= cms.VPSet(
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_20_20_20_CaloIdLV2"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),)
+        filterName = cms.string("hltEG20CaloIdLV2ClusterShapeL1TripleEGFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string(""),
+        ), 
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_20_20_20_CaloIdLV2"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),)
+        filterName = cms.string("hltTriEG20CaloIdLV2ClusterShapeUnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEG20CaloIdLV2ClusterShapeL1TripleEGFilter"),
+        ), 
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_20_20_20_CaloIdLV2_R9IdVL"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),)
+        filterName = cms.string("hltEG20CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string(""),
+        ), 
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_20_20_20_CaloIdLV2_R9IdVL"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),)
+        filterName = cms.string("hltTriEG20CaloIdLV2R9IdVLR9IdUnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEG20CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+        ), 
+    #first seeded leg
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),)
+        filterName = cms.string("hltEG30CaloIdLV2ClusterShapeL1TripleEGFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string(""),
+        ), 
+    #second unseeded leg, 10 GeV 
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("15:99999")),)
+        filterName = cms.string("hltEG10CaloIdLV2ClusterShapeUnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEG30CaloIdLV2ClusterShapeL1TripleEGFilter"),
+        ), 
+    #second unseded leg, 30 GeV
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),)
+        filterName = cms.string("hltDiEG30CaloIdLV2EtUnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEG30CaloIdLV2ClusterShapeL1TripleEGFilter"),
+        ), 
+    #first seeded leg
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2_R9IdVL"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),)
+        filterName = cms.string("hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string(""),
+        ), 
+    #second unseeded leg, 10 GeV
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2_R9IdVL"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("15:99999")),)
+        filterName = cms.string("hltEG10CaloIdLV2R9IdVLR9IdUnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+        ), 
+    #second unseeded leg, 30 GeV
+     cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2_R9IdVL"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),)
+        filterName = cms.string("hltDiEG30TriEG10HECaloIdV2R9IdVLEt10UnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+        ), 
+    #first seeded leg
+     cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_35_35_5_CaloIdLV2_R9IdVL"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("40:99999")),)
+        filterName = cms.string("hltEG35CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string(""),
+        ), 
+    #second unseeded leg, 5 GeV
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_35_35_5_CaloIdLV2_R9IdVL"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("10:99999")),)
+        filterName = cms.string("hltEG5CaloIdLV2R9IdVLR9IdUnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEG35CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+        ), 
+    #second unseeded leg, 35 GeV
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_35_35_5_CaloIdLV2_R9IdVL"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("40:99999")),)
+        filterName = cms.string("hltDiEG35CaloIdLV2R9IdVLEtUnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEG35CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+        ), 
 
+) 
 egHLTDQMOfflineTnPSource = cms.EDAnalyzer("HLTEleTagAndProbeOfflineSource",
                                           tagAndProbeCollections = cms.VPSet(
         cms.PSet( 
