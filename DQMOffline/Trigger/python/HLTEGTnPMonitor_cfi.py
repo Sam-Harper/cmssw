@@ -122,7 +122,7 @@ tagAndProbeElePhoHighEtaConfigEle27WPTightHEP17 = tagAndProbeElePhoHighEtaConfig
         ecalEndcapPosHighEtaCut,
         hcalPhi17Cut,
 ))
-tagAndProbeElePhoHigEtaConfigEle27WPTightHEM17 = tagAndProbeElePhoHighEtaConfigEle27WPTight.clone(
+tagAndProbeElePhoHighEtaConfigEle27WPTightHEM17 = tagAndProbeElePhoHighEtaConfigEle27WPTight.clone(
      probeRangeCuts = cms.VPSet(
         ecalEndcapPosHighEtaCut,
         hcalPhi17Cut,
@@ -526,20 +526,34 @@ egammaStdFiltersToMonitor= cms.VPSet(
         filterName = cms.string("hltDiEle25CaloIdLMWPMS2UnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEle25CaloIdLMWPMS2Filter"),
-        ), 
-     cms.PSet(
+        ),  
+    cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Ele27_Ele37_CaloIdL_MW"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("40:99999")),),
-        filterName = cms.string("hltEle37CaloIdLMWPMS2Filter"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("30:99999")),),
+        filterName = cms.string("hltEle27CaloIdLMWPMS2Filter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string(""),
         ),
-    cms.PSet(
-        folderName = cms.string("HLT/EGTagAndProbeEffs/AlCa_Ele35_WPTight_Gsf"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("38:99999")),),
-        filterName = cms.string("hltAlCaSingleEleWPTightGsfTrackIsoFilterForEleStream"),
+     cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Ele27_Ele37_CaloIdL_MW"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("30:99999")),),
+        filterName = cms.string("hltDiEle27CaloIdLMWPMS2UnseededFilter"),
         histTitle = cms.string(""),
-        tagExtraFilter = cms.string("hltEle37CaloIdLMWPMS2Filter"),
+        tagExtraFilter = cms.string("hltEle27CaloIdLMWPMS2Filter"),
+        ),
+     cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Ele27_Ele37_CaloIdL_MW"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("40:99999")),),
+        filterName = cms.string("hltEle37CaloIdLMWPMS2UnseededFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string("hltEle27CaloIdLMWPMS2Filter"),
+        ),
+    cms.PSet(
+        folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_Ele35_WPTight_Gsf_L1EGMT"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("38:99999")),),
+        filterName = cms.string("hltSingleEle35WPTightGsfL1EGMTTrackIsoFilter"),
+        histTitle = cms.string(""),
+        tagExtraFilter = cms.string(""),
         ),
     
      )
@@ -570,28 +584,28 @@ egammaPhoHighEtaFiltersToMonitor= cms.VPSet(
 egammaPhoFiltersToMonitor= cms.VPSet(
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_20_20_20_CaloIdLV2"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),),
         filterName = cms.string("hltEG20CaloIdLV2ClusterShapeL1TripleEGFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string(""),
         ), 
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_20_20_20_CaloIdLV2"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),),
         filterName = cms.string("hltTriEG20CaloIdLV2ClusterShapeUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG20CaloIdLV2ClusterShapeL1TripleEGFilter"),
         ), 
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_20_20_20_CaloIdLV2_R9IdVL"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),),
         filterName = cms.string("hltEG20CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string(""),
         ), 
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_20_20_20_CaloIdLV2_R9IdVL"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("25:99999")),),
         filterName = cms.string("hltTriEG20CaloIdLV2R9IdVLR9IdUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG20CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
@@ -599,7 +613,7 @@ egammaPhoFiltersToMonitor= cms.VPSet(
     #first seeded leg
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),),
         filterName = cms.string("hltEG30CaloIdLV2ClusterShapeL1TripleEGFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string(""),
@@ -607,7 +621,7 @@ egammaPhoFiltersToMonitor= cms.VPSet(
     #second unseeded leg, 10 GeV 
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("15:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("15:99999")),),
         filterName = cms.string("hltEG10CaloIdLV2ClusterShapeUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG30CaloIdLV2ClusterShapeL1TripleEGFilter"),
@@ -615,7 +629,7 @@ egammaPhoFiltersToMonitor= cms.VPSet(
     #second unseded leg, 30 GeV
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),),
         filterName = cms.string("hltDiEG30CaloIdLV2EtUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG30CaloIdLV2ClusterShapeL1TripleEGFilter"),
@@ -623,7 +637,7 @@ egammaPhoFiltersToMonitor= cms.VPSet(
     #first seeded leg
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2_R9IdVL"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),),
         filterName = cms.string("hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string(""),
@@ -631,23 +645,24 @@ egammaPhoFiltersToMonitor= cms.VPSet(
     #second unseeded leg, 10 GeV
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2_R9IdVL"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("15:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("15:99999")),),
         filterName = cms.string("hltEG10CaloIdLV2R9IdVLR9IdUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
+                                     
         ), 
     #second unseeded leg, 30 GeV
      cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2_R9IdVL"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),)
-        filterName = cms.string("hltDiEG30TriEG10HECaloIdV2R9IdVLEt10UnseededFilter"),
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),),
+        filterName = cms.string("hltDiEG30TriEG10CaloIdV2R9IdVLEtUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
         ), 
     #first seeded leg
      cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_35_35_5_CaloIdLV2_R9IdVL"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("40:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("38:99999")),),
         filterName = cms.string("hltEG35CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string(""),
@@ -655,7 +670,7 @@ egammaPhoFiltersToMonitor= cms.VPSet(
     #second unseeded leg, 5 GeV
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_35_35_5_CaloIdLV2_R9IdVL"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("10:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("10:99999")),),
         filterName = cms.string("hltEG5CaloIdLV2R9IdVLR9IdUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG35CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
@@ -663,7 +678,7 @@ egammaPhoFiltersToMonitor= cms.VPSet(
     #second unseeded leg, 35 GeV
     cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_35_35_5_CaloIdLV2_R9IdVL"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("40:99999")),)
+        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("38:99999")),),
         filterName = cms.string("hltDiEG35CaloIdLV2R9IdVLEtUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG35CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
@@ -697,7 +712,7 @@ egHLTDQMOfflineTnPSource = cms.EDAnalyzer("HLTEleTagAndProbeOfflineSource",
 egHLTElePhoHighEtaDQMOfflineTnPSource = cms.EDAnalyzer("HLTElePhoTagAndProbeOfflineSource",
                                                        tagAndProbeCollections = cms.VPSet(
         cms.PSet( 
-            tagAndProbeElePhoConfigEle27WPTight,
+            tagAndProbeElePhoHighEtaConfigEle27WPTight,
             histConfigs = egammaHighEtaHistConfigs,
             baseHistName = cms.string("eleWPTightTagPhoHighEtaProbe_"),
             filterConfigs = egammaPhoHighEtaFiltersToMonitor,
@@ -721,26 +736,25 @@ egHLTElePhoDQMOfflineTnPSource = cms.EDAnalyzer("HLTElePhoTagAndProbeOfflineSour
                                                 tagAndProbeCollections = cms.VPSet(
         cms.PSet( 
             tagAndProbeElePhoConfigEle27WPTight,
-            histConfigs = egammaHistConfigs,
+            histConfigs = egammaStdHistConfigs,
             baseHistName = cms.string("eleWPTightTagPhoProbe_"),
             filterConfigs = egammaPhoFiltersToMonitor,
         ),
         cms.PSet(
             tagAndProbeElePhoConfigEle27WPTightHEM17,
-            histConfigs = egammaHighEtaHistConfigs,
+            histConfigs = egammaStdHistConfigs,
             baseHistName = cms.string("eleWPTightTagPhoProbe-HEM17_"),
             filterConfigs = egammaPhoFiltersToMonitor,
         ),
         cms.PSet(
             tagAndProbeElePhoConfigEle27WPTightHEP17,
-            histConfigs = egammaHighEtaHistConfigs,
+            histConfigs = egammaStdHistConfigs,
             baseHistName = cms.string("eleWPTightTagPhoProbe-HEP17_"),
             filterConfigs = egammaPhoFiltersToMonitor,
         ),
            
         )
-
-
+)
 
 
 from RecoEgamma.ElectronIdentification.egmGsfElectronIDs_cff import egmGsfElectronIDs
