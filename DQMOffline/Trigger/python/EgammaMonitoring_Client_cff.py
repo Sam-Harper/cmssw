@@ -34,7 +34,7 @@ def makeAllEGEffHistDefs():
 
 
     baseNames=["eleWPTightTagPhoProbe","eleWPTightTagPhoProbe-HEM17","eleWPTightTagPhoProbe-HEP17"]
-    filterNames=["hltEG20CaloIdLV2ClusterShapeL1TripleEGFilter","hltTriEG20CaloIdLV2ClusterShapeUnseededFilter","hltEG20CaloIdLV2R9IdVLR9IdL1TripleEGFilter","hltTriEG20CaloIdLV2R9IdVLR9IdUnseededFilter","hltEG30CaloIdLV2ClusterShapeL1TripleEGFilter","hltEG10CaloIdLV2ClusterShapeUnseededFilter","hltDiEG30CaloIdLV2EtUnseededFilter","hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter","hltEG10CaloIdLV2R9IdVLR9IdUnseededFilter","hltDiEG30TriEG10CaloIdV2R9IdVLEtUnseededFilter","hltEG35CaloIdLV2R9IdVLR9IdL1TripleEGFilter","hltEG5CaloIdLV2R9IdVLR9IdUnseededFilter","hltDiEG35CaloIdLV2R9IdVLEtUnseededFilter"]
+    filterNames=["hltEG20CaloIdLV2ClusterShapeL1TripleEGFilter","hltTriEG20CaloIdLV2ClusterShapeUnseededFilter","hltEG20CaloIdLV2R9IdVLR9IdL1TripleEGFilter","hltTriEG20CaloIdLV2R9IdVLR9IdUnseededFilter","hltEG30CaloIdLV2ClusterShapeL1TripleEGFilter","hltEG10CaloIdLV2ClusterShapeUnseededFilter","hltDiEG30CaloIdLV2EtUnseededFilter","hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter","hltEG10CaloIdLV2R9IdVLR9IdUnseededFilter","hltDiEG30CaloIdLV2R9IdVLEtUnseededFilter","hltEG35CaloIdLV2R9IdVLR9IdL1TripleEGFilter","hltEG5CaloIdLV2R9IdVLR9IdUnseededFilter","hltDiEG35CaloIdLV2R9IdVLEtUnseededFilter"]
 
     for baseName in baseNames:
         for filterName in filterNames:

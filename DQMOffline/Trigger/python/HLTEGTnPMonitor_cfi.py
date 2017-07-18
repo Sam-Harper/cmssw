@@ -655,7 +655,7 @@ egammaPhoFiltersToMonitor= cms.VPSet(
      cms.PSet(
         folderName = cms.string("HLT/EGTagAndProbeEffs/HLT_TriplePhoton_30_30_10_CaloIdLV2_R9IdVL"),
         rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("35:99999")),),
-        filterName = cms.string("hltDiEG30TriEG10CaloIdV2R9IdVLEtUnseededFilter"),
+        filterName = cms.string("hltDiEG30CaloIdLV2R9IdVLEtUnseededFilter"),
         histTitle = cms.string(""),
         tagExtraFilter = cms.string("hltEG30CaloIdLV2R9IdVLR9IdL1TripleEGFilter"),
         ), 
