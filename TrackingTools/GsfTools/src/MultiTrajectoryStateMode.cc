@@ -31,11 +31,16 @@ MultiTrajectoryStateMode::momentumFromModeCartesian (const TrajectoryStateOnSurf
   std::vector<SingleGaussianState1D> pyStates; pyStates.reserve(numb);
   std::vector<SingleGaussianState1D> pzStates; pzStates.reserve(numb);
   // iteration over components
+  
   for ( std::vector<TrajectoryStateOnSurface>::const_iterator ic=components.begin();
 	ic!=components.end(); ++ic ) {
+    std::cout <<"  component start "<<std::endl;
     // extraction of parameters and variances
     GlobalVector mom(ic->globalMomentum());
     AlgebraicSymMatrix66 cov(ic->cartesianError().matrix());
+    std::cout <<"      x "<<mom.x()<<" "<<cov(3,3)<<" weight "<<ic->weight()<<std::endl; 
+    std::cout <<"      y "<<mom.y()<<" "<<cov(4,4)<<" weight "<<ic->weight()<<std::endl; 
+    std::cout <<"      z "<<mom.z()<<" "<<cov(5,5)<<" weight "<<ic->weight()<<std::endl; 
     pxStates.push_back(SingleGaussianState1D(mom.x(),cov(3,3),ic->weight()));
     pyStates.push_back(SingleGaussianState1D(mom.y(),cov(4,4),ic->weight()));
     pzStates.push_back(SingleGaussianState1D(mom.z(),cov(5,5),ic->weight()));
@@ -52,6 +57,7 @@ MultiTrajectoryStateMode::momentumFromModeCartesian (const TrajectoryStateOnSurf
   //
   // cartesian momentum vector from modes
   //
+  
   momentum = GlobalVector(pxUtils.mode().mean(),pyUtils.mode().mean(),pzUtils.mode().mean());
   return true;
 }

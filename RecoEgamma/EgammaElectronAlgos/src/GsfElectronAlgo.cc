@@ -488,8 +488,11 @@ bool GsfElectronAlgo::ElectronData::calculateTSOS
   // innermost state propagation to the beam spot position
   GlobalPoint bsPos ;
   ele_convert(beamSpot.position(),bsPos) ;
+  std::cout <<"bsPos "<<bsPos.x()<<" "<<bsPos.y()<<" "<<bsPos.z()<<std::endl;
   vtxTSOS = mtsTransform->extrapolatedState(innTSOS,bsPos) ;
   if (!vtxTSOS.isValid()) vtxTSOS=innTSOS;
+
+  std::cout <<"vertex TSOS "<<vtxTSOS.globalMomentum().eta()<<std::endl;
 
   //at seed
   outTSOS = mtsTransform->outerStateOnSurface(*gsfTrackRef);
@@ -522,7 +525,9 @@ void GsfElectronAlgo::ElectronData::calculateMode( const MultiTrajectoryStateMod
   mtsMode->positionFromModeCartesian(eleTSOS,elePos) ;
   mtsMode->momentumFromModeCartesian(sclTSOS,sclMom) ;
   mtsMode->positionFromModeCartesian(sclTSOS,sclPos) ;
+  std::cout <<"vtxTSOS test 2 "<<vtxTSOS.globalMomentum().eta()<<std::endl; 
   mtsMode->momentumFromModeCartesian(vtxTSOS,vtxMom) ;
+  std::cout <<" out mommenum "<<vtxMom.eta()<<" x "<<vtxMom.x()<<" "<<vtxMom.y()<<" "<<vtxMom.z()<<std::endl;
   mtsMode->positionFromModeCartesian(vtxTSOS,vtxPos) ;
   mtsMode->momentumFromModeCartesian(outTSOS,outMom);
   mtsMode->positionFromModeCartesian(outTSOS,outPos) ;
@@ -1268,7 +1273,7 @@ void GsfElectronAlgo::createElectron(const gsfAlgoHelpers::HeavyObjectCache* hoc
 
   Candidate::LorentzVector momentum = electronData_->calculateMomentum() ;
 
-
+  std::cout <<"electron "<<momentum.pt()<<" "<<momentum.eta()<<" "<<momentum.phi()<<" sc eta "<<seedCluster.energy()<<" "<<seedCluster.eta()<<std::endl;
   //====================================================
   // Track-Cluster Matching
   //====================================================
