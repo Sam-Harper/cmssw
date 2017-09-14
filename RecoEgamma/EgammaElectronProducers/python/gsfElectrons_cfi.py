@@ -3,6 +3,37 @@ import FWCore.ParameterSet.Config as cms
 from RecoEcal.EgammaClusterProducers.hybridSuperClusters_cfi import *
 from RecoEcal.EgammaClusterProducers.multi5x5BasicClusters_cfi import *
 
+trkIsol03Cfg= cms.PSet(
+    barrelCuts=cms.PSet(
+        minPt=cms.double(1.0),
+        maxDR=cms.double(0.3),
+        minDR=cms.double(0.0),
+         minDEta=cms.double(0.005),
+        maxDZ=cms.double(0.1),
+        maxDPtPt=cms.double(0.1),
+        minHits=cms.int32(8),
+         minPixelHits=cms.int32(1),
+        allowedQualities=cms.vstring(),
+        algosToReject=cms.vstring()
+        ),
+    endcapCuts=cms.PSet(
+        minPt=cms.double(1.0),
+        maxDR=cms.double(0.3),
+        minDR=cms.double(0.0),
+        minDEta=cms.double(0.005),
+        maxDZ=cms.double(0.5),
+        maxDPtPt=cms.double(0.1),
+        minHits=cms.int32(8),
+        minPixelHits=cms.int32(1),
+        allowedQualities=cms.vstring(),
+        algosToReject=cms.vstring()
+        )
+    )
+
+trkIsol04Cfg = trkIsol03Cfg.clone()
+trkIsol04Cfg.barrelCuts.maxDR = cms.double(0.4)
+trkIsol04Cfg.endcapCuts.maxDR = cms.double(0.4)
+
 #==============================================================================
 # Producer of transient ecal driven gsf electrons
 #==============================================================================
@@ -115,14 +146,9 @@ ecalDrivenGsfElectrons = cms.EDProducer("GsfElectronEcalDrivenProducer",
     recHitSeverityToBeExcludedEndcaps = cleanedHybridSuperClusters.RecHitSeverityToBeExcluded,
     #severityLevelCut = cms.int32(4),
 
-    # Isolation algos configuration
-    intRadiusBarrelTk = cms.double(0.015), 
-    intRadiusEndcapTk = cms.double(0.015), 
-    stripBarrelTk = cms.double(0.015), 
-    stripEndcapTk = cms.double(0.015), 
-    ptMinTk = cms.double(0.7), 
-    maxVtxDistTk = cms.double(0.2), 
-    maxDrbTk = cms.double(999999999.), 
+    # Isolation algos configuration 
+    trkIsol03Cfg = trkIsol03Cfg,
+    trkIsol04Cfg = trkIsol04Cfg,
     intRadiusHcal = cms.double(0.15),
     etMinHcal = cms.double(0.0), 
     intRadiusEcalBarrel = cms.double(3.0), 
