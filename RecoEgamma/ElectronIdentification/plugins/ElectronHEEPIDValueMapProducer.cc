@@ -213,7 +213,7 @@ float ElectronHEEPIDValueMapProducer::calTrkIso(const reco::GsfElectron& ele,
     float trkIso=0.; 
     for(auto& handle: handles){
       if(handle.isValid()){
-	trkIso+= trkIsoCalc_.calIsolPt(*ele.gsfTrack(),*handle,eles);
+	trkIso+= trkIsoCalc_.calIsolPt(*ele.gsfTrack(),*handle,EleTkIsolFromCands::Mode::ACCEPTALL);
       }
     }
     return trkIso;
