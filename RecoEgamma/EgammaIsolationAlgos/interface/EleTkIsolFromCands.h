@@ -36,14 +36,15 @@
 //      specify if the electron PF candidates are to be rejected in the sum over that collection or not.
 //      Note in all this, I'm not concerned about the electron in questions track, that will be rejected,
 //      I'm concerned about near by fake electrons which have been recoed by PF
+//      This is handled by the PIDVeto, which obviously is only used/required when using PFCandidates
 
 
 class EleTkIsolFromCands {
 public:
-  enum class Mode{
-    ACCEPTALL=0,
-    REJECTELES,
-    ONLYELES,
+  enum class PIDVeto{
+    NONE=0,
+    ELES,
+    NONELES,
   };
 
 private:
@@ -72,9 +73,9 @@ public:
 
   static edm::ParameterSetDescription pSetDescript();
 
-  std::pair<int,double> calIsol(const reco::TrackBase& trk,const pat::PackedCandidateCollection& cands,const Mode)const;
+  std::pair<int,double> calIsol(const reco::TrackBase& trk,const pat::PackedCandidateCollection& cands,const PIDVeto=PIDVeto::NONE)const;
   std::pair<int,double> calIsol(const double eleEta,const double elePhi,const double eleVZ,
-				const pat::PackedCandidateCollection& cands,const Mode)const;
+				const pat::PackedCandidateCollection& cands,const PIDVeto=PIDVeto::NONE)const;
 
   
   std::pair<int,double> calIsol(const reco::TrackBase& trk,const reco::TrackCollection& tracks)const;
@@ -83,40 +84,22 @@ public:
   
   //little helper function for the four calIsol functions for it to directly return the pt
   template<typename ...Args> 
-  double calIsolPt(Args && ...args){return calIsol(std::forward<Args>(args)...).second;}
-
-
-  // double calIsolPt(const reco::TrackBase& trk,const pat::PackedCandidateCollection& cands)const{
-  //   return calIsol(trk,cand).second;
-  // }
-  // double calIsolPt(const double eleEta,const double elePhi,const double eleVZ,
-  // 		   const pat::PackedCandidateCollection& cands)const{
-  //   return calIsol(eleEta,elePhi,eleVZ,cands).second;
-  // }
-  // double calIsolPt(const reco::TrackBase& trk,const reco::TrackCollection& tracks)const{
-  //   return calIsol(trk,tracks).second;
-  // }
-  // double calIsolPt(const double eleEta,const double elePhi,const double eleVZ,
-  // 		   const reco::TrackCollection& tracks)const{
-  //   return calIsol(eleEta,elePhi,eleVZ,tracks).second;
-  // }
+  double calIsolPt(Args && ...args)const{return calIsol(std::forward<Args>(args)...).second;}
   
-  
+  static PIDVeto pidVetoFromStr(const std::string& vetoStr);
+  static bool passPIDVeto(const int pdgId,const EleTkIsolFromCands::PIDVeto pidVeto);
 
-
+private:
   static bool passTrkSel(const reco::TrackBase& trk,
 			 const double trkPt,
 			 const TrkCuts& cuts,
 			 const double eleEta,const double elePhi,
 			 const double eleVZ);
-  
-private:
   //no qualities specified, accept all, ORed
   static bool passQual(const reco::TrackBase& trk,
 		       const std::vector<reco::TrackBase::TrackQuality>& quals);
   static bool passAlgo(const reco::TrackBase& trk,
 		       const std::vector<reco::TrackBase::TrackAlgorithm>& algosToRej);
-  static bool passMode(const pat::PackedCandidate& cand,const EleTkIsolFromCands::Mode mode);
 };
 
 

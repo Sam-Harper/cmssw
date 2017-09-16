@@ -62,16 +62,16 @@ edm::ParameterSetDescription EleTkIsolFromCands::pSetDescript()
 std::pair<int,double> 
 EleTkIsolFromCands::calIsol(const reco::TrackBase& eleTrk,
 			    const pat::PackedCandidateCollection& cands,
-			    const Mode mode)const
+			    const PIDVeto pidVeto)const
 {
-  return calIsol(eleTrk.eta(),eleTrk.phi(),eleTrk.vz(),cands,mode);
+  return calIsol(eleTrk.eta(),eleTrk.phi(),eleTrk.vz(),cands,pidVeto);
 }
 
 std::pair<int,double> 
 EleTkIsolFromCands::calIsol(const double eleEta,const double elePhi,
 			    const double eleVZ,
 			    const pat::PackedCandidateCollection& cands,
-			    const Mode mode)const
+			    const PIDVeto pidVeto)const
 {
   double ptSum=0.;
   int nrTrks=0;
@@ -79,7 +79,7 @@ EleTkIsolFromCands::calIsol(const double eleEta,const double elePhi,
   const TrkCuts& cuts = std::abs(eleEta)<1.5 ? barrelCuts_ : endcapCuts_;
   
   for(auto& cand  : cands){
-    if(cand.hasTrackDetails() && cand.charge()!=0 && passMode(cand,mode)){
+    if(cand.hasTrackDetails() && cand.charge()!=0 && passPIDVeto(cand.pdgId(),pidVeto)){
       const reco::Track& trk = cand.pseudoTrack();
       if(passTrkSel(trk,trk.pt(),cuts,eleEta,elePhi,eleVZ)){	
 	ptSum+=trk.pt();
@@ -117,6 +117,33 @@ EleTkIsolFromCands::calIsol(const double eleEta,const double elePhi,
   }
   return {nrTrks,ptSum};	
 }	
+
+bool EleTkIsolFromCands::passPIDVeto(const int pdgId,const EleTkIsolFromCands::PIDVeto veto)
+{
+  int pidAbs = std::abs(pdgId);
+  switch (veto){
+  case PIDVeto::NONE:
+    return true;
+  case PIDVeto::ELES:
+    if(pidAbs==11) return false;
+    else return true;
+  case PIDVeto::NONELES:
+    if(pidAbs==11) return true;
+    else return false;
+  default:
+    throw cms::Exception("CodeError") <<"invalid PIDVeto "<<static_cast<int>(veto)<<", EleTkIsolFromCands::PIDVeto has been updated without EleTkIsolFromCands::passPIDVeto also being updated";
+  }
+}
+
+EleTkIsolFromCands::PIDVeto EleTkIsolFromCands::pidVetoFromStr(const std::string& vetoStr) 
+{
+  if(vetoStr=="none") return PIDVeto::NONE;
+  else if(vetoStr=="eles") return PIDVeto::ELES;
+  else if(vetoStr=="noneles") return PIDVeto::NONELES;
+  else{
+    throw cms::Exception("CodeError") <<"unrecognised string "<<vetoStr<<", either a typo or this function needs to be updated";
+  }
+}
 
 bool EleTkIsolFromCands::passTrkSel(const reco::TrackBase& trk,
 				    const double trkPt,const TrkCuts& cuts,
@@ -160,19 +187,3 @@ passAlgo(const reco::TrackBase& trk,
   return algosToRej.empty() || !std::binary_search(algosToRej.begin(),algosToRej.end(),trk.algo());
 }
 
-bool EleTkIsolFromCands::passMode(const pat::PackedCandidate& cand,const EleTkIsolFromCands::Mode mode)
-{
-  int pidAbs = std::abs(cand.pdgId());
-  switch (mode){
-  case Mode::ACCEPTALL:
-    return true;
-  case Mode::REJECTELES:
-    if(pidAbs==11) return false;
-    else return true;
-  case Mode::ONLYELES:
-    if(pidAbs==11) return true;
-    else return false;
-  default:
-    throw cms::Exception("CodeError") <<"invalid mode "<<static_cast<int>(mode)<<", EleTkIsolFromCands::Mode has been updated without EleTkIsolFromCands::passMode also being updated";
-  }
-}
