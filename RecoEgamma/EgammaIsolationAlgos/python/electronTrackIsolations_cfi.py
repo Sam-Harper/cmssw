@@ -71,7 +71,7 @@ trkIsol03CfgV3= cms.PSet(
         minHits=cms.int32(8),
         minPixelHits=cms.int32(1),
         allowedQualities=cms.vstring(),
-        algosToReject=cms.vstring("jetCoreRegional")
+        algosToReject=cms.vstring("jetCoreRegionalStep")
         ),
     endcapCuts=cms.PSet(
         minPt=cms.double(1.0),
@@ -83,7 +83,7 @@ trkIsol03CfgV3= cms.PSet(
         minHits=cms.int32(8),
         minPixelHits=cms.int32(1),
         allowedQualities=cms.vstring(),
-        algosToReject=cms.vstring("jetCoreRegional")
+        algosToReject=cms.vstring("jetCoreRegionalStep")
         )
     )
 trkIsol04CfgV3 = trkIsol03CfgV3.clone()
