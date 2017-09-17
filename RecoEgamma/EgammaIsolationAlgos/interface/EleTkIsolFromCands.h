@@ -20,6 +20,9 @@
 //
 //The track version is more for variables that are stored in the electron rather than 
 //objects which are recomputed on the fly for AOD/miniAOD
+//
+//Note, the tracks in miniAOD have additional cuts on and are missing algo information so this 
+//has to be taken into account when using them
 
 //new for 9X: 
 //  1) its now possible to use generalTracks as input
