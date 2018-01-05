@@ -348,7 +348,6 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<double>("thresh_PFClusterSeedBarrel",1.0);
   desc.add<std::string>("ClusteringType","Mustache");
   desc.add<std::string>("EnergyWeight","Raw");
-  desc.add<edm::InputTag>("BeamSpot",edm::InputTag("offlineBeamSpot"));
   desc.add<double>("thresh_PFClusterSeedEndcap",1.0);
   desc.add<double>("phiwidth_SuperClusterBarrel",0.6);
   desc.add<double>("thresh_PFClusterES",0.0);

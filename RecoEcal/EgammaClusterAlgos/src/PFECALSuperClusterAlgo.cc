@@ -172,7 +172,7 @@ namespace {
   };
 }
 
-PFECALSuperClusterAlgo::PFECALSuperClusterAlgo() : beamSpot_(nullptr) { }
+PFECALSuperClusterAlgo::PFECALSuperClusterAlgo() {}
 
 void PFECALSuperClusterAlgo::
 setPFClusterCalibration(const std::shared_ptr<PFEnergyCalibration>& calib) {
@@ -185,8 +185,6 @@ void PFECALSuperClusterAlgo::setTokens(const edm::ParameterSet &iConfig, edm::Co
     cc.consumes<edm::View<reco::PFCluster> >(iConfig.getParameter<edm::InputTag>("PFClusters"));
   inputTagPFClustersES_ = 
     cc.consumes<reco::PFCluster::EEtoPSAssociation>(iConfig.getParameter<edm::InputTag>("ESAssociation"));  
-  inputTagBeamSpot_ = 
-    cc.consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("BeamSpot"));    
     
   if (useRegression_) {
     const edm::ParameterSet &regconf = iConfig.getParameter<edm::ParameterSet>("regressionConfig");
@@ -234,12 +232,7 @@ loadAndSortPFClusters(const edm::Event &iEvent) {
   
   const PFClusterView& clusters = *pfclustersHandle.product();
   const reco::PFCluster::EEtoPSAssociation& psclusters = *psAssociationHandle.product();
-  
-  //load BeamSpot
-  edm::Handle<reco::BeamSpot> bsHandle;
-  iEvent.getByToken( inputTagBeamSpot_, bsHandle);
-  beamSpot_ = bsHandle.product();
-  
+    
   //initialize regression for this event
   if (useRegression_) {
     regr_->setEvent(iEvent);
@@ -564,13 +557,9 @@ buildSuperCluster(CalibClusterPtr& seed,
   
   // save the super cluster to the appropriate list (if it passes the final
   // Et threshold)
-  //Note that Et is computed here with respect to the beamspot position
-  //in order to be consistent with the cut applied in the
-  //ElectronSeedProducer
-  double scEtBS = 
-    ptFast(new_sc.energy(),new_sc.position(),beamSpot_->position());
+  double scEt =  new_sc.energy()*std::sqrt(new_sc.position().perp2()/new_sc.position().mag2());
 
-  if ( scEtBS > threshSuperClusterEt_ ) {
+  if ( scEt > threshSuperClusterEt_ ) {
     switch( seed->the_ptr()->layer() ) {
     case PFLayer::ECAL_BARREL:
       if(isOOTCollection_) {

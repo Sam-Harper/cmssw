@@ -133,9 +133,7 @@ class PFECALSuperClusterAlgo {
 
   edm::EDGetTokenT<edm::View<reco::PFCluster> >   inputTagPFClusters_;
   edm::EDGetTokenT<reco::PFCluster::EEtoPSAssociation>   inputTagPFClustersES_;   
-  edm::EDGetTokenT<reco::BeamSpot>   inputTagBeamSpot_;
    
-  const reco::BeamSpot *beamSpot_;
   const ESChannelStatus* channelStatus_;
   
   CalibratedClusterPtrVector _clustersEB;
