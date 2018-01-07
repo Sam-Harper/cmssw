@@ -14,6 +14,8 @@
 #include "DataFormats/RecoCandidate/interface/RecoStandAloneMuonCandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateFwd.h" 
+#include "DataFormats/RecoCandidate/interface/RecoGenericCandidate.h"
+#include "DataFormats/RecoCandidate/interface/RecoGenericCandidateFwd.h" 
 #include "DataFormats/RecoCandidate/interface/RecoCaloTowerCandidate.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
 #include "DataFormats/RecoCandidate/interface/FitResult.h"
@@ -63,6 +65,12 @@ namespace DataFormats_RecoCandidate {
     edm::Ref<reco::RecoEcalCandidateCollection> r2;
     edm::RefProd<reco::RecoEcalCandidateCollection> rp2;
     edm::RefVector<reco::RecoEcalCandidateCollection> rv2;
+ 
+    reco::RecoGenericCandidateCollection vg2;
+    edm::Wrapper<reco::RecoGenericCandidateCollection> wg2;
+    edm::Ref<reco::RecoGenericCandidateCollection> rg2;
+    edm::RefProd<reco::RecoGenericCandidateCollection> rpg2;
+    edm::RefVector<reco::RecoGenericCandidateCollection> rvg2;
 
     reco::RecoEcalCandidateIsolationMap v3;
     edm::Wrapper<reco::RecoEcalCandidateIsolationMap> w3;
@@ -115,6 +123,11 @@ namespace DataFormats_RecoCandidate {
     edm::reftobase::RefHolder<reco::RecoEcalCandidateRef> rbe2;
     edm::reftobase::VectorHolder<reco::Candidate, reco::RecoEcalCandidateRefVector> rbe3;
     edm::reftobase::RefVectorHolder<reco::RecoEcalCandidateRefVector> rbe4;
+
+    edm::reftobase::Holder<reco::Candidate, reco::RecoGenericCandidateRef> rbg1;
+    edm::reftobase::RefHolder<reco::RecoGenericCandidateRef> rbg2;
+    edm::reftobase::VectorHolder<reco::Candidate, reco::RecoGenericCandidateRefVector> rbg3;
+    edm::reftobase::RefVectorHolder<reco::RecoGenericCandidateRefVector> rbg4;
 
 
     std::multimap<reco::isodeposit::Direction::Distance,float> mumdf1;

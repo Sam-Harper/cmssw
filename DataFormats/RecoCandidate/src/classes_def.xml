@@ -20,6 +20,9 @@
    <version ClassVersion="11" checksum="1100355146"/>
    <version ClassVersion="10" checksum="3531165310"/>
   </class>
+  <class name="reco::RecoGenericCandidate"  ClassVersion="10">
+   <version ClassVersion="10" checksum="2545920515"/>
+  </class>
   <class name="reco::RecoCaloTowerCandidate" ClassVersion="12">
    <version ClassVersion="12" checksum="4228136352"/>
    <version ClassVersion="11" checksum="2294254376"/>
@@ -67,7 +70,19 @@
   <class name="edm::Ref<std::vector<reco::RecoEcalCandidate>,reco::RecoEcalCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoEcalCandidate>,reco::RecoEcalCandidate> >"/>
   <class name="edm::RefProd<std::vector<reco::RecoEcalCandidate> >"/>
   <class name="edm::RefVector<std::vector<reco::RecoEcalCandidate>,reco::RecoEcalCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoEcalCandidate>,reco::RecoEcalCandidate> >"/>
- <class name="edm::reftobase::Holder<reco::Candidate, edm::Ref<std::vector<reco::RecoEcalCandidate>,reco::RecoEcalCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoEcalCandidate>,reco::RecoEcalCandidate> > >" />
+  <class name="edm::reftobase::Holder<reco::Candidate, edm::Ref<std::vector<reco::RecoEcalCandidate>,reco::RecoEcalCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoEcalCandidate>,reco::RecoEcalCandidate> > >" />
+  
+  <class name="std::vector<reco::RecoGenericCandidate>"/>
+  <class name="edm::Wrapper<std::vector<reco::RecoGenericCandidate> >"/>
+ 
+  <class name="edm::Wrapper<edm::RefVector<std::vector<reco::RecoGenericCandidate> > >"/>
+  
+  <class name="edm::Ref<std::vector<reco::RecoGenericCandidate>,reco::RecoGenericCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoGenericCandidate>,reco::RecoGenericCandidate> >"/>
+  <class name="edm::RefProd<std::vector<reco::RecoGenericCandidate> >"/>
+  <class name="edm::RefVector<std::vector<reco::RecoGenericCandidate>,reco::RecoGenericCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoGenericCandidate>,reco::RecoGenericCandidate> >"/>
+  <class name="edm::reftobase::Holder<reco::Candidate, edm::Ref<std::vector<reco::RecoGenericCandidate>,reco::RecoGenericCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoGenericCandidate>,reco::RecoGenericCandidate> > >" />
+
+
   <class name="edm::reftobase::Holder<reco::Candidate, edm::Ref<std::vector<reco::RecoChargedCandidate>,reco::RecoChargedCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoChargedCandidate>,reco::RecoChargedCandidate> > >" />
   <class name="edm::reftobase::Holder<reco::Candidate, edm::Ref<std::vector<reco::RecoChargedRefCandidate>,reco::RecoChargedRefCandidate,edm::refhelper::FindUsingAdvance<std::vector<reco::RecoChargedRefCandidate>,reco::RecoChargedRefCandidate> > >" />
 
