@@ -34,9 +34,7 @@ patOOTPhotons.resolutions     = cms.PSet()
 patOOTPhotons.addPuppiIsolation = cms.bool(False)
 
 # PFClusterIso
-patOOTPhotons.addPFClusterIso = cms.bool(True)
-patOOTPhotons.ecalPFClusterIsoMap = cms.InputTag("reducedEgamma", "ootPhoEcalPFClusIso")
-patOOTPhotons.hcalPFClusterIsoMap = cms.InputTag("reducedEgamma", "ootPhoHcalPFClusIso")
+patOOTPhotons.addPFClusterIso = cms.bool(False)
 
 # MC Match
 patOOTPhotons.genParticleMatch = cms.InputTag("ootPhotonMatch") ## particles source to be used for the matching
@@ -61,4 +59,4 @@ run2_miniAOD_80XLegacy.toReplaceWith(makePatOOTPhotonsTask, cms.Task(
                                      makePatOOTPhotonsTask.copy()
                                      ))
 
-run2_miniAOD_80XLegacy.toModify(patOOTPhotons, hcalPFClusterIsoMap = "")
+run2_miniAOD_80XLegacy.toModify(patOOTPhotons, addPFClusterIso = cms.bool(True),ecalPFClusterIsoMap = cms.InputTag("reducedEgamma", "ootPhoEcalPFClusIso") )

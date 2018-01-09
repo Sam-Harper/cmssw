@@ -25,6 +25,8 @@ GEDGsfElectronFinalizer::GEDGsfElectronFinalizer( const edm::ParameterSet & cfg 
    tokenElectronIsoVals_.push_back(consumes<edm::ValueMap<float> >(pfIsoVals.getParameter<edm::InputTag>("pfSumPhotonEt")));
    tokenElectronIsoVals_.push_back(consumes<edm::ValueMap<float> >(pfIsoVals.getParameter<edm::InputTag>("pfSumNeutralHadronEt")));
    tokenElectronIsoVals_.push_back(consumes<edm::ValueMap<float> >(pfIsoVals.getParameter<edm::InputTag>("pfSumPUPt")));
+   tokenElectronIsoVals_.push_back(consumes<edm::ValueMap<float> >(pfIsoVals.getParameter<edm::InputTag>("pfSumEcalClusterEt")));
+   tokenElectronIsoVals_.push_back(consumes<edm::ValueMap<float> >(pfIsoVals.getParameter<edm::InputTag>("pfSumHcalClusterEt")));
 //   std::vector<std::string> isoNames = pfIsoVals.getParameterNamesForType<edm::InputTag>();
 //   for(const std::string& name : isoNames) {
 //     edm::InputTag tag = 
@@ -103,6 +105,12 @@ void GEDGsfElectronFinalizer::produce( edm::Event & event, const edm::EventSetup
      isoVariables.sumPhotonEt = (*(isolationValueMaps)[1])[myElectronRef];
      isoVariables.sumNeutralHadronEt = (*(isolationValueMaps)[2])[myElectronRef];
      isoVariables.sumPUPt = (*(isolationValueMaps)[3])[myElectronRef];
+     if(isolationValueMaps.size()<=4){
+       throw cms::Exception("ArrayError") <<" looks like we a got a producer not updated"<<std::endl;
+     }
+     isoVariables.sumEcalClusterEt = (*(isolationValueMaps)[4])[myElectronRef];
+     isoVariables.sumHcalClusterEt = (*(isolationValueMaps)[5])[myElectronRef];
+
      newElectron.setPfIsolationVariables(isoVariables);
 
      // now set a status if not already done (in GEDGsfElectronProducer.cc)
