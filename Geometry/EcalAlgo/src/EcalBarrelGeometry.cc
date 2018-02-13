@@ -499,3 +499,16 @@ const CaloCellGeometry* EcalBarrelGeometry::getGeometryRawPtr (uint32_t index) c
   return (m_cellVec.size() < index ||
 	  nullptr == cell->param() ? nullptr : cell);
 }
+
+bool EcalBarrelGeometry::present( const DetId& id ) const
+{
+  if(id.det()==DetId::Ecal && id.subdetId()==EcalBarrel){
+    EBDetId ebId(id);
+    if(ebId.ietaAbs()>=EBDetId::MIN_IETA && ebId.ietaAbs()<=EBDetId::MAX_IETA &&
+       ebId.iphi()>=EBDetId::MIN_IPHI && ebId.iphi()<=EBDetId::MAX_IPHI){
+      return true;
+    }
+  }
+  return false;
+
+}
