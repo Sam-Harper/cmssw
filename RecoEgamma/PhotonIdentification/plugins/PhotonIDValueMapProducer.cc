@@ -40,6 +40,58 @@ bool isInFootprint(const T& thefootprint, const U& theCandidate) {
 class PhotonIDValueMapProducer : public edm::stream::EDProducer<> {
 
   public:
+  //profiling indicated that calculating dz,dxy is slow so catch the expensive values
+  class DzDxyCalc {
+  private:
+    float pzOverPt_;
+    float sinPhi_;
+    float cosPhi_;
+    float vx_;
+    float vy_;
+    float vz_;
+    bool isInit_;
+  public:
+    DzDxyCalc():
+      pzOverPt_(std::numeric_limits<float>::max()),
+      sinPhi_(std::numeric_limits<float>::max()),
+      cosPhi_(std::numeric_limits<float>::max()),
+      vx_(std::numeric_limits<float>::max()),      
+      vy_(std::numeric_limits<float>::max()),
+      vz_(std::numeric_limits<float>::max()),
+      isInit_(false){}
+
+    void init(const pat::PackedCandidate& cand){
+      //float comparison is okay here, etaAtVtx() is eta()+deta_ and I want to know if deta_ is 0 or not
+      if(cand.etaAtVtx()!=cand.eta()) pzOverPt_ = std::sinh(cand.etaAtVtx());
+      else pzOverPt_ = cand.pz()/cand.pt();
+      sinPhi_ = std::sin(cand.phiAtVtx());
+      cosPhi_ = std::cos(cand.phiAtVtx());
+      vx_ = cand.vx();
+      vy_ = cand.vy();
+      vz_ = cand.vz();
+      isInit_ = true;
+    }
+    void init(const reco::PFCandidate& cand){
+      const auto& trk = cand.trackRef();
+      pzOverPt_ = trk->pz()/trk->pt();
+      sinPhi_ = std::sin(trk->phi());
+      cosPhi_ = std::cos(trk->phi());
+      vx_ = trk->vx();
+      vy_ = trk->vy();
+      vz_ = trk->vz();
+      isInit_ = true;
+    }
+    bool isInit()const{return isInit_;}
+    float dz(const math::XYZPoint& point)const{
+      return vz_-point.Z() - ((vx_-point.X())*cosPhi_ + (vy_-point.Y())*sinPhi_)*pzOverPt_;
+    }
+    float dxy(const math::XYZPoint& point)const{
+      return -(vx_-point.X()) * sinPhi_ + (vy_-point.Y()) * cosPhi_;
+    }
+  };
+
+  
+  }
   
   explicit PhotonIDValueMapProducer(const edm::ParameterSet&);
   ~PhotonIDValueMapProducer() override;
@@ -102,6 +154,9 @@ class PhotonIDValueMapProducer : public edm::stream::EDProducer<> {
   edm::EDGetTokenT<edm::ValueMap<std::vector<reco::PFCandidateRef > > > particleBasedIsolationTokenMiniAOD_;
   edm::EDGetTokenT<edm::View<reco::Candidate> > pfCandidatesTokenMiniAOD_;
   edm::EDGetToken srcMiniAOD_;
+
+  //a cache for slow variables to calculate
+  std::vector<DzDxyCalc> pfCandDzDxyCalcCache_;
 
   // check whether a non-null preshower is there
   bool usesES_;
@@ -292,8 +347,11 @@ void PhotonIDValueMapProducer::produce(edm::Event& iEvent, const edm::EventSetup
   edm::Handle< edm::View<reco::Candidate> > pfCandidatesHandle;
 
   iEvent.getByToken(pfCandidatesToken_, pfCandidatesHandle);
-  if( !pfCandidatesHandle.isValid() )
+  if( !pfCandidatesHandle.isValid() ) {
     iEvent.getByToken(pfCandidatesTokenMiniAOD_, pfCandidatesHandle);
+  }
+  pfCandDzDxyCalcCache_.clear();
+  pfCandDzDxyCalcCache_.resize(pfCandidatesHandle->size());
 
   if( !isAOD && !src->empty() ) {
     edm::Ptr<pat::Photon> test(src->ptrAt(0));
@@ -302,6 +360,7 @@ void PhotonIDValueMapProducer::produce(edm::Event& iEvent, const edm::EventSetup
 	<<"DataFormat is detected as miniAOD but cannot cast to pat::Photon!";
     }
   }
+
 
   // size_t n = src->size();
   // Cluster shapes
@@ -552,11 +611,10 @@ float PhotonIDValueMapProducer
   float worstIsolation = 999;
   std::vector<float> allIsolations;
 
-  float dRveto;
-  if (photon->isEB())
-    dRveto = dRvetoBarrel;
-  else
-    dRveto = dRvetoEndcap;
+  const float dRveto = photon->isEB() ? dRvetoBarrel : dRvetoEndcap;
+  const float dRveto2 = dRveto*dRveto;
+  const float dRmax2 = dRmax*dRmax;
+
 
   //Calculate isolation sum separately for each vertex
   for(unsigned int ivtx=0; ivtx<vertices->size(); ++ivtx) {
@@ -566,34 +624,34 @@ float PhotonIDValueMapProducer
     math::XYZVector photon_directionWrtVtx(photon->superCluster()->x() - vtx->x(),
 					   photon->superCluster()->y() - vtx->y(),
 					   photon->superCluster()->z() - vtx->z());
+   
+    const float phoEtaWrtVtx = photon_directionWrtVtx.Eta();
+    const float phoPhiWrtVtx = photon_directionWrtVtx.Phi();
+
     
     float sum = 0;
     // Loop over the PFCandidates
     for(unsigned i=0; i<pfCandidates->size(); i++) {
       
-      const auto& iCand = pfCandidates->ptrAt(i);
+      const auto& iCand = pfCandidates->ptrAt(i);  
+      
+      if (iCand->pt() < ptMin) continue;
+
+      float dR2 = deltaR2(phoEtaWrtVtx, phoPhiWrtVtx,
+                          iCand->eta(), iCand->phi());
+      if(dR2 > dRmax2 || dR2 < dRveto2) continue;
 
       //require that PFCandidate is a charged hadron
       reco::PFCandidate::ParticleType thisCandidateType = candidatePdgId(iCand, isAOD);
-      if (thisCandidateType != reco::PFCandidate::h) 
-	continue;
-
-      if (iCand->pt() < ptMin)
-	continue;
-      
+      if (thisCandidateType != reco::PFCandidate::h) continue;
+    
       float dxy=-999, dz=-999;
       if(isPVConstraint) getImpactParameters(iCand, isAOD, pv, dxy, dz);
       else getImpactParameters(iCand, isAOD, *vtx, dxy, dz);
 
-
-
       if( fabs(dxy) > dxyMax) continue;
       if ( fabs(dz) > dzMax) continue;
-      
-      float dR2 = deltaR2(photon_directionWrtVtx.Eta(), photon_directionWrtVtx.Phi(), 
-                          iCand->eta(),      iCand->phi());
-      if(dR2 > dRmax*dRmax || dR2 < dRveto*dRveto) continue;
-      
+          
       sum += iCand->pt();
     }
 
@@ -612,12 +670,12 @@ PhotonIDValueMapProducer::candidatePdgId(const edm::Ptr<reco::Candidate> candida
 					 bool isAOD){
   
   reco::PFCandidate::ParticleType thisCandidateType = reco::PFCandidate::X;
-  if( isAOD )
-    thisCandidateType = ( (const recoCandPtr)candidate)->particleId();
+  //TO:DO, remove this dynamic_cast but requires change to PFCandidate (make translateTypeToPdgId( ParticleType type ) static so do later
+  if( isAOD ) return  thisCandidateType = ( (const recoCandPtr)candidate)->particleId();
   else {
     // the neutral hadrons and charged hadrons can be of pdgId types
     // only 130 (K0L) and +-211 (pi+-) in packed candidates
-    const int pdgId = ( (const patCandPtr)candidate)->pdgId();
+    const int pdgId = candidate->pdgId();
     if( pdgId == 22 )
       thisCandidateType = reco::PFCandidate::gamma;
     else if( abs(pdgId) == 130) // PDG ID for K0L
@@ -646,16 +704,31 @@ void PhotonIDValueMapProducer::getImpactParameters(const edm::Ptr<reco::Candidat
 
   dxy=-999;
   dz=-999;
-  if( isAOD ) {
-    const reco::Track *theTrack = &*( ((const recoCandPtr) candidate)->trackRef());
-    dxy = theTrack->dxy(pv.position());
-    dz  = theTrack->dz(pv.position());
-  } else {
-    const pat::PackedCandidate & aCand = *(patCandPtr(candidate)); 
-    dxy = aCand.dxy(pv.position());
-    dz = aCand.dz(pv.position());
+  // if( isAOD ) {
+  //   const reco::Track *theTrack = &*( ((const recoCandPtr) candidate)->trackRef());
+  //   dxy = theTrack->dxy(pv.position());
+  //   dz  = theTrack->dz(pv.position());
+  // } else {
+  //   const pat::PackedCandidate & aCand = *(patCandPtr(candidate)); 
+  //   dxy = aCand.dxy(pv.position());
+  //   dz = aCand.dz(pv.position());
 
+  // }
+  if(candidate.key()<pfCandDzDxyCalcCache_.size()){
+    auto& dzDxyCalc = pfCandDzDxyCalcCache_[candidate.key()];
+    if(!dzDxyCalc.isInit()){
+      if(isAOD) dzDxyCalc.init(*(const recoCandPtr)(candidate));
+      else dzDxyCalc.init(*(const patCandPtr)(candidate));
+    }
+    dxy = dzDxyCalc.dxy(pv.position());
+    dz = dzDxyCalc.dz(pv.position());
+    //float newDZ = dzDxyCalc.dz(pv.position());
+    //float newDXY = dzDxyCalc.dxy(pv.position());
+    // if(std::abs(newDZ-dz)>0.0001 || std::abs(newDXY-dxy)>0.0001) std::cout <<"miss match newDZ "<<newDZ<<" old dz "<<dz<<" newDXY "<<newDXY<<" old dxy "<<dxy<<std::endl;
+  }else{
+    throw cms::Exception("LogicError") <<" cand key is "<<candidate.key()<<" while the dzdxyCache has only "<<pfCandDzDxyCalcCache_.size()<<" entries";
   }
+  
 
 }
 
