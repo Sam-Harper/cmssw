@@ -6,46 +6,39 @@
 #include <CLHEP/Random/RandGaussQ.h>
 #include "RecoEgamma/EgammaTools/interface/EGEnergySysIndex.h"
 
-PhotonEnergyCalibrator::PhotonEnergyCalibrator(bool isMC, bool synchronization,
-					       const std::string& correctionFile
-					       ) :
+const EnergyScaleCorrection::ScaleCorrection PhotonEnergyCalibrator::defaultScaleCorr_;
+const EnergyScaleCorrection::SmearCorrection PhotonEnergyCalibrator::defaultSmearCorr_;
+
+PhotonEnergyCalibrator::PhotonEnergyCalibrator(const std::string& correctionFile):
   correctionRetriever_(correctionFile),
-  isMC_(isMC), synchronization_(synchronization),
   rng_(nullptr),
   minEt_(1.0)
 {
-  if(isMC_) {
-    correctionRetriever_.setDoScale(false);
-    correctionRetriever_.setDoSmearings(true);
-  } else {
-    correctionRetriever_.setDoScale(true);
-    correctionRetriever_.setDoSmearings(false);
-  }
-}
 
-PhotonEnergyCalibrator::~PhotonEnergyCalibrator()
-{}
+}
 
 void PhotonEnergyCalibrator::initPrivateRng(TRandom *rnd)
 {
   rng_ = rnd;
 }
 
-std::vector<float> PhotonEnergyCalibrator::calibrate(reco::Photon &photon,const unsigned int runNumber, 
-							 const EcalRecHitCollection *recHits, 
-							 edm::StreamID const & id, 
-							 const int eventIsMC) const
+std::vector<float> PhotonEnergyCalibrator::
+calibrate(reco::Photon &photon,const unsigned int runNumber, 
+	  const EcalRecHitCollection *recHits, 
+	  edm::StreamID const & id, 
+	  const PhotonEnergyCalibrator::EventType eventType) const
 {
-  return calibrate(photon,runNumber,recHits,gauss(id),eventIsMC);
+  return calibrate(photon,runNumber,recHits,gauss(id),eventType);
 }
 
-std::vector<float> PhotonEnergyCalibrator::calibrate(reco::Photon &photon,const unsigned int runNumber, 
-							 const EcalRecHitCollection *recHits, 
-							 const float smearNrSigma, 
-							 const int eventIsMC) const
+std::vector<float> PhotonEnergyCalibrator::
+calibrate(reco::Photon &photon,const unsigned int runNumber, 
+	  const EcalRecHitCollection *recHits, 
+	  const float smearNrSigma, 
+	  const PhotonEnergyCalibrator::EventType eventType) const
 {
-  const float aeta = std::abs(photon.superCluster()->eta());
-  const float et = photon.getCorrectedEnergy(reco::Photon::P4type::regression2) / cosh(aeta);
+  const float scEtaAbs = std::abs(photon.superCluster()->eta());
+  const float et = photon.getCorrectedEnergy(reco::Photon::P4type::regression2) / cosh(scEtaAbs);
 
   if (et < minEt_) {
     std::vector<float> retVal(EGEnergySysIndex::kNrSysErrs,
@@ -70,107 +63,99 @@ std::vector<float> PhotonEnergyCalibrator::calibrate(reco::Photon &photon,const 
     if(seedRecHit->checkFlag(EcalRecHit::kHasSwitchToGain6)) gainSeedSC = 6;
     if(seedRecHit->checkFlag(EcalRecHit::kHasSwitchToGain1)) gainSeedSC = 1;
   }
-  const float scale = correctionRetriever_.scaleCorr(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC);
-  const float smear = correctionRetriever_.smearingSigma(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 0., 0.);
-
-  // This always to be carefully thought
-  float scale_up = scale + correctionRetriever_.scaleCorrUncert(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 7);
-  float scale_dn = scale - correctionRetriever_.scaleCorrUncert(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 7);
-  float resol_up  = correctionRetriever_.smearingSigma(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 1., 0.);
-  float resol_dn  = correctionRetriever_.smearingSigma(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, -1., 0.);
   
-  float scale_stat_up = scale + correctionRetriever_.scaleCorrUncert(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 1);
-  float scale_stat_dn = scale - correctionRetriever_.scaleCorrUncert(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 1);
-  float scale_syst_up = scale + correctionRetriever_.scaleCorrUncert(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 2);
-  float scale_syst_dn = scale - correctionRetriever_.scaleCorrUncert(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 2);
-  float scale_gain_up = scale + correctionRetriever_.scaleCorrUncert(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 4);
-  float scale_gain_dn = scale - correctionRetriever_.scaleCorrUncert(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 4);
-  float resol_rho_up  = correctionRetriever_.smearingSigma(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 1., 0.);
-  float resol_rho_dn  = correctionRetriever_.smearingSigma(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, -1., 0.);
-  float resol_phi_up  = correctionRetriever_.smearingSigma(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 0., 1.);
-  float resol_phi_dn  = correctionRetriever_.smearingSigma(runNumber, photon.isEB(), photon.full5x5_r9(), aeta, et, gainSeedSC, 0., -1.);
+  const EnergyScaleCorrection::ScaleCorrection* scaleCorr = correctionRetriever_.getScaleCorr(runNumber, et, scEtaAbs, photon.full5x5_r9(), gainSeedSC);  
+  const EnergyScaleCorrection::SmearCorrection* smearCorr = correctionRetriever_.getSmearCorr(runNumber, et, scEtaAbs, photon.full5x5_r9(), gainSeedSC);  
+  if(scaleCorr==nullptr) scaleCorr=&defaultScaleCorr_;
+  if(smearCorr==nullptr) smearCorr=&defaultSmearCorr_;
+ 
 
   std::vector<float> uncertainties(EGEnergySysIndex::kNrSysErrs,0.);
-
-  const double oldEcalEnergy = photon.getCorrectedEnergy(reco::Photon::P4type::regression2);
-  const double oldEcalEnergyError = photon.getCorrectedEnergyError(reco::Photon::P4type::regression2);
   
-  uncertainties[EGEnergySysIndex::kScaleValue]  = scale;
-  uncertainties[EGEnergySysIndex::kSmearValue]  = smear;
+  uncertainties[EGEnergySysIndex::kScaleValue]  = scaleCorr->scale();
+  uncertainties[EGEnergySysIndex::kSmearValue]  = smearCorr->sigma(et); //even though we use scale = 1.0, we still store the value returned for MC
   uncertainties[EGEnergySysIndex::kSmearNrSigma]  = smearNrSigma;
-  uncertainties[EGEnergySysIndex::kEcalPreCorr] = oldEcalEnergy;
-  uncertainties[EGEnergySysIndex::kEcalErrPreCorr] = oldEcalEnergyError;
- 
-
-  if ((eventIsMC < 0 && isMC_) || (eventIsMC == 1)) {
-    double corr = 1.0 + smear * smearNrSigma;
-    double corr_rho_up = 1.0 + resol_rho_up * smearNrSigma;
-    double corr_rho_dn = 1.0 + resol_rho_dn * smearNrSigma;
-    double corr_phi_up = 1.0 + resol_phi_up * smearNrSigma;
-    double corr_phi_dn = 1.0 + resol_phi_dn * smearNrSigma;
-
-    double corr_up = 1.0 + resol_up * smearNrSigma;
-    double corr_dn = 1.0 + resol_dn * smearNrSigma;
-
-    const double newEcalEnergy      = oldEcalEnergy * corr;
-    const double newEcalEnergyError = std::hypot(oldEcalEnergyError * corr, smear * newEcalEnergy);
-    photon.setCorrectedEnergy(reco::Photon::P4type::regression2, newEcalEnergy, newEcalEnergyError, true);
- 
-    uncertainties[EGEnergySysIndex::kScaleStatUp]   = newEcalEnergy * scale_stat_up/scale;
-    uncertainties[EGEnergySysIndex::kScaleStatDown] = newEcalEnergy * scale_stat_dn/scale;
-    uncertainties[EGEnergySysIndex::kScaleSystUp]   = newEcalEnergy * scale_syst_up/scale;
-    uncertainties[EGEnergySysIndex::kScaleSystDown] = newEcalEnergy * scale_syst_dn/scale;
-    uncertainties[EGEnergySysIndex::kScaleGainUp]   = newEcalEnergy * scale_gain_up/scale;
-    uncertainties[EGEnergySysIndex::kScaleGainDown] = newEcalEnergy * scale_gain_dn/scale;
-    uncertainties[EGEnergySysIndex::kSmearRhoUp]    = newEcalEnergy * corr_rho_up/corr;
-    uncertainties[EGEnergySysIndex::kSmearRhoDown]  = newEcalEnergy * corr_rho_dn/corr;
-    uncertainties[EGEnergySysIndex::kSmearPhiUp]    = newEcalEnergy * corr_phi_up/corr;
-    uncertainties[EGEnergySysIndex::kSmearPhiDown]  = newEcalEnergy * corr_phi_dn/corr;
-    
-    // The total variation
-    uncertainties[EGEnergySysIndex::kScaleUp]   = newEcalEnergy * scale_up/scale;
-    uncertainties[EGEnergySysIndex::kScaleDown] = newEcalEnergy * scale_dn/scale;
-    uncertainties[EGEnergySysIndex::kSmearUp]   = newEcalEnergy * corr_up/corr;
-    uncertainties[EGEnergySysIndex::kSmearDown] = newEcalEnergy * corr_dn/corr;
-    
-
-
-  } else if ((eventIsMC < 0 && !isMC_) || (eventIsMC == 0)) {
-
-    const double newEcalEnergy = oldEcalEnergy * scale;
-    const double newEcalEnergyError = std::hypot(oldEcalEnergyError * scale, smear * newEcalEnergy);
-    photon.setCorrectedEnergy(reco::Photon::P4type::regression2, newEcalEnergy, newEcalEnergyError, true);
- 
-    uncertainties[EGEnergySysIndex::kScaleStatUp]   = newEcalEnergy * scale_stat_up/scale;
-    uncertainties[EGEnergySysIndex::kScaleStatDown] = newEcalEnergy * scale_stat_dn/scale;
-    uncertainties[EGEnergySysIndex::kScaleSystUp]   = newEcalEnergy * scale_syst_up/scale;
-    uncertainties[EGEnergySysIndex::kScaleSystDown] = newEcalEnergy * scale_syst_dn/scale;
-    uncertainties[EGEnergySysIndex::kScaleGainUp]   = newEcalEnergy * scale_gain_up/scale;
-    uncertainties[EGEnergySysIndex::kScaleGainDown] = newEcalEnergy * scale_gain_dn/scale;
-    uncertainties[EGEnergySysIndex::kSmearRhoUp]    = newEcalEnergy;
-    uncertainties[EGEnergySysIndex::kSmearRhoDown]  = newEcalEnergy;
-    uncertainties[EGEnergySysIndex::kSmearPhiUp]    = newEcalEnergy;
-    uncertainties[EGEnergySysIndex::kSmearPhiDown]  = newEcalEnergy;
-
-    // The total variation
-    uncertainties[EGEnergySysIndex::kScaleUp]   = newEcalEnergy * scale_up/scale;
-    uncertainties[EGEnergySysIndex::kScaleDown] = newEcalEnergy * scale_dn/scale;
-    uncertainties[EGEnergySysIndex::kSmearUp]   = newEcalEnergy;
-    uncertainties[EGEnergySysIndex::kSmearDown] = newEcalEnergy;
-    
+  //MC central values are not scaled (scale = 1.0), data is not smeared (smearNrSigma = 0)
+  //smearing still has a second order effect on data as it enters the E/p combination as an 
+  //extra uncertainty on the calo energy
+  //MC gets all the scale systematics
+  if(eventType == EventType::DATA){ 
+    setEnergyAndSystVarations(scaleCorr->scale(),0.,et,*scaleCorr,*smearCorr,photon,uncertainties);
+  }else if(eventType == EventType::MC){
+    setEnergyAndSystVarations(1.0,smearNrSigma,et,*scaleCorr,*smearCorr,photon,uncertainties);
   }
- 
-  uncertainties[EGEnergySysIndex::kEcalPostCorr] = photon.getCorrectedEnergy(reco::Photon::P4type::regression2);
-  uncertainties[EGEnergySysIndex::kEcalErrPostCorr] = photon.getCorrectedEnergyError(reco::Photon::P4type::regression2);
-
   
   return uncertainties;
   
 }
 
+void PhotonEnergyCalibrator::
+setEnergyAndSystVarations(const float scale,const float smearNrSigma,const float et,
+			  const EnergyScaleCorrection::ScaleCorrection& scaleCorr,
+			  const EnergyScaleCorrection::SmearCorrection& smearCorr,
+			  reco::Photon& photon,
+			  std::vector<float>& energyData)const
+{
+ 
+  const float smear = smearCorr.sigma(et);   
+  const float smearRhoUp = smearCorr.sigma(et,1,0);
+  const float smearRhoDn = smearCorr.sigma(et,-1,0);
+  const float smearPhiUp = smearCorr.sigma(et,0,1);
+  const float smearPhiDn = smearCorr.sigma(et,0,-1);
+ 
+  const float corr = scale + smear * smearNrSigma;
+  const float corrRhoUp = scale + smearRhoUp * smearNrSigma;
+  const float corrRhoDn = scale + smearRhoDn * smearNrSigma;
+  const float corrPhiUp = scale + smearPhiUp * smearNrSigma;
+  const float corrPhiDn = scale + smearPhiDn * smearNrSigma;
+  const float corrUp = corrPhiUp;
+  const float corrDn = corrPhiDn;
+
+  const float scaleShiftStatUp = 1+scaleCorr.scaleErrStat();
+  const float scaleShiftStatDn = 1-scaleCorr.scaleErrStat();
+  const float scaleShiftSystUp = 1+scaleCorr.scaleErrSyst();
+  const float scaleShiftSystDn = 1-scaleCorr.scaleErrSyst();
+  const float scaleShiftGainUp = 1+scaleCorr.scaleErrGain();
+  const float scaleShiftGainDn = 1-scaleCorr.scaleErrGain();
+  const float scaleShiftUp = 1+scaleCorr.scaleErr(EnergyScaleCorrection::kErrStatSystGain);
+  const float scaleShiftDn = 1-scaleCorr.scaleErr(EnergyScaleCorrection::kErrStatSystGain);
+
+  
+  const double oldEcalEnergy = photon.getCorrectedEnergy(reco::Photon::P4type::regression2);
+  const double oldEcalEnergyError = photon.getCorrectedEnergyError(reco::Photon::P4type::regression2);
+  
+  energyData[EGEnergySysIndex::kEcalPreCorr] = oldEcalEnergy;
+  energyData[EGEnergySysIndex::kEcalErrPreCorr] = oldEcalEnergyError;
+
+  const double newEcalEnergy      = oldEcalEnergy * corr;
+  const double newEcalEnergyError = std::hypot(oldEcalEnergyError * corr, smear * newEcalEnergy);
+  photon.setCorrectedEnergy(reco::Photon::P4type::regression2, newEcalEnergy, newEcalEnergyError, true);
+  
+  energyData[EGEnergySysIndex::kScaleStatUp]   = oldEcalEnergy * scaleShiftStatUp * corr;
+  energyData[EGEnergySysIndex::kScaleStatDown] = oldEcalEnergy * scaleShiftStatDn * corr;
+  energyData[EGEnergySysIndex::kScaleSystUp]   = oldEcalEnergy * scaleShiftSystUp * corr;
+  energyData[EGEnergySysIndex::kScaleSystDown] = oldEcalEnergy * scaleShiftSystDn * corr;
+  energyData[EGEnergySysIndex::kScaleGainUp]   = oldEcalEnergy * scaleShiftGainUp * corr;
+  energyData[EGEnergySysIndex::kScaleGainDown] = oldEcalEnergy * scaleShiftGainDn * corr;
+  energyData[EGEnergySysIndex::kSmearRhoUp]    = oldEcalEnergy * corrRhoUp;
+  energyData[EGEnergySysIndex::kSmearRhoDown]  = oldEcalEnergy * corrRhoDn;
+  energyData[EGEnergySysIndex::kSmearPhiUp]    = oldEcalEnergy * corrPhiUp;
+  energyData[EGEnergySysIndex::kSmearPhiDown]  = oldEcalEnergy * corrPhiDn;
+  
+  // The total variation
+  energyData[EGEnergySysIndex::kScaleUp]   = oldEcalEnergy * scaleShiftUp * corr;
+  energyData[EGEnergySysIndex::kScaleDown] = oldEcalEnergy * scaleShiftDn * corr;
+  energyData[EGEnergySysIndex::kSmearUp]   = oldEcalEnergy * corrUp;
+  energyData[EGEnergySysIndex::kSmearDown] = oldEcalEnergy * corrDn;
+
+  
+  energyData[EGEnergySysIndex::kEcalPostCorr] = photon.getCorrectedEnergy(reco::Photon::P4type::regression2);
+  energyData[EGEnergySysIndex::kEcalErrPostCorr] = photon.getCorrectedEnergyError(reco::Photon::P4type::regression2);
+}  
+
+
 double PhotonEnergyCalibrator::gauss(edm::StreamID const& id) const
 {
-  if (synchronization_) return 1.0;
   if (rng_) {
     return rng_->Gaus();
   } else {

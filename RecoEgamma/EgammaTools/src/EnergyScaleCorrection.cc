@@ -14,8 +14,7 @@
 #define LOGDRESSED(x) LogDebug(x)
 
 EnergyScaleCorrection::EnergyScaleCorrection(const std::string& correctionFileName, unsigned int genSeed):
-  smearingType_(ECALELF),
-  doScale_(false), doSmearings_(false)
+  smearingType_(ECALELF)
 {
 
   if(!correctionFileName.empty()) { 
@@ -36,79 +35,54 @@ EnergyScaleCorrection::EnergyScaleCorrection(const std::string& correctionFileNa
 
 }
 
-float EnergyScaleCorrection::scaleCorr(unsigned int runNumber, bool isEBEle,
-				       double r9Ele, double etaSCEle, double etEle, 
+float EnergyScaleCorrection::scaleCorr(unsigned int runNumber, double et, double eta, double r9,
 				       unsigned int gainSeed, std::bitset<kErrNrBits> uncBitMask) const
 {
-  if(doScale_==false) return kDefaultScaleVal_;
-  else {
-    const ScaleCorrection* scaleCorr =  getScaleCorr(runNumber, isEBEle, r9Ele, etaSCEle, etEle, gainSeed);
-    if(scaleCorr!=nullptr) return scaleCorr->scale;
-    else return kDefaultScaleVal_;
-  }
+  const ScaleCorrection* scaleCorr =  getScaleCorr(runNumber, et, eta, r9, gainSeed);
+  if(scaleCorr!=nullptr) return scaleCorr->scale();
+  else return kDefaultScaleVal_;
 }
 
 
 
-float EnergyScaleCorrection::scaleCorrUncert(unsigned int runNumber, bool isEBEle,
-					     double R9Ele, double etaSCEle, double EtEle, 
-					     unsigned int gainSeed, 
-					     std::bitset<kErrNrBits> uncBitMask) const
+float EnergyScaleCorrection::scaleCorrUncert(unsigned int runNumber, double et, double eta, double r9,
+					     unsigned int gainSeed, std::bitset<kErrNrBits> uncBitMask) const
 {
   
-  const ScaleCorrection* corrVal = getScaleCorr(runNumber, isEBEle, R9Ele, etaSCEle, EtEle, gainSeed);
-  
-  double totErr(0);
-  auto pow2 = [](const double& x){return x*x;};
-  
-  if(uncBitMask.test(kErrStat)) totErr+=pow2(corrVal->scaleErrStat);
-  if(uncBitMask.test(kErrSyst)) totErr+=pow2(corrVal->scaleErrSyst);  
-  if(uncBitMask.test(kErrGain)) totErr+=pow2(corrVal->scaleErrGain);
-    
-  return std::sqrt(totErr);
+  const ScaleCorrection* scaleCorr = getScaleCorr(runNumber, et, eta, r9, gainSeed);
+  if(scaleCorr!=nullptr) return scaleCorr->scaleErr(uncBitMask);
+  else return 0.;
 }
 
 
-float EnergyScaleCorrection::smearingSigma(int runnr, bool isEBEle, float r9Ele, 
-					   float etaSCEle, float etEle, 
+float EnergyScaleCorrection::smearingSigma(int runnr, double et, double eta, double r9,
 					   unsigned int gainSeed, ParamSmear par, 
 					   float nSigma) const
 {
-  if (par == kRho) return smearingSigma(runnr, isEBEle, r9Ele, etaSCEle, etEle, gainSeed, nSigma, 0.);
-  if (par == kPhi) return smearingSigma(runnr, isEBEle, r9Ele, etaSCEle, etEle, gainSeed, 0., nSigma);
-  return smearingSigma(runnr, isEBEle, r9Ele, etaSCEle, etEle, gainSeed, 0., 0.);
+  if (par == kRho) return smearingSigma(runnr, et, eta, r9, gainSeed, nSigma, 0.);
+  if (par == kPhi) return smearingSigma(runnr, et, eta, r9, gainSeed, 0., nSigma);
+  return smearingSigma(runnr, et, eta, r9, gainSeed, 0., 0.);
 }
 
 
-float EnergyScaleCorrection::smearingSigma(int runnr, bool isEBEle, float r9Ele, 
-					   float etaSCEle, float etEle, 
-					   unsigned int gainSeed, float nSigmaRho, 
-					   float nSigmaPhi) const
+float EnergyScaleCorrection::smearingSigma(int runnr, double et, double eta, double r9,
+					   unsigned int gainSeed, float nrSigmaRho, 
+					   float nrSigmaPhi) const
 {
-  const SmearCorrection* smearCorr = getSmearCorr(runnr,isEBEle,r9Ele,etaSCEle,etEle,gainSeed);
+  const SmearCorrection* smearCorr = getSmearCorr(runnr,et,eta,r9,gainSeed);
 						  
-  if(smearCorr!=nullptr){
-    
-    double rho = smearCorr->rho + smearCorr->rhoErr * nSigmaRho;
-    double phi = smearCorr->phi + smearCorr->phiErr * nSigmaPhi;
-  
-    double constTerm =  rho * std::sin(phi);
-    double alpha =  rho *  smearCorr->eMean * std::cos(phi);
-
-    return std::sqrt(constTerm * constTerm + alpha * alpha / etEle);
-  }else{
-    return kDefaultSmearVal_;
-  }
+  if(smearCorr!=nullptr) return smearCorr->sigma(nrSigmaRho,nrSigmaPhi);
+  else return kDefaultSmearVal_;
 }
 
 
 const EnergyScaleCorrection::ScaleCorrection* 
-EnergyScaleCorrection::getScaleCorr(unsigned int runnr, bool isEBEle,double r9Ele, double etaSCEle,
-				    double etEle, unsigned int gainSeed) const
+EnergyScaleCorrection::getScaleCorr(unsigned int runnr, double et, double eta, double r9,
+				    unsigned int gainSeed) const
 {
 
   // buld the category based on the values of the object
-  CorrectionCategory category(runnr, etaSCEle, r9Ele, etEle, gainSeed);
+  CorrectionCategory category(runnr, et, eta, r9, gainSeed);
   auto result = std::equal_range(scales_.begin(),scales_.end(),category,Sorter<CorrectionCategory,ScaleCorrection>()); 
   auto nrFound = std::distance(result.first,result.second);
   if(nrFound==0){
@@ -121,12 +95,12 @@ EnergyScaleCorrection::getScaleCorr(unsigned int runnr, bool isEBEle,double r9El
 }
 
 const EnergyScaleCorrection::SmearCorrection* 
-EnergyScaleCorrection::getSmearCorr(unsigned int runnr, bool isEBEle, double r9Ele, double etaSCEle,
-				    double etEle, unsigned int gainSeed) const
+EnergyScaleCorrection::getSmearCorr(unsigned int runnr, double et, double eta, double r9,
+				    unsigned int gainSeed) const
 {
 
   // buld the category based on the values of the object
-  CorrectionCategory category(runnr, etaSCEle, r9Ele, etEle, gainSeed);
+  CorrectionCategory category(runnr, et, eta, r9, gainSeed);
   auto result = std::equal_range(smearings_.begin(),smearings_.end(),category,Sorter<CorrectionCategory,SmearCorrection>()); 
   auto nrFound = std::distance(result.first,result.second);
   if(nrFound==0){
@@ -272,17 +246,29 @@ void EnergyScaleCorrection::readSmearingsFromFile(const std::string& filename)
 
 std::ostream& EnergyScaleCorrection::ScaleCorrection::print(std::ostream& os)const
 {
-  os <<  "( "<< scale << " +/- " << scaleErrStat << " +/- " << scaleErrSyst << " +/- " << scaleErrGain <<")" ;
+  os <<  "( "<< scale_ << " +/- " << scaleErrStat_ << " +/- " << scaleErrSyst_ << " +/- " << scaleErrGain_ <<")" ;
   return os; 
+}
+
+float EnergyScaleCorrection::ScaleCorrection::scaleErr(const std::bitset<kErrNrBits>& uncBitMask)const
+{
+  double totErr(0);
+  auto pow2 = [](const double& x){return x*x;};
+  
+  if(uncBitMask.test(kErrStat)) totErr+=pow2(scaleErrStat_);
+  if(uncBitMask.test(kErrSyst)) totErr+=pow2(scaleErrSyst_);  
+  if(uncBitMask.test(kErrGain)) totErr+=pow2(scaleErrGain_);
+  
+  return std::sqrt(totErr);
 }
 
 std::ostream& EnergyScaleCorrection::SmearCorrection::print(std::ostream& os)const
 {
-  os << rho << " +/- " << rhoErr 
+  os << rho_ << " +/- " << rhoErr_ 
      <<  "\t"
-     << phi << " +/- " << phiErr
+     << phi_ << " +/- " << phiErr_
      <<  "\t"
-     << eMean << " +/- " << eMeanErr;
+     << eMean_ << " +/- " << eMeanErr_;
   return os; 
 }
 

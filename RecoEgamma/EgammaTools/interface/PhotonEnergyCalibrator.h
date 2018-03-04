@@ -11,10 +11,15 @@
 
 class PhotonEnergyCalibrator
 {
- public:
+ public: 
+  enum class EventType{
+    DATA,
+    MC,
+  };
+
   PhotonEnergyCalibrator() {}
-  PhotonEnergyCalibrator(bool isMC, bool synchronization, const std::string& correctionFile);  
-  ~PhotonEnergyCalibrator() ;
+  PhotonEnergyCalibrator(const std::string& correctionFile);  
+  ~PhotonEnergyCalibrator(){}
   
   /// Initialize with a random number generator (if not done, it will use the CMSSW service)
   /// Caller code owns the TRandom.
@@ -26,11 +31,16 @@ class PhotonEnergyCalibrator
   /// Correct this photon.
   /// StreamID is needed when used with CMSSW Random Number Generator
   std::vector<float> calibrate(reco::Photon &photon, const unsigned int runNumber, 
-			       const EcalRecHitCollection* recHits, edm::StreamID const & id = edm::StreamID::invalidStreamID(), const int eventIsMC = -1) const ;
+			       const EcalRecHitCollection* recHits,  edm::StreamID const & id, const EventType eventType) const ;
   std::vector<float> calibrate(reco::Photon &photon, const unsigned int runNumber, 
-			       const EcalRecHitCollection* recHits, const float smearNrSigma, const int eventIsMC = -1) const ;
+			       const EcalRecHitCollection* recHits, const float smearNrSigma, const EventType eventType) const ;
   
 private:
+  void setEnergyAndSystVarations(const float scale,const float smearNrSigma,const float et,
+				 const EnergyScaleCorrection::ScaleCorrection& scaleCorr,
+				 const EnergyScaleCorrection::SmearCorrection& smearCorr,
+				 reco::Photon& photon,std::vector<float>& energyData)const;
+
   /// Return a number distributed as a unit gaussian, drawn from the private RNG if initPrivateRng was called,
   /// or from the CMSSW RandomNumberGenerator service
   /// If synchronization is set to true, it returns a fixed number (1.0)
@@ -38,11 +48,13 @@ private:
 
   // whatever data will be needed
   EnergyScaleCorrection correctionRetriever_;
-  bool isMC_;
-  bool synchronization_;
   TRandom *rng_; //this is not owned
   float minEt_;
 
+  //default values to access if no correction availible
+  static const EnergyScaleCorrection::ScaleCorrection defaultScaleCorr_;
+  static const EnergyScaleCorrection::SmearCorrection defaultSmearCorr_;
+  
 };
 
 #endif

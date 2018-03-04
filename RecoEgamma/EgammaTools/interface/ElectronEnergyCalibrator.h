@@ -15,10 +15,14 @@
 class ElectronEnergyCalibrator
 {
 public:
+  enum class EventType{
+    DATA,
+    MC,
+  };
+
   ElectronEnergyCalibrator() {}
-  ElectronEnergyCalibrator(EpCombinationToolSemi &combinator, bool isMC, 
-			   bool synchronization, const std::string& );
-  ~ElectronEnergyCalibrator() ;
+  ElectronEnergyCalibrator(EpCombinationToolSemi &combinator, const std::string& correctionFile );
+  ~ElectronEnergyCalibrator() {}
   
   /// Initialize with a random number generator (if not done, it will use the CMSSW service)
   /// Caller code owns the TRandom.
@@ -30,27 +34,33 @@ public:
   /// Correct this electron.
   /// StreamID is needed when used with CMSSW Random Number Generator
   std::vector<float> calibrate(reco::GsfElectron &ele, const unsigned int runNumber, 
-			       const EcalRecHitCollection* recHits, edm::StreamID const & id = edm::StreamID::invalidStreamID(), const int eventIsMC = -1) const ;
+			       const EcalRecHitCollection* recHits, edm::StreamID const & id, const EventType eventType) const ;
   std::vector<float> calibrate(reco::GsfElectron &ele, const unsigned int runNumber, 
-			       const EcalRecHitCollection* recHits, const float smearNrSigma, const int eventIsMC = -1) const ;
+			       const EcalRecHitCollection* recHits, const float smearNrSigma, const EventType eventType) const ;
 
 private:
+  void setEnergyAndSystVarations(const float scale,const float smearNrSigma,const float et,
+				 const EnergyScaleCorrection::ScaleCorrection& scaleCorr,
+				 const EnergyScaleCorrection::SmearCorrection& smearCorr,
+				 reco::GsfElectron& ele,std::vector<float>& energyData)const;
+    
   void setEcalEnergy(reco::GsfElectron& ele,const float scale,const float smear)const;
   std::pair<float,float> calCombinedMom(reco::GsfElectron& ele,const float scale,const float smear)const;
+  
   /// Return a number distributed as a unit gaussian, drawn from the private RNG if initPrivateRng was called,
   /// or from the CMSSW RandomNumberGenerator service
   /// If synchronization is set to true, it returns a fixed number (1.0)
   double gauss(edm::StreamID const& id) const ;
   
-
   // whatever data will be needed
   EnergyScaleCorrection correctionRetriever_;
   EpCombinationToolSemi *epCombinationTool_; //this is not owned
-  bool isMC_;
-  bool synchronization_;
   TRandom *rng_; //this is not owned
   float minEt_;
 
+  //default values to access if no correction availible
+  static const EnergyScaleCorrection::ScaleCorrection defaultScaleCorr_;
+  static const EnergyScaleCorrection::SmearCorrection defaultSmearCorr_;
   
 
 };

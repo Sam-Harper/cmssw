@@ -31,7 +31,7 @@ class CalibratedElectronProducerT: public edm::stream::EDProducer<>
 {
 public:
   explicit CalibratedElectronProducerT( const edm::ParameterSet & ) ;
-  ~CalibratedElectronProducerT() override;
+  ~CalibratedElectronProducerT(){}
   void produce( edm::Event &, const edm::EventSetup & ) override ;
   
 private: 
@@ -46,7 +46,6 @@ private:
   std::unique_ptr<TRandom> semiDeterministicRng_;
   edm::EDGetTokenT<EcalRecHitCollection> recHitCollectionEBToken_;
   edm::EDGetTokenT<EcalRecHitCollection> recHitCollectionEEToken_;
-  bool autoDataType_;
   bool produceCalibratedEles_;
   static const std::vector<std::pair<size_t,std::string> > valMapsToStore_;
 
@@ -103,15 +102,14 @@ CalibratedElectronProducerT<T>::CalibratedElectronProducerT( const edm::Paramete
   electronToken_(consumes<objectCollection>(conf.getParameter<edm::InputTag>("electrons"))),
   gbrForestName_(conf.getParameter< std::vector<std::string> >("gbrForestName")),
   epCombinationTool_(),
-  energyCorrector_(epCombinationTool_, conf.getParameter<bool>("isMC"), conf.getParameter<bool>("isSynchronization"), conf.getParameter<std::string>("correctionFile")),
+  energyCorrector_(epCombinationTool_, conf.getParameter<std::string>("correctionFile")),
   recHitCollectionEBToken_(consumes<EcalRecHitCollection>(conf.getParameter<edm::InputTag>("recHitCollectionEB"))),
   recHitCollectionEEToken_(consumes<EcalRecHitCollection>(conf.getParameter<edm::InputTag>("recHitCollectionEE"))),
-  autoDataType_((conf.existsAs<bool>("autoDataType") && !conf.getParameter<bool>("autoDataType") ) ? false : true),
   produceCalibratedEles_(conf.getParameter<bool>("produceCalibratedEles"))
 {
   energyCorrector_.setMinEt(conf.getParameter<double>("minEtToCalibrate"));  
   
-  if (conf.existsAs<bool>("semiDeterministic") && conf.getParameter<bool>("semiDeterministic")) {
+  if (conf.getParameter<bool>("semiDeterministic")) {
      semiDeterministicRng_.reset(new TRandom2());
      energyCorrector_.initPrivateRng(semiDeterministicRng_.get());
   }
@@ -121,11 +119,6 @@ CalibratedElectronProducerT<T>::CalibratedElectronProducerT( const edm::Paramete
   for(const auto& toStore : valMapsToStore_){
     produces<floatMap>(toStore.second);
   }
-}
-
-template<typename T>
-CalibratedElectronProducerT<T>::~CalibratedElectronProducerT()
-{
 }
 
 template<typename T>
@@ -156,8 +149,9 @@ CalibratedElectronProducerT<T>::produce( edm::Event & iEvent, const edm::EventSe
   std::vector<std::vector<float> > results(EGEnergySysIndex::kNrSysErrs);
   for(auto& res : results) res.reserve(nrObj);
 
-  int eventIsMC = -1;
-  if (autoDataType_) eventIsMC = iEvent.isRealData() ? 0 : 1;
+  const ElectronEnergyCalibrator::EventType evtType = iEvent.isRealData() ? 
+    ElectronEnergyCalibrator::EventType::DATA : ElectronEnergyCalibrator::EventType::MC; 
+  
   
   for (auto &ele : *inHandle) {
     out->push_back(ele);
@@ -165,7 +159,7 @@ CalibratedElectronProducerT<T>::produce( edm::Event & iEvent, const edm::EventSe
     if(semiDeterministicRng_) setSemiDetRandomSeed(iEvent,ele,nrObj,out->size());
 
     const EcalRecHitCollection* recHits = (ele.isEB()) ? recHitCollectionEBHandle.product() : recHitCollectionEEHandle.product();
-    std::vector<float> uncertainties = energyCorrector_.calibrate(out->back(), iEvent.id().run(), recHits, iEvent.streamID(), eventIsMC);
+    std::vector<float> uncertainties = energyCorrector_.calibrate(out->back(), iEvent.id().run(), recHits, iEvent.streamID(), evtType);
     
     for(size_t index=0;index<EGEnergySysIndex::kNrSysErrs;index++){
       results[index].push_back(uncertainties[index]);
@@ -183,7 +177,6 @@ CalibratedElectronProducerT<T>::produce( edm::Event & iEvent, const edm::EventSe
   }
 }
 
-//needs to be synced to CalibratedPhotonProducersRun2, want the same seed for a given SC
 template<typename T>
 void CalibratedElectronProducerT<T>::setSemiDetRandomSeed(const edm::Event& iEvent,const T& obj,size_t nrObjs,size_t objNr)
 {

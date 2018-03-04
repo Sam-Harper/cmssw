@@ -51,38 +51,55 @@ public:
     kErrNrBits=3
   };
   
+  
 
   
-  struct ScaleCorrection
+  class ScaleCorrection
   {
   public:  
     ScaleCorrection():
-      scale(1.),scaleErrStat(0.),scaleErrSyst(0.),scaleErrGain(0.){}
+      scale_(1.),scaleErrStat_(0.),scaleErrSyst_(0.),scaleErrGain_(0.){}
     ScaleCorrection(float iScale,float iScaleErrStat,float iScaleErrSyst,float iScaleErrGain):
-      scale(iScale),scaleErrStat(iScaleErrStat),scaleErrSyst(iScaleErrSyst),scaleErrGain(iScaleErrGain){}
+      scale_(iScale),scaleErrStat_(iScaleErrStat),scaleErrSyst_(iScaleErrSyst),scaleErrGain_(iScaleErrGain){}
     
+    float scale()const{return scale_;}
+    float scaleErr(const std::bitset<kErrNrBits>& uncBitMask)const;
+    float scaleErrStat()const{return scaleErrStat_;}
+    float scaleErrSyst()const{return scaleErrSyst_;}
+    float scaleErrGain()const{return scaleErrGain_;}
+
     friend std::ostream& operator<<(std::ostream& os, const ScaleCorrection& a){return a.print(os);}
     std::ostream& print(std::ostream& os)const;
-    
-    float scale, scaleErrStat, scaleErrSyst, scaleErrGain;
+  private:    
+    float scale_, scaleErrStat_, scaleErrSyst_, scaleErrGain_;
   };
   
   struct SmearCorrection
   {
   public:  
     SmearCorrection():
-      rho(0.),rhoErr(0.),phi(0.),phiErr(0.),
-      eMean(0.),eMeanErr(0.){}
+      rho_(0.),rhoErr_(0.),phi_(0.),phiErr_(0.),
+      eMean_(0.),eMeanErr_(0.){}
     SmearCorrection(float iRho,float iRhoErr,float iPhi,float iPhiErr,float iEMean,float iEMeanErr):
-      rho(iRho),rhoErr(iRhoErr),phi(iPhi),phiErr(iPhiErr),
-      eMean(iEMean),eMeanErr(iEMeanErr){}
+      rho_(iRho),rhoErr_(iRhoErr),phi_(iPhi),phiErr_(iPhiErr),
+      eMean_(iEMean),eMeanErr_(iEMeanErr){}
     
     friend std::ostream& operator<<(std::ostream& os, const SmearCorrection& a){return a.print(os);}
     std::ostream& print(std::ostream& os)const;
-    
-    float rho, rhoErr;
-    float phi, phiErr;
-    float eMean, eMeanErr;
+   
+   
+    float sigma(const float et,const float nrSigmaRho=0.,const float nrSigmaPhi=0.)const{
+      const double rhoVal = rho_ + rhoErr_ * nrSigmaRho;
+      const double phiVal = phi_ + phiErr_ * nrSigmaPhi;
+      const double constTerm =  rhoVal * std::sin(phiVal);
+      const double alpha =  rhoVal *  eMean_ * std::cos(phiVal);
+      return std::sqrt(constTerm * constTerm + alpha * alpha / et);
+    }
+  private:
+    float rho_, rhoErr_;
+    float phi_, phiErr_;
+    float eMean_, eMeanErr_;
+
   };
   
   class CorrectionCategory
@@ -119,26 +136,22 @@ public:
   ~EnergyScaleCorrection(){}
   
  
-  float scaleCorr(unsigned int runnr, bool isEBEle, double r9Ele, double etaSCEle,
-			double etEle, unsigned int gainSeed=12, 
-			std::bitset<kErrNrBits> uncBitMask=kErrNone) const; 
+  float scaleCorr(unsigned int runnr, double et, double eta, double r9,
+		  unsigned int gainSeed=12, std::bitset<kErrNrBits> uncBitMask=kErrNone) const; 
   
-  float scaleCorrUncert(unsigned int runnr, bool isEBEle,double r9Ele, 
-			double etaSCEle,double etEle, unsigned int gainSeed, 
-			std::bitset<kErrNrBits> uncBitMask=kErrNone) const;
+  float scaleCorrUncert(unsigned int runnr, double et, double eta, double r9,
+			unsigned int gainSeed,std::bitset<kErrNrBits> uncBitMask=kErrNone) const;
   
-  float smearingSigma(int runnr, bool isEBEle, float r9Ele, float etaSCEle, float etEle, unsigned int gainSeed, ParamSmear par, float nSigma = 0.) const;
-  float smearingSigma(int runnr, bool isEBEle, float r9Ele, float etaSCEle, float etEle, unsigned int gainSeed, float nSigmaRho, float nSigmaPhi) const;
+  float smearingSigma(int runnr, double et, double eta, double r9, unsigned int gainSeed, ParamSmear par, float nSigma = 0.) const;
+  float smearingSigma(int runnr, double et, double eta, double r9, unsigned int gainSeed, float nSigmaRho, float nSigmaPhi) const;
   
   void setSmearingType(FileFormat value);
-  void setDoScale(bool val){doScale_=val;}
-  void setDoSmearings(bool val){doSmearings_=val;}
+
+  const ScaleCorrection* getScaleCorr(unsigned int runnr, double et, double eta, double r9, unsigned int gainSeed) const; 
+  const SmearCorrection* getSmearCorr(unsigned int runnr, double et, double eta, double r9, unsigned int gainSeed) const; 
 
  private:
 
-  const ScaleCorrection* getScaleCorr(unsigned int runnr, bool isEBEle, double R9Ele, double etaSCEle, double EtEle, unsigned int gainSeed) const; 
-  const SmearCorrection* getSmearCorr(unsigned int runnr, bool isEBEle, double R9Ele, double etaSCEle, double EtEle, unsigned int gainSeed) const; 
-  
   void addScale(const std::string& category, int runMin, int runMax, 
 		double deltaP, double errDeltaP, double errSystDeltaP, double errDeltaPGain);
   void addSmearing(const std::string& category, int runMin, int runMax,
@@ -156,7 +169,6 @@ public:
   FileFormat smearingType_;  
   std::vector<std::pair<CorrectionCategory,ScaleCorrection> >scales_;
   std::vector<std::pair<CorrectionCategory,SmearCorrection> >smearings_;
-  bool doScale_, doSmearings_;
   
   template<typename T1,typename T2>
   class Sorter{
