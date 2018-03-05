@@ -35,7 +35,7 @@ private:
   std::unique_ptr<TRandom> semiDeterministicRng_;
   edm::EDGetTokenT<EcalRecHitCollection> recHitCollectionEBToken_;
   edm::EDGetTokenT<EcalRecHitCollection> recHitCollectionEEToken_;
-  bool produceCalibratedPhos_;
+  bool produceCalibratedObjs_;
 
   static const std::vector<std::pair<size_t,std::string> > valMapsToStore_;
 
@@ -84,11 +84,11 @@ namespace{
 
 template<typename T>
 CalibratedPhotonProducerT<T>::CalibratedPhotonProducerT( const edm::ParameterSet & conf ) :
-  photonToken_(consumes<edm::View<T> >(conf.getParameter<edm::InputTag>("photons"))),
+  photonToken_(consumes<edm::View<T> >(conf.getParameter<edm::InputTag>("src"))),
   energyCorrector_(conf.getParameter<std::string >("correctionFile")),
   recHitCollectionEBToken_(consumes<EcalRecHitCollection>(conf.getParameter<edm::InputTag>("recHitCollectionEB"))),
   recHitCollectionEEToken_(consumes<EcalRecHitCollection>(conf.getParameter<edm::InputTag>("recHitCollectionEE"))),
-  produceCalibratedPhos_(conf.getParameter<bool>("produceCalibratedPhos"))
+  produceCalibratedObjs_(conf.getParameter<bool>("produceCalibratedObjs"))
 { 
 
   energyCorrector_.setMinEt(conf.getParameter<double>("minEtToCalibrate"));
@@ -98,7 +98,7 @@ CalibratedPhotonProducerT<T>::CalibratedPhotonProducerT( const edm::ParameterSet
      energyCorrector_.initPrivateRng(semiDeterministicRng_.get());
   }
 
-  if(produceCalibratedPhos_) produces<objectVector>();
+  if(produceCalibratedObjs_) produces<objectVector>();
   
   for(const auto& toStore : valMapsToStore_){
     produces<floatMap>(toStore.second);
@@ -140,7 +140,7 @@ CalibratedPhotonProducerT<T>::produce( edm::Event & iEvent, const edm::EventSetu
     }
   }
     
-  if(produceCalibratedPhos_){
+  if(produceCalibratedObjs_){
     edm::OrphanHandle<objectVector> outHandle = iEvent.put(std::move(out));
     for(const auto& mapToStore : valMapsToStore_){
       fillAndStoreValueMap(iEvent,outHandle,results[mapToStore.first],mapToStore.second);

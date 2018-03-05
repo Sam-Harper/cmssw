@@ -46,7 +46,7 @@ private:
   std::unique_ptr<TRandom> semiDeterministicRng_;
   edm::EDGetTokenT<EcalRecHitCollection> recHitCollectionEBToken_;
   edm::EDGetTokenT<EcalRecHitCollection> recHitCollectionEEToken_;
-  bool produceCalibratedEles_;
+  bool produceCalibratedObjs_;
   static const std::vector<std::pair<size_t,std::string> > valMapsToStore_;
 
   typedef edm::ValueMap<float>                     floatMap;
@@ -99,13 +99,13 @@ namespace{
 
 template<typename T>
 CalibratedElectronProducerT<T>::CalibratedElectronProducerT( const edm::ParameterSet & conf ) :
-  electronToken_(consumes<objectCollection>(conf.getParameter<edm::InputTag>("electrons"))),
+  electronToken_(consumes<objectCollection>(conf.getParameter<edm::InputTag>("src"))),
   gbrForestName_(conf.getParameter< std::vector<std::string> >("gbrForestName")),
   epCombinationTool_(),
   energyCorrector_(epCombinationTool_, conf.getParameter<std::string>("correctionFile")),
   recHitCollectionEBToken_(consumes<EcalRecHitCollection>(conf.getParameter<edm::InputTag>("recHitCollectionEB"))),
   recHitCollectionEEToken_(consumes<EcalRecHitCollection>(conf.getParameter<edm::InputTag>("recHitCollectionEE"))),
-  produceCalibratedEles_(conf.getParameter<bool>("produceCalibratedEles"))
+  produceCalibratedObjs_(conf.getParameter<bool>("produceCalibratedObjs"))
 {
   energyCorrector_.setMinEt(conf.getParameter<double>("minEtToCalibrate"));  
   
@@ -114,7 +114,7 @@ CalibratedElectronProducerT<T>::CalibratedElectronProducerT( const edm::Paramete
      energyCorrector_.initPrivateRng(semiDeterministicRng_.get());
   }
 
-  if(produceCalibratedEles_) produces<objectVector>();
+  if(produceCalibratedObjs_) produces<objectVector>();
   
   for(const auto& toStore : valMapsToStore_){
     produces<floatMap>(toStore.second);
@@ -165,7 +165,7 @@ CalibratedElectronProducerT<T>::produce( edm::Event & iEvent, const edm::EventSe
       results[index].push_back(uncertainties[index]);
     }
   }
-  if(produceCalibratedEles_){
+  if(produceCalibratedObjs_){
     edm::OrphanHandle<objectVector> outHandle = iEvent.put(std::move(out));
     for(const auto& mapToStore : valMapsToStore_){
       fillAndStoreValueMap(iEvent,outHandle,results[mapToStore.first],mapToStore.second);

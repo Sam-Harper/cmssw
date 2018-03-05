@@ -40,6 +40,10 @@ public:
   };
   
   enum ScaleNuisances{
+    kErrStatBitNr = 0,
+    kErrSystBitNr = 1,
+    kErrGainBitNr = 2,
+    kErrNrBits=3,
     kErrNone = 0,
     kErrStat = 1,
     kErrSyst = 2,
@@ -47,8 +51,7 @@ public:
     kErrStatSyst = 3,
     kErrStatGain = 5,
     kErrSystGain = 6,
-    kErrStatSystGain = 7,
-    kErrNrBits=3
+    kErrStatSystGain = 7
   };
   
   
@@ -106,10 +109,10 @@ public:
   {  
   public:
     CorrectionCategory(const std::string& category,int runnrMin=0,int runnrMax=999999);
-    CorrectionCategory(const unsigned int runnr, const float etaEle, const float r9Ele, 
-		       const float etEle, const unsigned int gainSeed):
-      runMin_(runnr),runMax_(runnr),etaMin_(std::abs(etaEle)),etaMax_(std::abs(etaEle)),
-      r9Min_(r9Ele),r9Max_(r9Ele),etMin_(etEle),etMax_(etEle),gain_(gainSeed){}
+    CorrectionCategory(const unsigned int runnr, const float et, const float eta, const float r9, 
+		       const unsigned int gainSeed):
+      runMin_(runnr),runMax_(runnr),etaMin_(std::abs(eta)),etaMax_(std::abs(eta)),
+      r9Min_(r9),r9Max_(r9),etMin_(et),etMax_(et),gain_(gainSeed){}
     
     bool operator<(const CorrectionCategory& b) const;
     

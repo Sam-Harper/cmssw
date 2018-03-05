@@ -299,8 +299,11 @@ def miniAOD_customizeCommon(process):
         #force HEEP to use miniAOD (otherwise it'll detect the AOD)
         process.heepIDVarValueMaps.dataFormat = cms.int32(2)
 
-        #add the HEEP trk isol to the slimmed electron
-        process.slimmedElectrons.modifierConfig.modifications[0].electron_config.heepV70TrkPtIso = cms.InputTag("heepIDVarValueMaps","eleTrkPtIso")
+        #add the HEEP trk isol to the slimmed electron, add it to the first FromFloatValMap modifier
+        for pset in process.slimmedElectrons.modifierConfig.modifications:
+            if pset.hasParameter("modifierName") and pset.modifierName == cms.string('EGExtraInfoModifierFromFloatValueMaps'):
+                pset.electron_config.heepV70TrkPtIso = cms.InputTag("heepIDVarValueMaps","eleTrkPtIso")
+                break
 
     #now put them all in the pat electron
     process.patElectrons.electronIDSources=cms.PSet()
@@ -341,6 +344,13 @@ def miniAOD_customizeCommon(process):
     from RecoEgamma.EgammaTools.egammaObjectModifications_tools import makeVIDBitsModifier
     egamma_modifications.append(makeVIDBitsModifier(process,"egmGsfElectronIDs","egmPhotonIDs"))
 
+    #e/gamma scale & smearing
+    #we will run in value map producting mode keyed to the orginal collection
+    from RecoEgamma.EgammaPhotonProducers.reducedEgamma_tools import calibrateReducedEgamma
+    run2_miniAOD_94XFall17.toModify(process,calibrateReducedEgamma)
+    from RecoEgamma.EgammaTools.egammaObjectModifications_tools import appendReducedEgammaEnergyScaleAndSmearingModifier
+    run2_miniAOD_94XFall17.toModify(egamma_modifications,appendReducedEgammaEnergyScaleAndSmearingModifier)
+    
 
     #-- Adding boosted taus
     from RecoTauTag.Configuration.boostedHPSPFTaus_cfi import addBoostedTaus

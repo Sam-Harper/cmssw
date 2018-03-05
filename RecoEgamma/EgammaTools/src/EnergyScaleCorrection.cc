@@ -255,9 +255,9 @@ float EnergyScaleCorrection::ScaleCorrection::scaleErr(const std::bitset<kErrNrB
   double totErr(0);
   auto pow2 = [](const double& x){return x*x;};
   
-  if(uncBitMask.test(kErrStat)) totErr+=pow2(scaleErrStat_);
-  if(uncBitMask.test(kErrSyst)) totErr+=pow2(scaleErrSyst_);  
-  if(uncBitMask.test(kErrGain)) totErr+=pow2(scaleErrGain_);
+  if(uncBitMask.test(kErrStatBitNr)) totErr+=pow2(scaleErrStat_);
+  if(uncBitMask.test(kErrSystBitNr)) totErr+=pow2(scaleErrSyst_);  
+  if(uncBitMask.test(kErrGainBitNr)) totErr+=pow2(scaleErrGain_);
   
   return std::sqrt(totErr);
 }
