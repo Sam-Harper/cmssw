@@ -27,7 +27,7 @@ void EpCombinationTool::setEventContent(const edm::EventSetup& iSetup)
   ecalTrkEnergyRegressUncert_.setEventContent(iSetup);
 }
 
-std::pair<float, float> EpCombinationTool::combine(reco::GsfElectron& ele)const
+std::pair<float, float> EpCombinationTool::combine(const reco::GsfElectron& ele)const
 {
   const float scRawEnergy = ele.superCluster()->rawEnergy(); 
   const float esEnergy = ele.superCluster()->preshowerEnergy();
@@ -35,8 +35,8 @@ std::pair<float, float> EpCombinationTool::combine(reco::GsfElectron& ele)const
 
   const float corrEcalEnergy = ele.correctedEcalEnergy();
   const float corrEcalEnergyErr = ele.correctedEcalEnergyError();
-  const float ecalCorr = ele.correctedEcalEnergy() / (scRawEnergy+esEnergy);
-  const float ecalCorrErr =  corrEcalEnergyErr / corrEcalEnergy;
+  const float ecalMean = ele.correctedEcalEnergy() / (scRawEnergy+esEnergy);
+  const float ecalSigma =  corrEcalEnergyErr / corrEcalEnergy;
 
   auto gsfTrk = ele.gsfTrack();
 
@@ -52,20 +52,18 @@ std::pair<float, float> EpCombinationTool::combine(reco::GsfElectron& ele)const
      std::abs(corrEcalEnergy - trkP) < maxEPDiffInSigmaForComb_*std::sqrt(trkPErr*trkPErr+corrEcalEnergyErr*corrEcalEnergyErr) && 
      trkPErr < maxRelTrkMomErrForComb_*trkP) { 
 
-    const float preCombinationEt = corrEcalEnergy/std::cosh(trkEta);
- 
-   
     std::array<float, 9> eval;  
     eval[0] = corrEcalEnergy;
-    eval[1] = ecalCorrErr/ecalCorr;
+    eval[1] = ecalSigma/ecalMean;
     eval[2] = trkPErr/trkP;
     eval[3] = eOverP;
     eval[4] = ele.ecalDrivenSeed();
     eval[5] = ele.full5x5_showerShape().r9;
     eval[6] = fbrem;
     eval[7] = trkEta; 
-    eval[8] = trkPhi; 
+    eval[8] = trkPhi;  
 
+    const float preCombinationEt = corrEcalEnergy/std::cosh(trkEta);
     float mean  = ecalTrkEnergyRegress_(preCombinationEt,ele.isEB(),eval.data());
     float sigma  = ecalTrkEnergyRegressUncert_(preCombinationEt,ele.isEB(),eval.data());
     // Final correction
@@ -73,8 +71,11 @@ std::pair<float, float> EpCombinationTool::combine(reco::GsfElectron& ele)const
     // outside the boundaries of the training. In this case uses raw.
     // The resolution estimation, on the other hand should be ok.
     if (mean < 0.) mean = 1.0;
-
-    float rawCombEnergy = ( corrEcalEnergy*trkPErr*trkPErr + trkP*corrEcalEnergyErr*corrEcalEnergyErr ) / ( trkPErr*trkPErr + corrEcalEnergyErr*corrEcalEnergyErr );	
+    
+    //why this differs from the defination of corrEcalEnergyErr (it misses the mean) is not clear to me
+    //still this is a direct port from EGExtraInfoModifierFromDB, potential bugs and all
+    const float ecalSigmaTimesRawEnergy = ecalSigma*(scRawEnergy+esEnergy);
+    const float rawCombEnergy = ( corrEcalEnergy*trkPErr*trkPErr + trkP*ecalSigmaTimesRawEnergy*ecalSigmaTimesRawEnergy ) / ( trkPErr*trkPErr + ecalSigmaTimesRawEnergy*ecalSigmaTimesRawEnergy  );	
    
     return std::make_pair(mean*rawCombEnergy,sigma*rawCombEnergy);
   }else{

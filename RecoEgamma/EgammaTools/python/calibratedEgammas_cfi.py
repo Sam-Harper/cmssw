@@ -39,20 +39,13 @@ calibratedElectrons = cms.EDProducer("CalibratedElectronProducer",
                                      # input collections
                                      src = cms.InputTag('gedGsfElectrons'),
                                      epCombConfig = ecalTrkCombinationRegression,
-                                     gbrForestName = cms.vstring('electron_eb_ECALTRK_lowpt', 'electron_eb_ECALTRK',
-                                                                 'electron_ee_ECALTRK_lowpt', 'electron_ee_ECALTRK',
-                                                                 'electron_eb_ECALTRK_lowpt_var', 'electron_eb_ECALTRK_var',
-                                                                 'electron_ee_ECALTRK_lowpt_var', 'electron_ee_ECALTRK_var'),     
                                      )
 
 calibratedPatElectrons = cms.EDProducer("CalibratedPatElectronProducer",
                                         calibratedEgammaSettings,
                                         # input collections
-                                        src = cms.InputTag('slimmedElectrons'),
-                                        gbrForestName = cms.vstring('electron_eb_ECALTRK_lowpt', 'electron_eb_ECALTRK',
-                                                                    'electron_ee_ECALTRK_lowpt', 'electron_ee_ECALTRK',
-                                                                    'electron_eb_ECALTRK_lowpt_var', 'electron_eb_ECALTRK_var',
-                                                                    'electron_ee_ECALTRK_lowpt_var', 'electron_ee_ECALTRK_var'),     
+                                        src = cms.InputTag('slimmedElectrons'), 
+                                        epCombConfig = ecalTrkCombinationRegression,
                                        )
 
 calibratedPhotons = cms.EDProducer("CalibratedPhotonProducer",

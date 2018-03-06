@@ -22,7 +22,7 @@ public:
   ~EpCombinationTool(){}
 
   void setEventContent(const edm::EventSetup& iSetup);
-  std::pair<float, float> combine(reco::GsfElectron& electron) const;
+  std::pair<float, float> combine(const reco::GsfElectron& electron) const;
   
   
 private:
