@@ -6,7 +6,7 @@
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "RecoEgamma/EgammaTools/interface/EnergyScaleCorrection.h"
-#include "RecoEgamma/EgammaTools/interface/EpCombinationToolSemi.h"
+#include "RecoEgamma/EgammaTools/interface/EpCombinationTool.h"
 
 #include <TRandom.h>
 
@@ -21,7 +21,7 @@ public:
   };
 
   ElectronEnergyCalibrator() {}
-  ElectronEnergyCalibrator(EpCombinationToolSemi &combinator, const std::string& correctionFile );
+  ElectronEnergyCalibrator(const EpCombinationTool &combinator, const std::string& correctionFile );
   ~ElectronEnergyCalibrator() {}
   
   /// Initialize with a random number generator (if not done, it will use the CMSSW service)
@@ -54,7 +54,7 @@ private:
   
   // whatever data will be needed
   EnergyScaleCorrection correctionRetriever_;
-  EpCombinationToolSemi *epCombinationTool_; //this is not owned
+  const EpCombinationTool *epCombinationTool_; //this is not owned
   TRandom *rng_; //this is not owned
   float minEt_;
 

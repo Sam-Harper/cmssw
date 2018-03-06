@@ -1,0 +1,25 @@
+#ifndef RecoEgamma_ElectronTools_EgammaBDTOutputTransformer_h
+#define RecoEgamma_ElectronTools_EgammaBDTOutputTransformer_h
+
+#include <vdt/vdtMath.h>
+
+class EgammaBDTOutputTransformer {
+
+public:  
+  EgammaBDTOutputTransformer(const double limitLow,const double limitHigh):
+    limitLow_(limitLow),
+    limitHigh_(limitHigh),
+    offset_(limitLow_ + 0.5*(limitHigh_-limitLow_)),
+    scale_(0.5*(limitHigh_-limitLow_)){}
+
+  double operator()(const double rawVal)const{return offset_ + scale_*vdt::fast_sin(rawVal);}
+ 
+private:
+  double limitLow_;
+  double limitHigh_;
+  double offset_;
+  double scale_;
+};
+
+
+#endif

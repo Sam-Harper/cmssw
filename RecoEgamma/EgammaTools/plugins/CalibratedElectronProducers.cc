@@ -16,7 +16,7 @@
 
 #include "CondFormats/DataRecord/interface/GBRDWrapperRcd.h"
 #include "CondFormats/EgammaObjects/interface/GBRForestD.h"
-#include "RecoEgamma/EgammaTools/interface/EpCombinationToolSemi.h"
+#include "RecoEgamma/EgammaTools/interface/EpCombinationTool.h"
 #include "RecoEgamma/EgammaTools/interface/ElectronEnergyCalibrator.h"
 #include "RecoEgamma/EgammaTools/interface/EGEnergySysIndex.h"
 #include "RecoEgamma/EgammaTools/interface/EgammaRandomSeeds.h"
@@ -41,7 +41,7 @@ private:
   std::vector<std::string>        gbrForestName_;
   std::vector<const GBRForestD* > gbrForestHandle_;
   
-  EpCombinationToolSemi        epCombinationTool_;
+  EpCombinationTool        epCombinationTool_;
   ElectronEnergyCalibrator energyCorrector_;
   std::unique_ptr<TRandom> semiDeterministicRng_;
   edm::EDGetTokenT<EcalRecHitCollection> recHitCollectionEBToken_;
@@ -101,7 +101,7 @@ template<typename T>
 CalibratedElectronProducerT<T>::CalibratedElectronProducerT( const edm::ParameterSet & conf ) :
   electronToken_(consumes<objectCollection>(conf.getParameter<edm::InputTag>("src"))),
   gbrForestName_(conf.getParameter< std::vector<std::string> >("gbrForestName")),
-  epCombinationTool_(),
+  epCombinationTool_(conf.getParameter<edm::ParameterSet>("epCombConfig")),
   energyCorrector_(epCombinationTool_, conf.getParameter<std::string>("correctionFile")),
   recHitCollectionEBToken_(consumes<EcalRecHitCollection>(conf.getParameter<edm::InputTag>("recHitCollectionEB"))),
   recHitCollectionEEToken_(consumes<EcalRecHitCollection>(conf.getParameter<edm::InputTag>("recHitCollectionEE"))),
@@ -132,7 +132,7 @@ CalibratedElectronProducerT<T>::produce( edm::Event & iEvent, const edm::EventSe
     gbrForestHandle_.push_back(forestHandle.product());      
   }
   
-  epCombinationTool_.init(gbrForestHandle_);
+  epCombinationTool_.setEventContent(iSetup);
   
   edm::Handle<objectCollection> inHandle;
   iEvent.getByToken(electronToken_, inHandle);
