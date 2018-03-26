@@ -133,6 +133,5 @@ for valueMapName in RecoEgamma.EgammaTools.calibratedPhotonProducerTRecoPhoton_c
 def appendReducedEgammaEnergyScaleAndSmearingModifier(modifiers):
     modifiers.append(reducedEgammaEnergyScaleAndSmearingModifier)
 
-from Configuration.Eras.Modifier_run2_miniAOD_94XFall17_cff import run2_miniAOD_94XFall17
-run2_miniAOD_94XFall17.toModify(egamma_modifications,appendReducedEgammaEnergyScaleAndSmearingModifier)
+
    
