@@ -19,8 +19,21 @@ _defaultPhoIDModules =  [ 'RecoEgamma.PhotonIdentification.Identification.cutBas
                         'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring16_nonTrig_V1_cff'
                         ]
 
+    
+def _getEnergyCorrectionFile(era):
+    if era=="2017-Nov17ReReco":
+        return "EgammaAnalysis/ElectronTools/data/ScalesSmearings/Run2017_17Nov2017_v1_ele_unc"
+    if era=="2016-Legacy":
+        return "EgammaAnalysis/ElectronTools/data/ScalesSmearings/Legacy2016_07Aug2017_FineEtaR9_v3_ele_unc"
+    if era=="2016-Feb17ReMiniAOD":
+        raise RuntimeError('Error in postRecoEgammaTools, era 2016-Feb17ReMiniAOD is not currently implimented')
+   
+    raise RuntimeError('Error in postRecoEgammaTools, era '+era+' not recognised. Allowed eras are 2017-Nov17ReReco, 2016-Legacy, 2016-Feb17ReMiniAOD')
 
-def _setupEgammaPostRECOSequence(process,applyEnergyCorrections=False,applyVIDOnCorrectedEgamma=False):
+
+
+
+def _setupEgammaPostRECOSequence(process,applyEnergyCorrections=False,applyVIDOnCorrectedEgamma=False,era="2017-Nov17ReReco"):
     if applyVIDOnCorrectedEgamma:
         raise RuntimeError('Error in postRecoEgammaTools, _setupEgammaPostRECOSequence can not currently apply VID on corrected E/gammas in AOD due to ValueMap issues'.format(applyEnergyCorrections,applyVIDOnCorrectedEgamma))
     if applyEnergyCorrections: 
@@ -54,12 +67,18 @@ def _setupEgammaPostRECOSequence(process,applyEnergyCorrections=False,applyVIDOn
         process.egammaScaleSmearTask = cms.Task(process.calibratedElectrons,
                                                 process.calibratedPhotons
                                                 )
+
     process.egmGsfElectronIDs.physicsObjectSrc = eleSrc
     process.egmPhotonIDs.physicsObjectSrc = phoSrc
     process.electronMVAValueMapProducer.src = eleSrc
     process.photonMVAValueMapProducer.src = phoSrc
     process.photonIDValueMapProducer.src = phoSrc
     process.egmPhotonIsolation.srcToIsolate = phoSrc
+
+        
+    energyCorrectionFile = _getEnergyCorrectionFile(era)
+    process.calibratedElectrons.correctionFile = energyCorrectionFile
+    process.calibratedPhotons.correctionFile = energyCorrectionFile
     
     if hasattr(process,'heepIDVarValueMaps'):
         process.heepIDVarValueMaps.elesAOD = eleSrc
@@ -73,7 +92,7 @@ loads up the modifiers and which then creates a new slimmedElectrons,slimmedPhot
 with VID and scale and smearing all loaded in
 """
 
-def _setupEgammaPostRECOSequenceMiniAOD(process,applyEnergyCorrections=False,applyVIDOnCorrectedEgamma=False):
+def _setupEgammaPostRECOSequenceMiniAOD(process,applyEnergyCorrections=False,applyVIDOnCorrectedEgamma=False,era="2017-Nov17ReReco"):
 
     
     if applyEnergyCorrections != applyVIDOnCorrectedEgamma:
@@ -89,6 +108,11 @@ def _setupEgammaPostRECOSequenceMiniAOD(process,applyEnergyCorrections=False,app
     process.calibratedPatElectrons.src = eleCalibSrc
     process.calibratedPatPhotons.src = phoCalibSrc
     
+    energyCorrectionFile = _getEnergyCorrectionFile(era)
+    process.calibratedPatElectrons.correctionFile = energyCorrectionFile
+    process.calibratedPatPhotons.correctionFile = energyCorrectionFile
+
+
     if applyEnergyCorrections and applyVIDOnCorrectedEgamma:
         phoSrc = cms.InputTag('calibratedPatPhotons')
         eleSrc = cms.InputTag('calibratedPatElectrons') 
@@ -150,6 +174,7 @@ def setupEgammaPostRecoSeq(process,
                            applyEnergyCorrections=False,
                            applyVIDOnCorrectedEgamma=False,
                            isMiniAOD=True,
+                           era="2017-Nov17ReReco",
                            eleIDModules=_defaultEleIDModules,
                            phoIDModules=_defaultPhoIDModules):
 
@@ -170,9 +195,9 @@ def setupEgammaPostRecoSeq(process,
         setupAllVIDIdsInModule(process,idmod,setupVIDPhotonSelection)
     
     if isMiniAOD:
-        _setupEgammaPostRECOSequenceMiniAOD(process,applyEnergyCorrections,applyVIDOnCorrectedEgamma)
+        _setupEgammaPostRECOSequenceMiniAOD(process,applyEnergyCorrections=applyEnergyCorrections,applyVIDOnCorrectedEgamma=applyVIDOnCorrectedEgamma,era=era)
     else:
-        _setupEgammaPostRECOSequence(process,applyEnergyCorrections,applyVIDOnCorrectedEgamma)
+        _setupEgammaPostRECOSequence(process,applyEnergyCorrections=applyEnergyCorrections,applyVIDOnCorrectedEgamma=applyVIDOnCorrectedEgamma,era=era)
     
     process.egammaScaleSmearSeq = cms.Sequence( process.egammaScaleSmearTask)
     process.egammaPostRecoSeq   = cms.Sequence( process.egammaScaleSmearSeq*
