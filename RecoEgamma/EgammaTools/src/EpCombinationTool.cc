@@ -79,8 +79,11 @@ std::pair<float, float> EpCombinationTool::combine(const reco::GsfElectron& ele)
     eval[8] = trkPhi;  
 
     const float preCombinationEt = corrEcalEnergy/std::cosh(trkEta);
-    float mean  = ecalTrkEnergyRegress_(preCombinationEt,ele.isEB(),ele.nSaturatedXtals()!=0,eval.data());
-    float sigma  = ecalTrkEnergyRegressUncert_(preCombinationEt,ele.isEB(),ele.nSaturatedXtals()!=0,eval.data());
+    //okay for this CMSSW_8_0_X backport, we dont have the number of saturated crystals in the electron stored
+    //this is not a big deal as here it isnt needed
+    //so we just zero it out
+    float mean  = ecalTrkEnergyRegress_(preCombinationEt,ele.isEB(),0,eval.data());
+    float sigma  = ecalTrkEnergyRegressUncert_(preCombinationEt,ele.isEB(),0,eval.data());
     // Final correction
     // A negative energy means that the correction went
     // outside the boundaries of the training. In this case uses raw.
