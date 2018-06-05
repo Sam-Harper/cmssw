@@ -1,7 +1,5 @@
 from RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_tools import *
 
-mvaVariablesFile        = "RecoEgamma/PhotonIdentification/data/PhotonMVAEstimatorRun2VariablesSpring15ValMaps.txt"
-
 #
 # In this file we define the locations of the MVA weights, cuts on the MVA values
 # for specific working points, and configure those cuts in VID
@@ -27,8 +25,8 @@ mvaTag = "Run2Spring15NonTrig25nsV2"
 #   1    endcap photons
 
 mvaSpring15NonTrigWeightFiles_V2 = cms.vstring(
-    path.join(weightFileBaseDir, "Spring15/25ns_EB_V2.weights.xml.gz"),
-    path.join(weightFileBaseDir, "Spring15/25ns_EE_V2.weights.xml.gz"),
+    os.path.join(weightFileBaseDir, "Spring15/25ns_EB_V2.weights.xml.gz"),
+    os.path.join(weightFileBaseDir, "Spring15/25ns_EE_V2.weights.xml.gz"),
     )
 
 # The locatoins of value maps with the actual MVA values and categories

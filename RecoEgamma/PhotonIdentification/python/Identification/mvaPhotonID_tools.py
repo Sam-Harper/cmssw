@@ -1,25 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.SelectorUtils.centralIDRegistry import central_id_registry
-from os import path
+import os.path
 
 weightFileBaseDir = "RecoEgamma/PhotonIdentification/data/MVA"
-
-# division between barrel and endcap
-ebeeSplit = 1.479
-# categories
-category_cuts = cms.vstring(
-    "abs(superCluster.eta) <  1.479",
-    "abs(superCluster.eta) >= 1.479",
-    )
-
-# This MVA implementation class name
-mvaClassName = "PhotonMVAEstimator"
-
-# The locatoins of value maps with the actual MVA values and categories
-# for all particles.
-# The names for the maps are "<module name>:<MVA class name>Values" 
-# and "<module name>:<MVA class name>Categories"
-mvaProducerModuleLabel = "photonMVAValueMapProducer"
 
 # =======================================================
 # Define simple containers for MVA cut values and related

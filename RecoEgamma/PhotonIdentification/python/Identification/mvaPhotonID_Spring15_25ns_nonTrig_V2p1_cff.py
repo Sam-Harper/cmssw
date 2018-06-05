@@ -1,7 +1,5 @@
 from RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_tools import *
 
-mvaVariablesFile        = "RecoEgamma/PhotonIdentification/data/PhotonMVAEstimatorRun2VariablesSpring15.txt"
-
 # This MVA ID is the same as 25ns V2 except it uses quantities embedded
 # in the objects rather than value maps.
 #
@@ -29,8 +27,8 @@ mvaTag = "Run2Spring15NonTrig25nsV2p1"
 #   1    endcap photons
 
 mvaSpring15NonTrigWeightFiles_V2p1 = cms.vstring(
-    path.join(weightFileBaseDir, "Spring15/25ns_EB_V2.weights.xml.gz"),
-    path.join(weightFileBaseDir, "Spring15/25ns_EE_V2.weights.xml.gz"),
+    os.path.join(weightFileBaseDir, "Spring15/25ns_EB_V2.weights.xml.gz"),
+    os.path.join(weightFileBaseDir, "Spring15/25ns_EE_V2.weights.xml.gz"),
     )
 
 # The locatoins of value maps with the actual MVA values and categories
