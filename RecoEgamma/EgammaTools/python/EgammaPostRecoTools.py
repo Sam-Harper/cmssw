@@ -15,8 +15,8 @@ _defaultEleIDModules =  [ #'RecoEgamma.ElectronIdentification.Identification.hee
 _defaultPhoIDModules =  [ #'RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Fall17_94X_V1_TrueVtx_cff',
                         #'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1_cff', 
                         #'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1p1_cff', 
-                  #      'RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Spring16_V2p2_cff',
-                   #     'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring16_nonTrig_V1_cff'
+                        'RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Spring16_V2p2_cff',
+                        'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring16_nonTrig_V1_cff'
                         ]
 
 
@@ -68,7 +68,7 @@ def _setupEgammaPostRECOSequence(process,applyEnergyCorrections=False,applyVIDOn
     process.electronMVAValueMapProducer.src = eleSrc
     process.photonMVAValueMapProducer.src = phoSrc
     process.photonIDValueMapProducer.src = phoSrc
-#    process.egmPhotonIsolation.srcToIsolate = phoSrc
+    process.egmPhotonIsolation.srcToIsolate = phoSrc
 
     energyCorrectionFile = _getEnergyCorrectionFile(era)
     process.calibratedElectrons.correctionFile = energyCorrectionFile
@@ -123,7 +123,7 @@ def _setupEgammaPostRECOSequenceMiniAOD(process,applyEnergyCorrections=False,app
     process.electronMVAValueMapProducer.srcMiniAOD = eleSrc
     process.photonMVAValueMapProducer.srcMiniAOD = phoSrc
     process.photonIDValueMapProducer.srcMiniAOD = phoSrc
-#    process.egmPhotonIsolation.srcToIsolate = phoSrc
+    process.egmPhotonIsolation.srcToIsolate = phoSrc
 
     if hasattr(process,'heepIDVarValueMaps'):
         process.heepIDVarValueMaps.elesMiniAOD = eleSrc
