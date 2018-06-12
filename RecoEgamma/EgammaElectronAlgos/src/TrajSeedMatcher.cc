@@ -353,7 +353,7 @@ bool TrajSeedMatcher::layerHasValidHits(const DetLayer& layer, const TrajectoryS
   else{
     DetId id = detWithState.front().first->geographicalId();
     MeasurementDetWithData measDet = measTkEvt_->idToDet(id);
-    if(measDet.isActive()) return true;
+    if(measDet.isActive() && !measDet.hasBadComponents(detWithState.front().second)) return true;
     else return false;
   }
 }
