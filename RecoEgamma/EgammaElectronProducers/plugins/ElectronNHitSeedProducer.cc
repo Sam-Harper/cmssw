@@ -25,6 +25,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
+#include "FWCore/Utilities/interface/transform.h"
 
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
@@ -35,6 +36,9 @@
 #include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
 #include "DataFormats/TrajectorySeed/interface/TrajectorySeedCollection.h"
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "DataFormats/DetId/interface/DetIdCollection.h"
+#include "DataFormats/SiPixelDetId/interface/PixelFEDChannel.h"
+ 
 #include "Geometry/Records/interface/TrackerTopologyRcd.h"
 
 #include "RecoEgamma/EgammaElectronAlgos/interface/TrajSeedMatcher.h"
@@ -59,7 +63,9 @@ private:
   edm::EDGetTokenT<std::vector<reco::Vertex> > verticesToken_;
   edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_ ;
   edm::EDGetTokenT<MeasurementTrackerEvent> measTkEvtToken_;
-  
+  //dynamic pixel bad pixel information (taken from exmaple at RecoTracker/TkTrackingRegions/plugins/PixelInactiveAreaFinder.cc)
+  std::vector<edm::EDGetTokenT<DetIdCollection> > inactivePixTokens_;
+  std::vector<edm::EDGetTokenT<PixelFEDChannelCollection> > badPixFEDChanTokens_;
 };
 
 namespace {
@@ -69,6 +75,19 @@ namespace {
     edm::Handle<T> handle;
     event.getByToken(token,handle);
     return handle;
+  }
+  template<typename T> 
+  std::vector<edm::Handle<T> > 
+  getHandles(const edm::Event& event,const std::vector<edm::EDGetTokenT<T> >& tokens)
+  {
+    std::vector<edm::Handle<T> > handles;
+
+    for(auto token : tokens){
+      edm::Handle<T> handle;
+      event.getByToken(token,handle);
+      handles.push_back(handle);
+    }
+    return handles;
   }
 
   template<typename T>
@@ -106,7 +125,9 @@ ElectronNHitSeedProducer::ElectronNHitSeedProducer( const edm::ParameterSet& pse
   initialSeedsToken_(consumes<TrajectorySeedCollection>(pset.getParameter<edm::InputTag>("initialSeeds"))),
   verticesToken_(consumes<std::vector<reco::Vertex> >(pset.getParameter<edm::InputTag>("vertices"))),
   beamSpotToken_(consumes<reco::BeamSpot>(pset.getParameter<edm::InputTag>("beamSpot"))),
-  measTkEvtToken_(consumes<MeasurementTrackerEvent>(pset.getParameter<edm::InputTag>("measTkEvt")))
+  measTkEvtToken_(consumes<MeasurementTrackerEvent>(pset.getParameter<edm::InputTag>("measTkEvt"))),
+  inactivePixTokens_(edm::vector_transform(pset.getParameter<std::vector<edm::InputTag> >("inactivePixelDetectors"), [this](const auto& tag) { return this->consumes<DetIdCollection>(tag); })),
+  badPixFEDChanTokens_(edm::vector_transform(pset.getParameter<std::vector<edm::InputTag> >("badPixelFEDChannels"), [this](const auto& tag) { return this->consumes<PixelFEDChannelCollection>(tag); }))
 {
   const auto superClusTags = pset.getParameter<std::vector<edm::InputTag> >("superClusters");
   for(const auto& scTag : superClusTags){
@@ -122,6 +143,8 @@ void ElectronNHitSeedProducer::fillDescriptions(edm::ConfigurationDescriptions& 
   desc.add<edm::InputTag>("vertices",edm::InputTag());
   desc.add<edm::InputTag>("beamSpot",edm::InputTag("hltOnlineBeamSpot")); 
   desc.add<edm::InputTag>("measTkEvt",edm::InputTag("hltSiStripClusters"));
+  desc.add<std::vector<edm::InputTag> >("inactivePixelDetectors",std::vector<edm::InputTag>{edm::InputTag{"hltSiPixelDigis"}});
+  desc.add<std::vector<edm::InputTag> >("badPixelFEDChannels",std::vector<edm::InputTag>{edm::InputTag{"hltSiPixelDigis"}});
   desc.add<std::vector<edm::InputTag> >("superClusters",std::vector<edm::InputTag>{edm::InputTag{"hltEgammaSuperClustersToPixelMatch"}});
   desc.add<edm::ParameterSetDescription>("matcherConfig",TrajSeedMatcher::makePSetDescription());
   
@@ -135,6 +158,7 @@ void ElectronNHitSeedProducer::produce(edm::Event& iEvent, const edm::EventSetup
   
   matcher_.doEventSetup(iSetup);
   matcher_.setMeasTkEvtHandle(getHandle(iEvent,measTkEvtToken_));
+  matcher_.setBadPixelDetIds(getHandles(iEvent,inactivePixTokens_),getHandles(iEvent,badPixFEDChanTokens_));
 
   auto eleSeeds = std::make_unique<reco::ElectronSeedCollection>();
   

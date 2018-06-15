@@ -32,6 +32,8 @@
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/TrajectorySeed/interface/TrajectorySeedCollection.h"
 #include "DataFormats/DetId/interface/DetId.h"
+#include "DataFormats/DetId/interface/DetIdCollection.h"
+#include "DataFormats/SiPixelDetId/interface/PixelFEDChannel.h"
 #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 #include "TrackingTools/MaterialEffects/interface/PropagatorWithMaterial.h"
 #include "TrackingTools/DetLayers/interface/NavigationSchool.h"
@@ -211,13 +213,19 @@ public:
   static edm::ParameterSetDescription makePSetDescription();
 
   void doEventSetup(const edm::EventSetup& iSetup);
+  void setMeasTkEvtHandle(edm::Handle<MeasurementTrackerEvent> handle){measTkEvt_=std::move(handle);}
+  // void setBadPixelDetIds(std::vector<edm::Handle<DetIdCollection> > inactivePixelDets,
+  // 			std::vector<edm::Handle<PixelFEDChannelCollection> > badPixelFEDChans){
+  //   inactivePixelDets_=std::move(inactivePixelDets);badPixelFEDChans_=std::move(badPixelFEDChans);
+  // }
+  void setBadPixelDetIds(const std::vector<edm::Handle<DetIdCollection> >& inactivePixelDets,
+			 const std::vector<edm::Handle<PixelFEDChannelCollection> >& badPixelFEDChans);
+
   
   std::vector<TrajSeedMatcher::SeedWithInfo>
   compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
 		  const GlobalPoint & vprim, const float energy);
 
-  void setMeasTkEvtHandle(edm::Handle<MeasurementTrackerEvent> handle){measTkEvt_=std::move(handle);}
-  
 private:
   
   std::vector<SCHitMatch> processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
@@ -265,6 +273,8 @@ private:
 			 const Propagator& propToLayerFromState)const;
   
   size_t getNrHitsRequired(const int nrValidLayers)const;
+
+  bool badPixDetId(DetId id)const;
     
 private:
   static constexpr float kElectronMass_ = 0.000511;
@@ -273,9 +283,9 @@ private:
   std::unique_ptr<PropagatorWithMaterial> backwardPropagator_;
   unsigned long long cacheIDMagField_;
   edm::ESHandle<MagneticField> magField_;
-  edm::Handle<MeasurementTrackerEvent> measTkEvt_;
   edm::ESHandle<NavigationSchool> navSchool_;
   edm::ESHandle<DetLayerGeometry> detLayerGeom_;
+  edm::Handle<MeasurementTrackerEvent> measTkEvt_;
   std::string navSchoolLabel_;
   std::string detLayerGeomLabel_;
 
@@ -295,6 +305,9 @@ private:
 
   std::unordered_map<std::pair<int,GlobalPoint>,TrajectoryStateOnSurface> trajStateFromPointPosChargeCache_;
   std::unordered_map<std::pair<int,GlobalPoint>,TrajectoryStateOnSurface> trajStateFromPointNegChargeCache_;
+
+  std::vector<uint32_t> badPixelDetsBarrel_;
+  std::vector<uint32_t> badPixelDetsEndcap_;
 
 };
 

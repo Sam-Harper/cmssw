@@ -98,6 +98,44 @@ void TrajSeedMatcher::doEventSetup(const edm::EventSetup& iSetup)
   iSetup.get<RecoGeometryRecord>().get(detLayerGeomLabel_,detLayerGeom_);
 }
 
+//taken from https://github.com/cms-sw/cmssw/blob/CMSSW_10_1_0/RecoTracker/TkTrackingRegions/plugins/PixelInactiveAreaFinder.cc#L639-L682
+void TrajSeedMatcher::setBadPixelDetIds(const std::vector<edm::Handle<DetIdCollection> >& inactivePixelDets,
+					const std::vector<edm::Handle<PixelFEDChannelCollection> >& badPixelFEDChans)
+{
+  
+  auto addDetId = [&](const auto id) {
+    const auto detid = DetId(id);
+    const auto subdet = detid.subdetId();
+    if(subdet == PixelSubdetector::PixelBarrel) {
+      badPixelDetsBarrel_.push_back(detid.rawId());
+    }
+    else if(subdet == PixelSubdetector::PixelEndcap) {
+      badPixelDetsEndcap_.push_back(detid.rawId());
+    }
+  };
+
+  // dynamic bad modules
+  for(const auto& handle: inactivePixelDets) {
+    for(const auto& id: *handle) {
+      addDetId(id);
+    }
+  }
+
+  // dynamic bad ROCs ("Fed25")
+  // TODO: consider moving to finer-grained areas for inactive ROCs
+  for(const auto& handle: badPixelFEDChans) {
+    for(const auto& disabledChannels: *handle) {
+      addDetId(disabledChannels.detId());
+    }
+  }
+
+  // remove duplicates
+  std::sort(badPixelDetsBarrel_.begin(),badPixelDetsBarrel_.end());
+  std::sort(badPixelDetsEndcap_.begin(),badPixelDetsEndcap_.end());
+  badPixelDetsBarrel_.erase(std::unique(badPixelDetsBarrel_.begin(),badPixelDetsBarrel_.end()),badPixelDetsBarrel_.end());
+  badPixelDetsEndcap_.erase(std::unique(badPixelDetsEndcap_.begin(),badPixelDetsEndcap_.end()),badPixelDetsEndcap_.end());
+}
+
 
 std::vector<TrajSeedMatcher::SeedWithInfo>
 TrajSeedMatcher::compatibleSeeds(const TrajectorySeedCollection& seeds, const GlobalPoint& candPos,
@@ -353,7 +391,9 @@ bool TrajSeedMatcher::layerHasValidHits(const DetLayer& layer, const TrajectoryS
   else{
     DetId id = detWithState.front().first->geographicalId();
     MeasurementDetWithData measDet = measTkEvt_->idToDet(id);
-    if(measDet.isActive() && !measDet.hasBadComponents(detWithState.front().second)) return true;
+    //from empirical testing, the first term is "is this marked bad in the database", the others are for dynamically bad modules (certainly once modules are marked bad in the DB, the first term becomes effective for them)
+    //we were inspired from https://github.com/cms-sw/cmssw/blob/CMSSW_10_1_0/RecoTracker/TrackProducer/interface/TrackProducerBase.icc#L230-L232 and https://github.com/cms-sw/cmssw/blob/CMSSW_10_1_0/RecoTracker/TkTrackingRegions/plugins/PixelInactiveAreaFinder.cc#L659-L675
+    if(measDet.isActive() && !measDet.hasBadComponents(detWithState.front().second) && !badPixDetId(id)) return true;   
     else return false;
   }
 }
@@ -366,6 +406,19 @@ size_t TrajSeedMatcher::getNrHitsRequired(const int nrValidLayers)const
   }
   return minNrHits_.back();
   
+}
+
+bool TrajSeedMatcher::badPixDetId(DetId id)const
+{
+  if(id.subdetId()==PixelSubdetector::PixelBarrel){
+    return std::binary_search(badPixelDetsBarrel_.begin(),badPixelDetsBarrel_.end(),id.rawId());
+  }
+  else if(id.subdetId()==PixelSubdetector::PixelEndcap){
+    return std::binary_search(badPixelDetsEndcap_.begin(),badPixelDetsBarrel_.end(),id.rawId());
+  }else{
+    //well its not a pix det id so it cant be a bad pixel module
+    return false;
+  } 
 }
 
 TrajSeedMatcher::SCHitMatch::SCHitMatch(const GlobalPoint& vtxPos,
