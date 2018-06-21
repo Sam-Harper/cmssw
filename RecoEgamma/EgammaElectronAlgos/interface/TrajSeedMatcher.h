@@ -227,7 +227,7 @@ public:
 		  const GlobalPoint & vprim, const float energy);
 
 private:
-  
+
   std::vector<SCHitMatch> processSeed(const TrajectorySeed& seed, const GlobalPoint& candPos,
 				   const GlobalPoint & vprim, const float energy, const int charge );
 
@@ -277,6 +277,20 @@ private:
   bool badPixDetId(DetId id)const;
     
 private:
+
+  class PixelChecks {
+  public:
+    PixelChecks(const std::vector<std::string>& input);
+    ~PixelChecks()=default;
+    bool active()const{return active_;}
+    bool badComp()const{return badComp_;}
+    bool badPixDetId()const{return badPixDetId_;}
+  private:
+    bool active_;
+    bool badComp_;
+    bool badPixDetId_;
+  };
+
   static constexpr float kElectronMass_ = 0.000511;
   static constexpr float kPhiCut_ = -0.801144;//cos(2.5)
   std::unique_ptr<PropagatorWithMaterial> forwardPropagator_;
@@ -308,7 +322,7 @@ private:
 
   std::vector<uint32_t> badPixelDetsBarrel_;
   std::vector<uint32_t> badPixelDetsEndcap_;
-
+  const PixelChecks pixelChecks_;
 };
 
 #endif

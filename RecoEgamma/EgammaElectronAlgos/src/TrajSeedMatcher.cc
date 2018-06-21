@@ -23,7 +23,8 @@ constexpr float TrajSeedMatcher::kElectronMass_;
 TrajSeedMatcher::TrajSeedMatcher(const edm::ParameterSet& pset):
   cacheIDMagField_(0),
   minNrHits_(pset.getParameter<std::vector<unsigned int> >("minNrHits")),
-  minNrHitsValidLayerBins_(pset.getParameter<std::vector<int> >("minNrHitsValidLayerBins"))
+  minNrHitsValidLayerBins_(pset.getParameter<std::vector<int> >("minNrHitsValidLayerBins")),
+  pixelChecks_(pset.getParameter<std::vector<std::string> >("pixelChecks"))
 {
   useRecoVertex_ = pset.getParameter<bool>("useRecoVertex");
   navSchoolLabel_ = pset.getParameter<std::string>("navSchool");
@@ -56,6 +57,7 @@ edm::ParameterSetDescription TrajSeedMatcher::makePSetDescription()
   desc.add<std::string>("detLayerGeom","hltESPGlobalDetLayerGeometry");
   desc.add<std::vector<int> >("minNrHitsValidLayerBins",{4});
   desc.add<std::vector<unsigned int> >("minNrHits",{2,3});
+  desc.add<std::vector<std::string> >("pixelChecks",{"active"});
   
   edm::ParameterSetDescription cutsDesc;
   auto cutDescCases = 
@@ -102,7 +104,9 @@ void TrajSeedMatcher::doEventSetup(const edm::EventSetup& iSetup)
 void TrajSeedMatcher::setBadPixelDetIds(const std::vector<edm::Handle<DetIdCollection> >& inactivePixelDets,
 					const std::vector<edm::Handle<PixelFEDChannelCollection> >& badPixelFEDChans)
 {
-  
+  //if we're not going to check for bad pixel det ids, then no point in filling them
+  if(!pixelChecks_.badPixDetId()) return;
+
   auto addDetId = [&](const auto id) {
     const auto detid = DetId(id);
     const auto subdet = detid.subdetId();
@@ -393,7 +397,9 @@ bool TrajSeedMatcher::layerHasValidHits(const DetLayer& layer, const TrajectoryS
     MeasurementDetWithData measDet = measTkEvt_->idToDet(id);
     //from empirical testing, the first term is "is this marked bad in the database", the others are for dynamically bad modules (certainly once modules are marked bad in the DB, the first term becomes effective for them)
     //we were inspired from https://github.com/cms-sw/cmssw/blob/CMSSW_10_1_0/RecoTracker/TrackProducer/interface/TrackProducerBase.icc#L230-L232 and https://github.com/cms-sw/cmssw/blob/CMSSW_10_1_0/RecoTracker/TkTrackingRegions/plugins/PixelInactiveAreaFinder.cc#L659-L675
-    if(measDet.isActive() && !measDet.hasBadComponents(detWithState.front().second) && !badPixDetId(id)) return true;   
+    if( (!pixelChecks_.active() || measDet.isActive() ) &&
+	(!pixelChecks_.badComp() || !measDet.hasBadComponents(detWithState.front().second)) && 
+	(!pixelChecks_.badPixDetId() || !badPixDetId(id)) ) return true;   
     else return false;
   }
 }
@@ -537,3 +543,20 @@ size_t TrajSeedMatcher::MatchingCutsV2::getBinNr(float eta)const
   return etaBins_.size();
 }
 
+TrajSeedMatcher::PixelChecks::PixelChecks(const std::vector<std::string>& input):
+  active_(false),badComp_(false),badPixDetId_(false)
+{
+  const std::vector<std::pair<std::string,bool*> > allowedEntries = {
+    {"active",&active_},{"badcomp",&badComp_},{"badPixDetId",&badPixDetId_}
+  };
+
+  for(const auto& entry : input){
+    auto res = std::find_if(allowedEntries.begin(),allowedEntries.end(),[&entry](auto& val){return val.first==entry;});
+    if(res!=allowedEntries.end()) *(res->second) = true;
+    else{
+      std::string entriesStr = "";
+      for( const auto& entry : allowedEntries) entriesStr+=" "+entry.first;
+      throw cms::Exception("InvalidConfig")<<" TrajSeedMatcher::PixelChecks::PixelChecks check "<<entry<<" is invalid, valid entries are"+entriesStr;
+    }
+  }
+}
