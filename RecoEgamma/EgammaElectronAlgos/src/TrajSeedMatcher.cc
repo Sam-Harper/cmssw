@@ -547,7 +547,7 @@ TrajSeedMatcher::PixelChecks::PixelChecks(const std::vector<std::string>& input)
   active_(false),badComp_(false),badPixDetId_(false)
 {
   const std::vector<std::pair<std::string,bool*> > allowedEntries = {
-    {"active",&active_},{"badcomp",&badComp_},{"badPixDetId",&badPixDetId_}
+    {"active",&active_},{"badComp",&badComp_},{"badPixDetId",&badPixDetId_}
   };
 
   for(const auto& entry : input){
@@ -555,8 +555,8 @@ TrajSeedMatcher::PixelChecks::PixelChecks(const std::vector<std::string>& input)
     if(res!=allowedEntries.end()) *(res->second) = true;
     else{
       std::string entriesStr = "";
-      for( const auto& entry : allowedEntries) entriesStr+=" "+entry.first;
-      throw cms::Exception("InvalidConfig")<<" TrajSeedMatcher::PixelChecks::PixelChecks check "<<entry<<" is invalid, valid entries are"+entriesStr;
+      for( const auto& entry : allowedEntries) entriesStr+=" \""+entry.first+"\"";
+      throw cms::Exception("InvalidConfig")<<" TrajSeedMatcher::PixelChecks::PixelChecks check \""<<entry<<"\" is invalid, valid entries are:"+entriesStr;
     }
   }
 }
