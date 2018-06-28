@@ -67,7 +67,7 @@ float EnergyScaleCorrection::smearingSigma(int runnr, double et, double eta, dou
 {
   const SmearCorrection* smearCorr = getSmearCorr(runnr,et,eta,r9,gainSeed);
 						  
-  if(smearCorr!=nullptr) return smearCorr->sigma(nrSigmaRho,nrSigmaPhi);
+  if(smearCorr!=nullptr) return smearCorr->sigma(et,nrSigmaRho,nrSigmaPhi);
   else return kDefaultSmearVal_;
 }
 
@@ -390,9 +390,10 @@ bool EnergyScaleCorrection::CorrectionCategory::
 inCategory(const unsigned int runnr, const float et, const float eta, const float r9, 
 	   const unsigned int gainSeed)const
 {
+  const float etaAbs = std::abs(eta);
   return runnr>= runMin_ && runnr<= runMax_ &&
     et>=etMin_ && et<=etMax_ &&
-    eta>=etaMin_ && eta<=etaMax_ &&
+    etaAbs>=etaMin_ && etaAbs<=etaMax_ &&
     r9>=r9Min_ && r9<=r9Max_ &&
     (gain_==0 || gainSeed==gain_);  
 }
