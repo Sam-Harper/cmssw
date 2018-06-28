@@ -151,8 +151,6 @@ public:
 
  private:
 
-  void addScale(const std::string& category, int runMin, int runMax, 
-		double deltaP, double errDeltaP, double errSystDeltaP, double errDeltaPGain);
   void addSmearing(const std::string& category, int runMin, int runMax,
 		   double rho, double errRho, double phi, double errPhi, 
 		   double eMean, double errEMean);

@@ -124,24 +124,6 @@ EnergyScaleCorrection::getSmearCorr(unsigned int runnr, double et, double eta, d
   return &result.first->second;
 }
 
-
-void EnergyScaleCorrection::addScale(const std::string& category, int runMin, int runMax,  
-				     double energyScale, double energyScaleErrStat, 
-				     double energyScaleErrSyst, double energyScaleErrGain)
-{
-  
-  CorrectionCategory cat(category,runMin,runMax); // build the category from the string
-  auto result = std::equal_range(scales_.begin(),scales_.end(),cat,Sorter<CorrectionCategory,ScaleCorrection>());
-  if(result.first!=result.second){
-    throw cms::Exception("ConfigError") << "Category already defined! "<<cat;
-  }
-  
-  ScaleCorrection corr(energyScale,energyScaleErrStat,energyScaleErrSyst,energyScaleErrGain);
-  scales_.push_back({cat,corr});
-  std::sort(scales_.begin(),scales_.end(),Sorter<CorrectionCategory,ScaleCorrection>()); 
-  
-}
-
 void EnergyScaleCorrection::addSmearing(const std::string& category,int runMin, int runMax,
 					double rho, double errRho, 
 					double phi, double errPhi,
@@ -181,14 +163,23 @@ void EnergyScaleCorrection::readScalesFromFile(const std::string& filename)
   int runMin, runMax;
   std::string category, region2;
   double energyScale, energyScaleErr, energyScaleErrStat, energyScaleErrSyst, energyScaleErrGain;
-  
+  std::map<CorrectionCategory,ScaleCorrection> scalesMap;
   for(file >> category; file.good(); file >> category) {
     file >> region2
 	 >> runMin >> runMax
 	 >> energyScale >> energyScaleErr >> energyScaleErrStat >> energyScaleErrSyst >> energyScaleErrGain;
-    addScale(category, runMin, runMax, energyScale, energyScaleErrStat, energyScaleErrSyst, energyScaleErrGain);
+
+    CorrectionCategory cat(category,runMin,runMax);
+    ScaleCorrection corr(energyScale,energyScaleErrStat,energyScaleErrSyst,energyScaleErrGain);
+    auto result = scalesMap.insert({cat,corr});
+    if(!result.second){
+      throw cms::Exception("ConfigError") << "Category already defined! "<<cat;
+    }
   }
   
+  for(auto scale : scalesMap) scales_.push_back(scale);
+  std::sort(scales_.begin(),scales_.end(),Sorter<CorrectionCategory,ScaleCorrection>());
+
   file.close();  
   return;
 }
