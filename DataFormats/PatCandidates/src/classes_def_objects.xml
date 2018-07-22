@@ -59,6 +59,9 @@
   <ioread sourceClass="pat::Electron"  targetClass="pat::Electron" version="[-28]" target="cachedIP_" source="std::vector<bool> cachedIP_" embed="false">
     <![CDATA[ cachedIP_ = onfile.cachedIP_[1] + 2*onfile.cachedIP_[2] + 4*onfile.cachedIP_[3] + 8*onfile.cachedIP_[4]; ]]>
   </ioread>
+  <ioread sourceClass="pat::Electron"  targetClass="pat::Electron" version="[-37]" target="" source="float ecalPFClusIso_;float hcalPFClusIso_" embed="false" include="DataFormats/PatCandidates/interface/PFClusFix.h">
+    <![CDATA[ setClusIso(*newObj,onfile.ecalPFClusIso_,onfile.hcalPFClusIso_); ]]> <!---onfile.ecalPFClusIso_; ]]> -->
+  </ioread>
 
 
   <class name="pat::Muon"  ClassVersion="25">
