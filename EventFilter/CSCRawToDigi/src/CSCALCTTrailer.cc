@@ -53,7 +53,7 @@ CSCALCTTrailer::CSCALCTTrailer(int size, int firmVersion)
      firmwareVersion = 2007;
   }
   else {
-    edm::LogError("CSCALCTTrailer|CSCRawToDigi") <<"failed to construct: undetermined ALCT firmware version!!" << firmVersion;
+    edm::LogError("CSCALCTTrailer|CSCRawToDigi") <<"failed to construct: undetermined ALCT firmware version!! msg1 " << firmVersion;
   }
 
 }
@@ -67,7 +67,7 @@ CSCALCTTrailer::CSCALCTTrailer(const unsigned short * buf){
     firmwareVersion=2006;
   }
   else {
-    edm::LogError("CSCALCTTrailer|CSCRawToDigi") <<"failed to construct: undetermined ALCT firmware version!!" << firmwareVersion;
+    edm::LogError("CSCALCTTrailer|CSCRawToDigi") <<"failed to construct: undetermined ALCT firmware version!! msg2 " << firmwareVersion;
   }
 
   ///Now fill data 

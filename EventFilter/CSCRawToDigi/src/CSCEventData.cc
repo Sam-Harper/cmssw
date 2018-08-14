@@ -41,9 +41,10 @@ CSCEventData::CSCEventData(const uint16_t * buf, uint16_t format_version): theFo
   unpack_data(buf);
 }
 
-
+#include <sstream>
 void CSCEventData::unpack_data(const uint16_t * buf)
 {
+  std::ostringstream samLog;
   // zero everything
   init();
   const uint16_t * pos = buf;
@@ -55,7 +56,10 @@ void CSCEventData::unpack_data(const uint16_t * buf)
           LogTrace ("CSCEventData|CSCRawToDigi") << std::hex << pos[i ] << " ";
         }
     }
-
+  samLog<<" event data "<<std::endl;
+  for (int i =0; i < 16; ++i){
+    samLog <<"    "<<i<<" "<<std::hex<<pos[i]<<std::dec<<std::endl;
+  }
   theDMBHeader = CSCDMBHeader(pos, theFormatVersion);
   if (!(theDMBHeader.check()))
     {
@@ -80,14 +84,17 @@ void CSCEventData::unpack_data(const uint16_t * buf)
     }
 
   pos += theDMBHeader.sizeInWords();
+  samLog <<" dmb header size "<<theDMBHeader.sizeInWords()<<std::endl;
 
   if (nalct() ==1)
     {
       if (isALCT(pos))  //checking for ALCTData
         {
+	  samLog <<" have isALCT data "<<std::endl;
           theALCTHeader = new CSCALCTHeader( pos );
           if (!theALCTHeader->check())
             {
+	      samLog<<" data is corupt"<<std::endl;
               LogTrace ("CSCEventData|CSCRawToDigi") <<"+++WARNING: Corrupt ALCT data - won't attempt to decode";
             }
           else
@@ -121,9 +128,11 @@ void CSCEventData::unpack_data(const uint16_t * buf)
               int sizeInWord_ZSE =0;
 
               //alctZSErecovered = new unsigned short [theAnodeData->sizeInWords()];
+	      samLog <<"enabled zse "<<zseEnable<<std::endl;
 
               if (zseEnable)
                 {
+
                   /// Aauxilary variables neede to recover zero suppression
                   /// Calculate the number of wire groups per layer
                   int  nWGs_per_layer = ( (theALCTHeader->data()[6]&0x0007) + 1 ) * 16 ;
@@ -133,7 +142,8 @@ void CSCEventData::unpack_data(const uint16_t * buf)
                   const uint16_t * posZSE = pos;
                   std::vector<unsigned short> alctZSErecoveredVector;
                   alctZSErecoveredVector.clear();
-
+		  samLog <<" number wg/layer "<<nWGs_per_layer<<" "<<nWG_round_up<<std::endl;
+		    
                   //alctZSErecovered = new unsigned short [theAnodeData->sizeInWords()];
                   //delete [] alctZSErecovered;
                   //std::cout << " ALCT Buffer with ZSE: " << std::endl; ///to_rm
@@ -157,8 +167,11 @@ void CSCEventData::unpack_data(const uint16_t * buf)
 
                   /// Actual word counting and recovering the original ALCT payload
                   int alctZSErecoveredPos=0;
-                  while (*posZSE != 0xDE0D)
+		  int countSam=0;
+                  while (*posZSE != 0xDE0D)  
                     {
+		      samLog <<" sam count "<<countSam<<" "<< ( (*posZSE == 0x1000) && (*posZSE != 0x3000) )<<std::endl;
+		      countSam++;
                       if ( (*posZSE == 0x1000) && (*posZSE != 0x3000))
                         {
                           for (int j=0; j<nWG_round_up; j++)
@@ -202,24 +215,35 @@ void CSCEventData::unpack_data(const uint16_t * buf)
                   //std::cout << " ALCT SizeZSE : " << sizeInWord_ZSE << std::endl; ///to_rm
                   //std::cout << " ALCT SizeZSE Recovered: " << alctZSErecoveredPos << std::endl; ///to_rm
                   //std::cout << " ALCT Size Expected: " << theAnodeData->sizeInWords() << std::endl; ///to_rm
+		  samLog <<" size in word "<<sizeInWord_ZSE<<std::endl;
                   pos +=sizeInWord_ZSE;
                 }
               else
                 {
+		  samLog<<" non zse "<<std::endl;
                   //pos +=sizeInWord_ZSE;
                   theAnodeData = new CSCAnodeData(*theALCTHeader, pos);
                   pos += theAnodeData->sizeInWords(); // size of the data is determined during unpacking
+		  samLog <<" size in word "<<theAnodeData->sizeInWords()<<std::endl;
                 }
               //std::cout << " ****The ALCT information from CSCEventData.cc (end)**** " << std::endl; ///to_rm
+	      if ((pos[0]==0xDE0D)&&((pos[1]&0xF000)==0xD000)) {
+		samLog<<" CSC trailer 2007"<<std::endl;
+	      }else samLog<<" CSC trailer not 2007"<<std::endl;
+	      samLog <<" trailer "<<std::hex<<pos[0]<<" "<<pos[1]<<std::dec<<std::endl;
+	      samLog <<" dist moved in buff "<<(pos-buf)<<std::endl;
               theALCTTrailer = new CSCALCTTrailer( pos );
               pos += theALCTTrailer->sizeInWords();
+	      samLog <<" trailer size "<<theALCTTrailer->sizeInWords()<<std::endl;
             }
+	
         }
       else
         {
           LogTrace ("CSCEventData|CSCRawToDigi") << "Error:nalct reported but no ALCT data found!!!";
         }
     }
+ 
 
   if (nclct() ==1)
     {
@@ -246,11 +270,14 @@ void CSCEventData::unpack_data(const uint16_t * buf)
         && (*(i+pos+6) & 0xF000) == 0xE000 && (*(i+pos+7) & 0xF000) == 0xE000;
       if (dmbTrailerReached)
         {
+	  samLog <<"  DMB trailer reached at i "<<i<<" address "<<(pos+i)<<std::endl;
           // theDMBTrailer = *( (CSCDMBTrailer *) (pos+i) );
           theDMBTrailer = CSCDMBTrailer(pos+i, theFormatVersion);
           break;
         }
+      if(*(i+pos)==0x9ad0 && *(i+1+pos)==9895) samLog<<" new header reached "<<std::endl;
     }
+  samLog <<" DBM trailer reached "<<dmbTrailerReached<<std::endl;
   if (dmbTrailerReached)
     {
       for (int icfeb = 0; icfeb < MAX_CFEB; ++icfeb)
@@ -267,6 +294,7 @@ void CSCEventData::unpack_data(const uint16_t * buf)
                 }
               else
                 {
+		  samLog <<" cfeb found "<<icfeb<<std::endl;
                   //dataPresent|=(0x1>>icfeb);
                   // Fill CFEB data and convert it into cathode digis
 
@@ -286,7 +314,8 @@ void CSCEventData::unpack_data(const uint16_t * buf)
     {
       LogTrace ("CSCEventData|CSCRawToDigi") << "Critical Error: DMB Trailer was not found!!! ";
     }
-
+  samLog <<" size "<<size_<<std::endl;
+  edm::LogError("SamDebug") <<samLog.str();
   // std::cout << "CSC format: " << theFormatVersion << " " << getFormatVersion() << std::endl;
 }
 
@@ -340,6 +369,7 @@ void CSCEventData::init()
 
 void CSCEventData::copy(const CSCEventData & data)
 {
+  if(&data==this) std::cout <<"oh dear, self copy, will end in tears"<<std::endl;
   init();
   theFormatVersion = data.theFormatVersion;
   theDMBHeader  = data.theDMBHeader;
