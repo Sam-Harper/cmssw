@@ -9,18 +9,20 @@ process.load("DQMServices.Core.DQMStore_cfi")
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
+import FWCore.ParameterSet.VarParsing as VarParsing
+options = VarParsing.VarParsing ('analysis') 
+options.register('dqmTag','/HLT/TrigObjTnpSource/All',options.multiplicity.singleton,options.varType.string," whether we are running on miniAOD or not")
+options.parseArguments()
 
 # Source
 process.source = cms.Source("PoolSource",
-  fileNames = cms.untracked.vstring(
-    'file:/opt/ppd/month/harper/dataFiles/EGamma_Run2018B_RAW_317182_LS52_1884CA4B-3664-E811-A7EC-FA163EB2E120.root'
-  )
+  fileNames = cms.untracked.vstring(options.inputFiles)
 )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.load("DQM.HLTEvF.trigObjTnPSource_cfi")
 
 process.load('DQMServices.Components.DQMFileSaver_cfi')
-process.dqmSaver.workflow = "/HLT/TrigObjTnpSource/All"
+process.dqmSaver.workflow = options.dqmTag
 
 process.endp = cms.EndPath( process.trigObjTnPSource + process.dqmSaver )
