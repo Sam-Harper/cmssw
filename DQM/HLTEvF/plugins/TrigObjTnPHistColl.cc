@@ -174,7 +174,7 @@ TrigObjTnPHistColl::TrigObjVarF::TrigObjVarF(std::string varName):isAbs_(false)
   auto absPos = varName.rfind("Abs");
   if(absPos != std::string::npos && absPos+3 == varName.size() ) {
     isAbs_ = true;
-    varName = varName.erase(0,absPos);
+    varName = varName.erase(absPos);
   }
   if(varName=="pt") varFunc_ = &trigger::TriggerObject::pt;
   else if(varName=="eta") varFunc_ = &trigger::TriggerObject::eta;
