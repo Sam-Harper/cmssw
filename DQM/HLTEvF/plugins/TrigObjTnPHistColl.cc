@@ -1,12 +1,20 @@
 #include "TrigObjTnPHistColl.h"
 
+namespace{
+  std::vector<float> convertToFloat(const std::vector<double>& vecD){
+    std::vector<float> vecF;
+    for(double x : vecD) vecF.push_back(x);
+    return vecF;
+  }
+}
+
 TrigObjTnPHistColl::TrigObjTnPHistColl(const edm::ParameterSet& config,edm::ConsumesCollector&& cc):
   tagCuts_(config.getParameter<std::vector<edm::ParameterSet>>("tagCuts")),
   probeCuts_(config.getParameter<std::vector<edm::ParameterSet>>("probeCuts")),
   tagFilters_(config.getParameter<edm::ParameterSet>("tagFilters")),
   collName_(config.getParameter<std::string>("collName")),
   folderName_(config.getParameter<std::string>("folderName")),
-  histBins_(config.getParameter<edm::ParameterSet>("histBins")),
+  histDefs_(config.getParameter<edm::ParameterSet>("histDefs")),
   evtTrigSel_(config.getParameter<edm::ParameterSet>("evtTrigSel"),cc)
 {
   for(auto probeFilter : config.getParameter<std::vector<std::string> >("probeFilters")){
@@ -22,7 +30,7 @@ edm::ParameterSetDescription TrigObjTnPHistColl::makePSetDescription()
   desc.add<edm::ParameterSetDescription>("tagFilters",FilterSelector::makePSetDescription());
   desc.add<std::string>("collName","stdTag");
   desc.add<std::string>("folderName","HLT/EGM/TrigObjTnP");
-  desc.add<edm::ParameterSetDescription>("histBins",HistColl::Bins::makePSetDescription());
+  desc.add<edm::ParameterSetDescription>("histDefs",HistDefs::makePSetDescription());
   desc.add<std::vector<std::string>>("probeFilters",std::vector<std::string>());  
 
   edm::ParameterSetDescription trigEvtFlagDesc;
@@ -47,7 +55,7 @@ void TrigObjTnPHistColl::bookHists(DQMStore::IBooker& iBooker)
 {
   iBooker.setCurrentFolder(folderName_);
   for(auto& probe : probeHists_){
-    probe.bookHists(collName_,iBooker,histBins_);
+    probe.bookHists(collName_,iBooker,histDefs_);
   }
 }
 
@@ -76,18 +84,6 @@ const trigger::Keys TrigObjTnPHistColl::getKeys(const trigger::TriggerEvent& tri
   else return trigger::Keys();
 }
 
-TrigObjTnPHistColl::TrigObjCuts::TrigObjCuts(const edm::ParameterSet& config)
-{
-  
-
-}
-
-TrigObjTnPHistColl::TrigObjCuts::CutData::CutData(const edm::ParameterSet& config)
-{
-  
-
-}
-
 TrigObjTnPHistColl::FilterSelector::FilterSelector(const edm::ParameterSet& config):
   isAND_(config.getParameter<bool>("isAND"))
 {
@@ -102,7 +98,6 @@ edm::ParameterSetDescription TrigObjTnPHistColl::FilterSelector::makePSetDescrip
   desc.add<bool>("isAND",false);
   return desc;
 }
-
 
 const trigger::Keys TrigObjTnPHistColl::FilterSelector::getPassingKeys(const trigger::TriggerEvent& trigEvt)const
 {
@@ -173,59 +168,123 @@ const trigger::Keys TrigObjTnPHistColl::FilterSelector::FilterSet::getPassingKey
   return passingKeys;
 }
 
+TrigObjTnPHistColl::TrigObjVarF::TrigObjVarF(std::string varName):isAbs_(false)
+{
+  //first look for "Abs" at the end of the string
+  auto absPos = varName.rfind("Abs");
+  if(absPos != std::string::npos && absPos+3 == varName.size() ) {
+    isAbs_ = true;
+    varName = varName.erase(0,absPos);
+  }
+  if(varName=="pt") varFunc_ = &trigger::TriggerObject::pt;
+  else if(varName=="eta") varFunc_ = &trigger::TriggerObject::eta;
+  else if(varName=="phi") varFunc_ = &trigger::TriggerObject::phi;
+  else{
+    std::ostringstream msg;
+    msg<<"var "<<varName<<" not recognised (use pt or p rather than et or e for speed!) ";
+    if(isAbs_) msg<<" varName was \"Abs\" suffex cleaned where it tried to remove \"Abs\" at the end of the variable name ";
+    msg <<__FILE__<<","<<__LINE__<<std::endl;
+    throw cms::Exception("ConfigError") <<msg.str();
+  }
+}
+
+TrigObjTnPHistColl::HistFiller::HistFiller(const edm::ParameterSet& config):
+  localCuts_(config.getParameter<std::vector<edm::ParameterSet> >("localCuts")),
+  var_(config.getParameter<std::string>("var"))
+{
+  
+}
+
+edm::ParameterSetDescription TrigObjTnPHistColl::HistFiller::makePSetDescription()
+{
+  edm::ParameterSetDescription desc;
+  desc.addVPSet("localCuts",VarRangeCut<trigger::TriggerObject>::makePSetDescription());
+  desc.add<std::string>("var","pt");
+  return desc;
+}
+
+void TrigObjTnPHistColl::HistFiller::operator()(const trigger::TriggerObject& probe,float mass,
+						MonitorElement* hist)
+{
+  if(localCuts_(probe)) hist->Fill(var_(probe),mass);
+}
+
+
+
+TrigObjTnPHistColl::HistDefs::HistDefs(const edm::ParameterSet& config):
+  massBins_(convertToFloat(config.getParameter<std::vector<double> >("massBins")))
+{
+  const auto histConfigs = config.getParameter<std::vector<edm::ParameterSet> >("configs");
+  for(const auto& histConfig : histConfigs){
+    histData_.emplace_back(Data(histConfig));
+  }
+}
+
+edm::ParameterSetDescription TrigObjTnPHistColl::HistDefs::makePSetDescription()
+{
+  edm::ParameterSetDescription desc;
+  desc.addVPSet("configs",Data::makePSetDescription(),std::vector<edm::ParameterSet>()); 
+  std::vector<double> massBins;
+  for(float mass = 60;mass<=120;mass+=1) massBins.push_back(mass);
+  desc.add<std::vector<double>>("massBins",massBins);
+  return desc;
+}
+
+std::vector<std::pair<TrigObjTnPHistColl::HistFiller,MonitorElement*> > TrigObjTnPHistColl::HistDefs::bookHists(DQMStore::IBooker& iBooker,const std::string& name,const std::string& title)const
+{
+  std::vector<std::pair<HistFiller,MonitorElement*> > hists;
+  for(const auto& data : histData_){
+    hists.push_back({data.filler(),data.book(iBooker,name,title,massBins_)});
+  }
+  return hists;
+}
+
+TrigObjTnPHistColl::HistDefs::Data::Data(const edm::ParameterSet& config):
+  histFiller_(config.getParameter<edm::ParameterSet>("filler")),
+  bins_(convertToFloat(config.getParameter<std::vector<double> >("bins"))),
+  nameSuffex_(config.getParameter<std::string>("nameSuffex")),
+  titleSuffex_(config.getParameter<std::string>("titleSuffex"))
+{ 
+
+}
+
+edm::ParameterSetDescription TrigObjTnPHistColl::HistDefs::Data::makePSetDescription()
+{
+  edm::ParameterSetDescription desc;
+  desc.add<edm::ParameterSetDescription>("filler",TrigObjTnPHistColl::HistFiller::makePSetDescription());
+  desc.add<std::vector<double> >("bins",{-2.5,-1.5,0,1.5,2.5});
+  desc.add<std::string>("nameSuffex","_eta");
+  desc.add<std::string>("titleSuffex",";#eta;mass [GeV]");
+  return desc;
+}
+
+MonitorElement* TrigObjTnPHistColl::HistDefs::Data::book(DQMStore::IBooker& iBooker,
+					      const std::string& name,const std::string& title,
+					      const std::vector<float>& massBins)const
+{
+  return iBooker.book2D((name+nameSuffex_).c_str(),(title+titleSuffex_).c_str(),
+			bins_.size()-1,bins_.data(),massBins.size()-1,massBins.data());
+}
+
 void TrigObjTnPHistColl::HistColl::bookHists(DQMStore::IBooker& iBooker,
 					     const std::string& name,const std::string& title,
-					     const TrigObjTnPHistColl::HistColl::Bins& bins )
+					     const HistDefs& histDefs)
 {
-  ptHist_ = iBooker.book2D((name+"_pt").c_str(),(title+";p_{T} [GeV];mass [GeV]").c_str(),
-			   bins.pt.size()-1,bins.pt.data(),
-			   bins.mass.size()-1,bins.mass.data());
-  etaHist_ = iBooker.book2D((name+"_eta").c_str(),(title+";#eta;mass [GeV]").c_str(),
-			    bins.eta.size()-1,bins.eta.data(),
-			    bins.mass.size()-1,bins.mass.data());
-  phiHist_ = iBooker.book2D((name+"_phi").c_str(),(title+";#phi [rad];mass [GeV]").c_str(),
-			    bins.phi.size()-1,bins.phi.data(),
-			    bins.mass.size()-1,bins.mass.data());
+  hists_ = histDefs.bookHists(iBooker,name,title);
 }
 
 void TrigObjTnPHistColl::HistColl::fill(const trigger::TriggerObject& probe,float mass)
 {
-  ptHist_->Fill(probe.pt(),mass);
-  etaHist_->Fill(probe.eta(),mass);
-  phiHist_->Fill(probe.phi(),mass);
-}
-
-TrigObjTnPHistColl::HistColl::Bins::Bins(const edm::ParameterSet& config)
-{
-  auto getVecFloat = [&config](const std::string& name){
-    auto vecDouble = config.getParameter<std::vector<double> >(name);
-    std::vector<float> vecFloat;
-    for(double x : vecDouble) vecFloat.push_back(x);
-    return vecFloat;
-  };
-  pt = getVecFloat("pt");
-  eta = getVecFloat("eta");
-  phi = getVecFloat("phi");
-  mass = getVecFloat("mass");
-}  
-
-edm::ParameterSetDescription TrigObjTnPHistColl::HistColl::Bins::makePSetDescription()
-{
-  edm::ParameterSetDescription desc;
-  desc.add<std::vector<double> >("pt",{10,20,30,60,100});
-  desc.add<std::vector<double> >("eta",{-2.5,-1.5,0,1.5,2.5});
-  desc.add<std::vector<double> >("phi",{-3.14,-1.57,0,-1.57,3.14});
-  std::vector<double> massBins;
-  for(float mass = 60;mass<=120;mass+=1) massBins.push_back(mass);
-  desc.add<std::vector<double> >("mass",massBins);
-  return desc;
+  for(auto& hist : hists_){
+    hist.first(probe,mass,hist.second);
+  }
 }
 
 void TrigObjTnPHistColl::ProbeData::bookHists(const std::string& tagName,
 					      DQMStore::IBooker& iBooker,
-					      const TrigObjTnPHistColl::HistColl::Bins& bins)
+					      const HistDefs& histDefs)
 {
-  hists_.bookHists(iBooker,tagName+"_"+probeFilter_,tagName+"_"+probeFilter_,bins);
+  hists_.bookHists(iBooker,tagName+"_"+probeFilter_,tagName+"_"+probeFilter_,histDefs);
 }
 
 void TrigObjTnPHistColl::ProbeData::fill(const trigger::size_type tagKey,const trigger::TriggerEvent& trigEvt,const VarRangeCutColl<trigger::TriggerObject>& probeCuts)

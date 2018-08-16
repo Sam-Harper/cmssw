@@ -16,8 +16,54 @@
 //
 //   The TrigObjTnPHistColl then has a series of histograms which are filled for 
 //   probes which pass a specified filter. For each specified filter, a set of 
-//   2D histograms are produced, et vs mass, eta vs mass, phi vs mass
+//   2D histograms are produced, <var> vs mass where var is configuable via python
+//   These histograms may have additional cuts, eg eta cuts which limit them to barrel
+//   or endcap
+
 //   This allows us to get the mass spectrum in each bin to allow signal & bkg fits 
+//
+// Class Structure
+//   TrigObjTnPHistColl : master object which manages a series of histograms which 
+//                        share a common tag defination. It selects tag and probe pairs
+//                        and then sends selected probes to fill the relavent histograms
+//
+//   FilterSelector : specifies and cuts on the trigger filters an object has to pass.
+//                    It allows ANDed and ORing of trigger filter requirements.
+//                    It acheives this by grouping the filters in sets of filters (FilterSet)
+//                    and an object either has to pass all of those filters in the sets or 
+//                    any of those filters in the set.
+//                    An object can then be required to pass all defined FilterSets or any of them
+//
+//   TrigObjVarF : allows arbitary access to a given float variable of trigger::TriggerObject
+//                 it can also return the abs value of that variable if so requested
+//  
+//   HistFiller : stores the variable a histogram is to be filled with and any cuts the object
+//                must additional pass. It then can fill/not fill a histogram using this information
+//
+//   HistDefs : has all the information necesary to define a histograms to be produced. 
+//              The Data sub struct containts the HistFiller object, the binning of the 
+//              histogram and name /title suffexs. There is one set of histogram definations
+//              for a TrigObjTnPHistColl so each probe filter has identical binning
+//              Each booked histogram contains a local copy of the approprate HistFiller
+//              
+//   HistColl : a collection of histograms to be filled by a probe passing a particular trigger 
+//              and kinematic selection. Histograms may have additional further selection on the 
+//              probe (eg limiting to the barrel etc). Each histogram is booked using the central 
+//              histogram definations and contains a copy of the approprate HistFiller
+//
+//   ProbeData : a specific filter for a probe object to pass with a collection of histograms to
+//               fill managed by HistColl. The filter is not measured by FilterSelector as it is
+//               intentionally limited to only a single filter
+//
+//   TrigObjTnPHistColl : single tag selection and generic requirements for a probe
+//      |
+//      |--> collection of ProbeData : a set of histos to fill for probes passing a given filter
+//              |
+//              |--> ProbeData : filter to pass to fill histograms + histograms
+//                    |
+//                    |--> HistColl : hists for it to be filled
+//                           | 
+//                           |--> collection of HistFillters+their hists, histfillter fills the hist
 //
 // Author : Sam Harper , RAL, Aug 2018
 //
@@ -36,30 +82,6 @@
 
 class TrigObjTnPHistColl {
 public:
-  class TrigObjCuts {
-    class CutData {
-    public:
-      explicit CutData(const edm::ParameterSet& config);
-      bool operator()(const trigger::TriggerObject& obj)const{
-	const float val = isAbs_ ? std::abs((obj.*varFunc_)()) : (obj.*varFunc_)();
-	return val>=min_ && val<max_;
-      }
-    private:
-      float min_,max_;
-      bool isAbs_;
-      float (trigger::TriggerObject::*varFunc_)()const;
-    };
-  public:
-    explicit TrigObjCuts(const edm::ParameterSet& config);
-    bool operator()(const trigger::TriggerObject& obj)const{
-      for(auto& cut : cuts_){
-	if(!cut(obj)) return false;
-      }
-      return true;
-    }
-  private:
-    std::vector<CutData> cuts_;
-  };
   
   class FilterSelector {
   public:
@@ -75,7 +97,7 @@ public:
     };
     
   public:
-    FilterSelector(const edm::ParameterSet& config); 
+    explicit FilterSelector(const edm::ParameterSet& config); 
     static edm::ParameterSetDescription makePSetDescription();
     const trigger::Keys getPassingKeys(const trigger::TriggerEvent& trigEvt)const;
   private:
@@ -87,34 +109,67 @@ public:
     bool isAND_;
     
   };
-  
+
+  class TrigObjVarF {
+  public:
+    explicit TrigObjVarF(std::string varName);
+    float operator()(const trigger::TriggerObject& obj)const{
+      return isAbs_ ? std::abs((obj.*varFunc_)()) : (obj.*varFunc_)();
+    }
+  private:
+    float (trigger::TriggerObject::*varFunc_)()const;
+    bool isAbs_;
+  };
+
+  class HistFiller { 
+  public:
+    explicit HistFiller(const edm::ParameterSet& config);
+    static edm::ParameterSetDescription makePSetDescription();
+    void operator()(const trigger::TriggerObject& probe,float mass,MonitorElement* hist);    
+  private:
+    VarRangeCutColl<trigger::TriggerObject> localCuts_;
+    TrigObjVarF var_;
+  };
+
+  //Histogram Defination, defines the histogram (name,title,bins,how its filled)
+  class HistDefs { 
+  private:
+    class Data { 
+    public:
+      explicit Data(const edm::ParameterSet& config); 
+      static edm::ParameterSetDescription makePSetDescription();
+      MonitorElement* book(DQMStore::IBooker& iBooker,const std::string& name,const std::string& title,const std::vector<float>& massBins)const;
+      const HistFiller& filler()const{return histFiller_;}
+    private:
+      HistFiller histFiller_;
+      std::vector<float> bins_;
+      std::string nameSuffex_;
+      std::string titleSuffex_;
+    };  
+  public:
+    explicit HistDefs(const edm::ParameterSet& config);  
+    static edm::ParameterSetDescription makePSetDescription();
+    std::vector<std::pair<HistFiller,MonitorElement*> > bookHists(DQMStore::IBooker& iBooker,const std::string& name,const std::string& title)const;
+  private:
+    std::vector<Data> histData_;
+    std::vector<float> massBins_;
+  };
+
   class HistColl {
   public:
-    struct Bins {
-    public:
-      explicit Bins(const edm::ParameterSet& config); 
-      static edm::ParameterSetDescription makePSetDescription();
-    public:
-      std::vector<float> pt;
-      std::vector<float> eta;
-      std::vector<float> phi;
-      std::vector<float> mass;
-    };
-  public:
-    HistColl():ptHist_(nullptr),etaHist_(nullptr),phiHist_(nullptr){}
+    HistColl(){}
     void bookHists(DQMStore::IBooker& iBooker,const std::string& name,
-		   const std::string& title,const Bins& bins);
+		   const std::string& title,const HistDefs& histDefs);
     void fill(const trigger::TriggerObject& probe,float mass);
   private:
-    MonitorElement* ptHist_; //we do not own this
-    MonitorElement* etaHist_; //we do not own this
-    MonitorElement* phiHist_; //we do not own this
+    std::vector<std::pair<HistFiller,MonitorElement*> > hists_; //we do not own the MonitorElement*
   };
+
 
   class ProbeData {
   public:
     explicit ProbeData(std::string probeFilter):probeFilter_(std::move(probeFilter)){}
-    void bookHists(const std::string& tagName,DQMStore::IBooker& iBooker,const HistColl::Bins& bins);
+    void bookHists(const std::string& tagName,DQMStore::IBooker& iBooker,const HistDefs& histDefs);
     void fill(const trigger::size_type tagKey,const trigger::TriggerEvent& trigEvt,const VarRangeCutColl<trigger::TriggerObject>& probeCuts);
 
   private:
@@ -137,7 +192,7 @@ private:
   FilterSelector tagFilters_;
   std::string collName_;
   std::string folderName_;
-  HistColl::Bins histBins_;
+  HistDefs histDefs_;
   std::vector<ProbeData> probeHists_; 
   GenericTriggerEventFlag evtTrigSel_;
 
