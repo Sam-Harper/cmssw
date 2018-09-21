@@ -92,6 +92,7 @@ private:
   double epSig_ECALTRKThr_;      // 10
   bool forceHighEnergyEcalTrainingIfSaturated_;
 
+  const bool zeroES_ = true;
   
 };
 
@@ -375,7 +376,7 @@ void EGRegressionModifierV2::modifyObject(reco::GsfElectron& ele) const {
 
   std::array<float, 32> eval;  
   const double raw_energy = the_sc->rawEnergy(); 
-  const double raw_es_energy = the_sc->preshowerEnergy();
+  const double raw_es_energy = zeroES_ ? 0 : the_sc->preshowerEnergy();
   const auto& full5x5_ess = ele.full5x5_showerShape();
 
   float e5x5Inverse = full5x5_ess.e5x5 != 0. ? vdt::fast_inv(full5x5_ess.e5x5) : 0.;
@@ -571,7 +572,7 @@ void EGRegressionModifierV2::modifyObject(reco::Photon& pho) const {
   
   std::array<float, 32> eval;  
   const double raw_energy = the_sc->rawEnergy(); 
-  const double raw_es_energy = the_sc->preshowerEnergy();
+  const double raw_es_energy = zeroES_ ? 0. : the_sc->preshowerEnergy();
   const auto& full5x5_pss = pho.full5x5_showerShapeVariables();
 
   float e5x5Inverse = full5x5_pss.e5x5 != 0. ? vdt::fast_inv(full5x5_pss.e5x5) : 0.;
