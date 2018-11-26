@@ -61,6 +61,13 @@ namespace std {
       return h1 ^ (h2 << 1);
     }
   };
+  template <>
+  struct equal_to<std::pair<int, GlobalPoint> >
+      : public std::binary_function<std::pair<int, GlobalPoint>, std::pair<int, GlobalPoint>, bool> {
+    bool operator()(const std::pair<int, GlobalPoint>& a, const std::pair<int, GlobalPoint>& b) const {
+      return (a.first == b.first) & (a.second == b.second);
+    }
+  };
 }  // namespace std
 
 class TrajSeedMatcher {
@@ -277,6 +284,8 @@ private:
   std::string detLayerGeomLabel_;
 
   bool useRecoVertex_;
+  bool enableHitSkipping_;
+  bool requireExactMatchCount_;
   std::vector<std::unique_ptr<MatchingCuts> > matchingCuts_;
 
   //these two varibles determine how hits we require
