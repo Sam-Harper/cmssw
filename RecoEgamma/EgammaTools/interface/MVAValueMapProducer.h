@@ -82,22 +82,20 @@ MVAValueMapProducer<ParticleType>::MVAValueMapProducer(const edm::ParameterSet& 
     //
     // Compose and save the names of the value maps to be produced
     //
-
-    const std::string fullName = ( mvaEstimators_.back()->getName() +
-                                   mvaEstimators_.back()->getTag()  );
-
-    const std::string thisValueMapName      = fullName + "Values";
-    const std::string thisRawValueMapName   = fullName + "RawValues";
-    const std::string thisCategoriesMapName = fullName + "Categories";
-
-    mvaValueMapNames_     .push_back( thisValueMapName      );
-    mvaRawValueMapNames_  .push_back( thisRawValueMapName   );
+    const auto& currentEstimator = mvaItr->second;
+    const std::string full_name = ( currentEstimator->getName() + 
+                                    currentEstimator->getTag()    );
+    std::string thisValueMapName = full_name + "Values";
+    std::string thisRawValueMapName = full_name + "RawValues";
+    std::string thisCategoriesMapName = full_name + "Categories";    
+    mvaValueMapNames_.push_back( thisValueMapName );
     mvaCategoriesMapNames_.push_back( thisCategoriesMapName );
 
     // Declare the maps to the framework
-    produces<edm::ValueMap<float>>(thisValueMapName     );
-    produces<edm::ValueMap<float>>(thisRawValueMapName  );
-    produces<edm::ValueMap<int>>  (thisCategoriesMapName);
+    produces<edm::ValueMap<float> >(thisValueMapName);  
+    produces<edm::ValueMap<float> >(thisRawValueMapName);
+    produces<edm::ValueMap<int> >(thisCategoriesMapName);
+  }
 
   }
 
@@ -128,20 +126,19 @@ void MVAValueMapProducer<ParticleType>::produce(edm::Event& iEvent, const edm::E
 
     std::vector<float> mvaValues;
     std::vector<float> mvaRawValues;
-    std::vector<int>   mvaCategories;
-
+    std::vector<int> mvaCategories;
+    
     // Loop over particles
     for (size_t i = 0; i < src->size(); ++i){
-      auto iCand = src->ptrAt(i);
-      int cat = -1; // Passed by reference to the mvaValue function to store the category
-      const float response = mvaEstimators_[iEstimator]->mvaValue( iCand, iEvent, cat );
+      auto iCand = src->ptrAt(i);      
+      const float response = thisEstimator->mvaValue( iCand, iEvent );
       mvaRawValues.push_back( response ); // The MVA score
       mvaValues.push_back( 2.0/(1.0+exp(-2.0*response))-1 ); // MVA output between -1 and 1
-      mvaCategories.push_back( cat );
+      mvaCategories.push_back( thisEstimator->findCategory( iCand ) );
     } // end loop over particles
 
-    writeValueMap(iEvent, src, mvaValues    , mvaValueMapNames_     [iEstimator] );
-    writeValueMap(iEvent, src, mvaRawValues , mvaRawValueMapNames_  [iEstimator] );
+    writeValueMap(iEvent, src, mvaValues, mvaValueMapNames_[iEstimator] );  
+    writeValueMap(iEvent, src, mvaRawValues, mvaRawValueMapNames_[iEstimator] );
     writeValueMap(iEvent, src, mvaCategories, mvaCategoriesMapNames_[iEstimator] );
 
   } // end loop over estimators
