@@ -12,7 +12,8 @@ ElectronMVAEstimatorRun2Fall17::ElectronMVAEstimatorRun2Fall17(const edm::Parame
   ptSplit_                (conf.getParameter<double>                  ("ptSplit")),
   ebSplit_                (conf.getParameter<double>                  ("ebSplit")),
   ebeeSplit_              (conf.getParameter<double>                  ("ebeeSplit")),
-  varNames_               (conf.getParameter<std::vector<std::string>>("varNames"))
+  varNames_               (conf.getParameter<std::vector<std::string>>("varNames")),
+  absTrackClusterMatching_(tag_ == "V2")
 {
 
   const std::vector <std::string> weightFileNames
@@ -43,7 +44,8 @@ ElectronMVAEstimatorRun2Fall17::ElectronMVAEstimatorRun2Fall17(
   rhoLabel_               (edm::InputTag("fixedGridRhoFastjetAll")),
   ptSplit_                (ptSplit),
   ebSplit_                (ebSplit),
-  ebeeSplit_              (ebeeSplit)
+  ebeeSplit_              (ebeeSplit),
+  absTrackClusterMatching_(tag_ == "V2")
 {
 
   // Set if this is the ID with or without PF isolations
@@ -155,7 +157,7 @@ mvaValue( const reco::GsfElectron * particle, const edm::EventBase & iEvent) con
 
 float ElectronMVAEstimatorRun2Fall17::
 mvaValue( const int iCategory, const std::vector<float> & vars) const  {
-  const float result = gbrForests_.at(iCategory)->GetClassifier(vars.data());
+  const float result = gbrForests_.at(iCategory)->GetResponse(vars.data()); // The BDT score
 
   if(debug_) {
     std::cout << " *** Inside the class methodName_ " << methodName_ << std::endl;
@@ -358,6 +360,13 @@ fillMVAVariables(const reco::GsfElectron* eleRecoPtr, const edm::Handle<reco::Co
   float deta            = eleRecoPtr->deltaEtaSuperClusterTrackAtVtx();
   float dphi            = eleRecoPtr->deltaPhiSuperClusterTrackAtVtx();
   float detacalo        = eleRecoPtr->deltaEtaSeedClusterTrackAtCalo();
+
+  // Required by V2 ID
+  if (absTrackClusterMatching_) {
+      deta     = std::abs(deta);
+      dphi     = std::abs(dphi);
+      detacalo = std::abs(detacalo);
+  }
 
   if(withIso_)
   {

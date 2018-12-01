@@ -55,7 +55,7 @@ mvaValue(const edm::Ptr<reco::Candidate>& particle, const edm::Event& iEvent) co
   const int iCategory = findCategory( particle );
   const std::vector<float> vars = std::move( fillMVAVariables( particle, iEvent ) );  
   
-  const float result = gbrForests_.at(iCategory)->GetClassifier(vars.data());
+  const float result = gbrForests_.at(iCategory)->GetResponse(vars.data()); // The BDT score
 
   // DEBUG
   const bool debug = false;
