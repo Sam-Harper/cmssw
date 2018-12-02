@@ -16,6 +16,18 @@
 #include <algorithm>
 #include <cstddef>
 
+//our SFINAE templates
+namespace{
+  template<typename T,typename Dummy=decltype(&T::value_type::parentRefs)>
+    constexpr auto hasParents(const T&){return true;}
+  template<typename T>
+    constexpr auto hasParents(...){return false;}
+  template<typename T,typename Dummy=decltype(&T::value_type::parentRefs>
+    constexpr auto getParentRefs(const T& obj){return obj->parentRefs();}
+  template<typename T>
+    constexpr auto getParentRefs(const T&){return std::vector<T>();}
+}
+
 namespace edm {
   namespace helper {
     template<typename Map>
@@ -126,8 +138,27 @@ namespace edm {
 
     template<typename RefKey>
     const_reference_type operator[](const RefKey & r) const {
-      return get(r.id(), r.key());
+      if(!hasParents<T>(r)){
+	return get(r.id(), r.key());
+      }else{
+	if(validIdKeyPair(r.id(), r.key())) return get(r.id(),r.key());
+	else{
+	  if(r.isAvailable()){
+	    auto parentRefs = getParentRefs<RefKey,hasParents<RefKey> >(r);
+	    for(auto parentRef : parentRefs){
+	      if(validIdKeyPair(parentRef.id(),parentRef.key())) return get(parentRef.id(),parentRef.key());
+	    }
+	  }
+	}
+	throwNotExisting();
+      }//end loop over parents
     }
+
+    bool validIdKeyPair(ProductID id, size_t idx) const {
+      typename id_offset_vector::const_iterator f = getIdOffset(id);
+      return f!=ids_.end();
+    }
+
     // raw index of a given (id,key) pair
     size_t rawIndexOf(ProductID id, size_t idx) const {
       typename id_offset_vector::const_iterator f = getIdOffset(id);
