@@ -531,6 +531,13 @@ namespace reco {
     float pfMVA() const {return pfID_.mva;}
     // setters
     void setPflowIDVariables ( const PflowIDVariables& pfid ) {  pfID_ = pfid;}         
+
+  public:
+    const std::vector<edm::Ptr<reco::Photon> >& parentRefs()const{return parentRefs_;}
+    void addParentRef(edm::Ptr<reco::Photon> ref){parentRefs_.push_back(ref);}
+    void setParentRefs(std::vector<edm::Ptr<reco::Photon> > refs){parentRefs_ = refs;}
+  private: 
+
     
   private:
     /// check overlap with another candidate
@@ -552,6 +559,9 @@ namespace reco {
     MIPVariables        mipVariableBlock_; 
     PflowIsolationVariables pfIsolation_;
     PflowIDVariables pfID_;    
+    //needs to access both reco::Photons, pat::Photons
+    std::vector<edm::Ptr<reco::Photon> > parentRefs_;
+
   };
 
 }

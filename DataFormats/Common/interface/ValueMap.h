@@ -17,15 +17,21 @@
 #include <cstddef>
 
 //our SFINAE templates
+//these exist to extend the valuemap interface for those objects which support it
+//if an object has "parentRefs" function which returns a std::vector<edm::Ref> 
+//or std::vector<edm::Ptr> (or something which looks sufficiently close to it)
+//the ValueMap::operator[] will also check for those references 
+//this means you can make a new collection of objects and then use ValueMaps 
+//keyed to the old collection without error
 namespace{
   template<typename T,typename Dummy=decltype(&T::value_type::parentRefs)>
     constexpr auto hasParents(const T&){return true;}
   template<typename T>
     constexpr auto hasParents(...){return false;}
-  template<typename T,typename Dummy=decltype(&T::value_type::parentRefs>
-    constexpr auto getParentRefs(const T& obj){return obj->parentRefs();}
+  template<typename T,typename Dummy=decltype(&T::value_type::parentRefs)>
+    const auto getParentRefs(const T& obj){return obj->parentRefs();}
   template<typename T>
-    constexpr auto getParentRefs(const T&){return std::vector<T>();}
+    const auto getParentRefs(...){return std::vector<T>();}
 }
 
 namespace edm {
@@ -144,14 +150,15 @@ namespace edm {
 	if(validIdKeyPair(r.id(), r.key())) return get(r.id(),r.key());
 	else{
 	  if(r.isAvailable()){
-	    auto parentRefs = getParentRefs<RefKey,hasParents<RefKey> >(r);
+	    auto parentRefs = getParentRefs<RefKey>(r);
 	    for(auto parentRef : parentRefs){
 	      if(validIdKeyPair(parentRef.id(),parentRef.key())) return get(parentRef.id(),parentRef.key());
 	    }
 	  }
+	  //we tried, no valid reference, call the get and let it raise the exception
+	  return get(r.id(),r.key());	  
 	}
-	throwNotExisting();
-      }//end loop over parents
+      }
     }
 
     bool validIdKeyPair(ProductID id, size_t idx) const {
