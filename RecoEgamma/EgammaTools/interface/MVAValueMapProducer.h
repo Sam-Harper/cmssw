@@ -89,6 +89,7 @@ MVAValueMapProducer<ParticleType>::MVAValueMapProducer(const edm::ParameterSet& 
     std::string thisRawValueMapName = full_name + "RawValues";
     std::string thisCategoriesMapName = full_name + "Categories";    
     mvaValueMapNames_.push_back( thisValueMapName );
+    mvaRawValueMapNames_.push_back( thisRawValueMapName );
     mvaCategoriesMapNames_.push_back( thisCategoriesMapName );
 
     // Declare the maps to the framework
