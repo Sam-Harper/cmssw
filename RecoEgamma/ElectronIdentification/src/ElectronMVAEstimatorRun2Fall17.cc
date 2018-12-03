@@ -299,6 +299,7 @@ fillMVAVariables(const edm::Ptr<reco::Candidate>& particle, const edm::Event& iE
 std::vector<float> ElectronMVAEstimatorRun2Fall17::
 fillMVAVariables(const reco::GsfElectron* eleRecoPtr, const edm::Handle<reco::ConversionCollection> conversions, const reco::BeamSpot *theBeamSpot, const edm::Handle<double> rho) const {
 
+  const int iCategory = findCategory( eleRecoPtr );
 
   // Both pat and reco particles have exactly the same accessors, so we use a reco ptr
   // throughout the code, with a single exception as of this writing, handled separately below.
@@ -368,7 +369,87 @@ fillMVAVariables(const reco::GsfElectron* eleRecoPtr, const edm::Handle<reco::Co
       detacalo = std::abs(detacalo);
   }
 
-  if(withIso_)
+  if(tag_ == "V2" && withIso_)
+  {
+
+    // Isolation variables
+    float pfChargedHadIso   = (eleRecoPtr->pfIsolationVariables()).sumChargedHadronPt ; //chargedHadronIso();
+    float pfNeutralHadIso   = (eleRecoPtr->pfIsolationVariables()).sumNeutralHadronEt ; //neutralHadronIso();
+    float pfPhotonIso       = (eleRecoPtr->pfIsolationVariables()).sumPhotonEt; //photonIso();
+
+    if ((iCategory + 1) % 3 == 0) {
+        std::vector<float> vars = packMVAVariables(
+                                      see,                      // 0
+                                      spp,                      // 1
+                                      circularity,
+                                      r9,
+                                      etawidth,
+                                      phiwidth,                 // 5
+                                      hoe,
+                                      //Pure tracking variables
+                                      kfhits,
+                                      kfchi2,
+                                      gsfchi2,                  // 9
+                                      // Energy matching
+                                      fbrem,
+                                      gsfhits,
+                                      expectedMissingInnerHits,
+                                      convVtxFitProbability,     // 13
+                                      eop,
+                                      eleeopout,                // 15
+                                      oneOverEminusOneOverP,
+                                      // Geometrical matchings
+                                      deta,                     // 17
+                                      dphi,
+                                      detacalo,
+                                      // Pileup
+                                      (float)*rho,
+                                      // Endcap only
+                                      preShowerOverRaw,         // 24
+                                      // Isolation variables
+                                      pfPhotonIso,
+                                      pfChargedHadIso,
+                                      pfNeutralHadIso
+                                  );
+        constrainMVAVariables(vars);
+        return vars;
+    } else {
+        std::vector<float> vars = packMVAVariables(
+                                      see,                      // 0
+                                      spp,                      // 1
+                                      circularity,
+                                      r9,
+                                      etawidth,
+                                      phiwidth,                 // 5
+                                      hoe,
+                                      //Pure tracking variables
+                                      kfhits,
+                                      kfchi2,
+                                      gsfchi2,                  // 9
+                                      // Energy matching
+                                      fbrem,
+                                      gsfhits,
+                                      expectedMissingInnerHits,
+                                      convVtxFitProbability,     // 13
+                                      eop,
+                                      eleeopout,                // 15
+                                      oneOverEminusOneOverP,
+                                      // Geometrical matchings
+                                      deta,                     // 17
+                                      dphi,
+                                      detacalo,
+                                      // Pileup
+                                      (float)*rho,
+                                      // Isolation variables
+                                      pfPhotonIso,
+                                      pfChargedHadIso,
+                                      pfNeutralHadIso
+                                  );
+        constrainMVAVariables(vars);
+        return vars;
+    }
+  }
+  else if(withIso_)
   {
 
     // Isolation variables
