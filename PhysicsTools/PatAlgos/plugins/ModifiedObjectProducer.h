@@ -11,6 +11,31 @@
 
 #include <memory>
 
+namespace{
+  
+  // template<typename T,typename Dummy=decltype(&T::addParentRef)>
+  // constexpr auto tracksParents(const T&){return true;}
+  // constexpr auto tracksParents(...){return false;}
+  // template<typename T1,typename T2,typename std::enable_if<tracksParents=decltype(&T1::addParentRef)>
+  // void addParentRef(T1& obj,const edm::Ptr<T2>& ref){return obj.addParentRef(ref);}
+  // template<typename T1,typename T2,typename Dummy=decltype(&T1::addParentRef)>
+  // void addParentRef(T1& obj,const edm::Ptr<T2>& ref){return obj.addParentRef(ref);}
+
+  // template<typename T,typename Dummy=decltype(&T::addParentRef)>
+  //   constexpr auto tracksParents(int){return true;}
+  // template<typename T>
+  //   constexpr auto tracksParents(...){return false;}
+  template<typename T,typename Dummy = decltype(&T::addParentRef)>
+    constexpr auto tracksParents(int){return true;}
+  template<typename T>
+    constexpr auto tracksParents(long){return false;}
+  template<typename T1,typename T2,typename std::enable_if<tracksParents<T1>(0),int >::type = 0>
+    void addParentRef(T1& obj,const edm::Ptr<T2>& ref){obj.addParentRef(ref);}
+  template<typename T1,typename T2,typename std::enable_if<!tracksParents<T1>(0),int >::type = 0>
+    void addParentRef(T1& obj,const edm::Ptr<T2>& ref){}
+
+}
+
 namespace pat {
   
   template<class T>
@@ -43,15 +68,16 @@ namespace pat {
 
       evt.getByToken(src_,input);
       output->reserve(input->size());
-
       modifier_->setEvent(evt);
-
       for( auto itr = input->begin(); itr != input->end(); ++itr ) {
         output->push_back(*itr);
         T& obj = output->back();
+	if(tracksParents<T>(0)){
+	  edm::Ptr<T> ref(input,std::distance(input->begin(),itr));
+	  addParentRef(obj,ref);
+	}
         modifier_->modify(obj);
       }
-
       evt.put(std::move(output));
     }
 

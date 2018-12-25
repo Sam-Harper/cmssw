@@ -58,18 +58,18 @@ public:
   ~EGXtraModFromVMObjFiller()=delete;
 
   //will do a UserData add but specialisations exist for float and ints
-  template<typename ObjType,typename MapType>
+  template<typename ObjType,typename MapType,typename PtrType>
   static void 
   addValueToObject(ObjType& obj,
-		   const edm::Ptr<reco::Candidate>& ptr,
+		   const edm::Ptr<PtrType>& ptr,
 		   const std::unordered_map<unsigned,edm::Handle<edm::ValueMap<MapType> > >& vmaps,
 		   const std::pair<const std::string,edm::EDGetTokenT<edm::ValueMap<MapType> > > & val_map,
 		   bool overrideExistingValues);
   
-  template<typename ObjType,typename MapType>
+  template<typename ObjType,typename MapType,typename PtrType>
   static void 
   addValuesToObject(ObjType& obj,
-		    const edm::Ptr<reco::Candidate>& ptr,
+		    const edm::Ptr<PtrType>& ptr,
 		    const std::unordered_map<std::string,edm::EDGetTokenT<edm::ValueMap<MapType> > > & vmaps_token,		  
 		    const std::unordered_map<unsigned,edm::Handle<edm::ValueMap<MapType> > >& vmaps,
 		    bool overrideExistingValues){
@@ -237,7 +237,7 @@ setConsumes(edm::ConsumesCollector& sumes) {
 namespace {
   template<typename T, typename U, typename V, typename MapType >
   inline void assignValue(const T& ptr, const U& tok, const V& map, MapType& value) {
-    if( !tok.isUninitialized() ) value = map.find(tok.index())->second->get(ptr.id(),ptr.key());
+    if( !tok.isUninitialized() ) value = (*map.find(tok.index())->second)[ptr];
   }
 }
 
@@ -247,7 +247,7 @@ modifyObject(pat::Electron& ele) const {
   // we encounter two cases here, either we are running AOD -> MINIAOD
   // and the value maps are to the reducedEG object, can use original object ptr
   // or we are running MINIAOD->MINIAOD and we need to fetch the pat objects to reference
-  edm::Ptr<reco::Candidate> ptr(ele.originalObjectRef());
+  edm::Ptr<reco::GsfElectron> ptr;//(ele.originalObjectRef().productGetter(),ele.originalObjectRef().key());
   if( !e_conf.tok_electron_src.isUninitialized() ) {
     auto key = eles_by_oop.find(ele_idx);
     if( key != eles_by_oop.end() ) {
@@ -258,6 +258,7 @@ modifyObject(pat::Electron& ele) const {
         << " not found in cache!";
     }
   }
+
   //now we go through and modify the objects using the valuemaps we read in 
   EGXtraModFromVMObjFiller<OutputType>::addValuesToObject(ele,ptr,e_conf.tok_valuemaps,
 							  ele_vmaps,overrideExistingValues_);
@@ -271,7 +272,7 @@ modifyObject(pat::Photon& pho) const {
   // we encounter two cases here, either we are running AOD -> MINIAOD
   // and the value maps are to the reducedEG object, can use original object ptr
   // or we are running MINIAOD->MINIAOD and we need to fetch the pat objects to reference
-  edm::Ptr<reco::Candidate> ptr(pho.originalObjectRef());
+  edm::Ptr<reco::Photon> ptr(pho.originalObjectRef());
   if( !ph_conf.tok_photon_src.isUninitialized() ) {
     auto key = phos_by_oop.find(pho_idx);
     if( key != phos_by_oop.end() ) {
@@ -290,10 +291,10 @@ modifyObject(pat::Photon& pho) const {
 
 
 template<typename OutputType>
-template<typename ObjType,typename MapType>
+template<typename ObjType,typename MapType,typename PtrType>
 void EGXtraModFromVMObjFiller<OutputType>::
 addValueToObject(ObjType& obj,
-		 const edm::Ptr<reco::Candidate>& ptr,
+		 const edm::Ptr<PtrType>& ptr,
 		 const std::unordered_map<unsigned,edm::Handle<edm::ValueMap<MapType> > >& vmaps,
 		 const std::pair<const std::string,edm::EDGetTokenT<edm::ValueMap<MapType> > > & val_map,
 		 bool overrideExistingValues)
@@ -310,10 +311,10 @@ addValueToObject(ObjType& obj,
 }  
 
 template<>
-template<typename ObjType,typename MapType>
+template<typename ObjType,typename MapType,typename PtrType>
 void EGXtraModFromVMObjFiller<float>::
 addValueToObject(ObjType& obj,
-		 const edm::Ptr<reco::Candidate>& ptr,
+		 const edm::Ptr<PtrType>& ptr,
 		 const std::unordered_map<unsigned,edm::Handle<edm::ValueMap<MapType> > >& vmaps,
 		 const std::pair<const std::string,edm::EDGetTokenT<edm::ValueMap<MapType> > >& val_map,
 		 bool overrideExistingValues)
@@ -330,10 +331,10 @@ addValueToObject(ObjType& obj,
 }
 
 template<>
-template<typename ObjType,typename MapType>
+template<typename ObjType,typename MapType,typename PtrType>
 void EGXtraModFromVMObjFiller<int>::
 addValueToObject(ObjType& obj,
-		 const edm::Ptr<reco::Candidate>& ptr,		 
+		 const edm::Ptr<PtrType>& ptr,		 
 		 const std::unordered_map<unsigned,edm::Handle<edm::ValueMap<MapType> > >& vmaps,
 		 const std::pair<const std::string,edm::EDGetTokenT<edm::ValueMap<MapType> > >& val_map,
 		 bool overrideExistingValues)
@@ -353,7 +354,7 @@ template<>
 template<>
 void EGXtraModFromVMObjFiller<egmodifier::EGID>::
 addValuesToObject(pat::Electron& obj,
-		  const edm::Ptr<reco::Candidate>& ptr,
+		  const edm::Ptr<reco::GsfElectron>& ptr,
 		  const std::unordered_map<std::string,edm::EDGetTokenT<edm::ValueMap<float> > > & vmaps_token,		  
 		  const std::unordered_map<unsigned,edm::Handle<edm::ValueMap<float> > >& vmaps,
 		  bool overrideExistingValues)
@@ -372,7 +373,7 @@ template<>
 template<>
 void EGXtraModFromVMObjFiller<egmodifier::EGID>::
 addValuesToObject(pat::Photon& obj,
-		  const edm::Ptr<reco::Candidate>& ptr,
+		  const edm::Ptr<reco::Photon>& ptr,
 		  const std::unordered_map<std::string,edm::EDGetTokenT<edm::ValueMap<float> > > & vmaps_token,		  
 		  const std::unordered_map<unsigned,edm::Handle<edm::ValueMap<float> > >& vmaps,
 		  bool overrideExistingValues)
