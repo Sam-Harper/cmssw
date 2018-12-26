@@ -10,12 +10,6 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/Photon.h"
 
-#include <unordered_map>
-
-namespace {
-  const edm::InputTag empty_tag;
-}
-
 //class: EGExtraInfoModifierFromValueMaps
 //  
 //this is a generalisation of EGExtraInfoModiferFromFloatValueMaps
@@ -44,46 +38,59 @@ namespace egmodifier{
   class EGID{};//dummy class to be used as a template arguement 
 }
 
-template<typename MapType>
-struct ValueMapData {
-  std::string name;
-  edm::InputTag tag;
-  edm::EDGetTokenT<edm::ValueMap<MapType> > token;
-  edm::Handle<edm::ValueMap<MapType> > handle;
-  ValueMapData(std::string iName,const edm::InputTag& iTag):name(std::move(iName)),tag(iTag){}
-  void setHandle(const edm::Event& evt){
-      evt.getByToken(token,handle);
+//our little helper classes
+namespace egmodifier {
+  template<typename MapType>
+  class ValueMapData {
+  public:
+    ValueMapData(std::string name,const edm::InputTag& tag):name_(std::move(name)),tag_(tag){}
+    
+    void setHandle(const edm::Event& evt){if(!token_.isUninitialized()) evt.getByToken(token_,handle_);}
+    void setToken(edm::ConsumesCollector& cc){if(!tag_.empty()) token_ = cc.consumes<edm::ValueMap<MapType> >(tag_);}
+
+    const std::string& name()const{return name_;}
+    void isValid()const {return handle_.isValid();}    
+    template<typename RefType>
+    typename edm::ValueMap<MapType>::const_reference_type
+    value(const RefType& ref)const{return (*handle_)[ref];}
+
+  private:
+    std::string name_;
+    edm::InputTag tag_;
+    edm::EDGetTokenT<edm::ValueMap<MapType> > token_;
+    edm::Handle<edm::ValueMap<MapType> > handle_;
+  };
+
+  template<typename OutputType>
+  class EGXtraModFromVMObjFiller {
+  public:
+    EGXtraModFromVMObjFiller()=delete;
+    ~EGXtraModFromVMObjFiller()=delete;
+    
+    template<typename ObjType,typename MapType>
+    static void 
+    addValueToObject(ObjType& obj,
+		     const ValueMapData<MapType>& vmData,
+		     bool overrideExistingValues);
+    
+    template<typename ObjType,typename MapType>
+    static void 
+    addValuesToObject(ObjType& obj,
+		      const std::vector<ValueMapData<MapType> >& vmapsData,
+		      bool overrideExistingValues){
+      for(auto& vmapData : vmapsData){
+	addValueToObject(obj,vmapData,overrideExistingValues);
+      }  
     }
-  void setToken(edm::ConsumesCollector& cc){
-    token = cc.consumes<edm::ValueMap<MapType> >(tag);
-  }
-};
-
-
-template<typename OutputType>
-class EGXtraModFromVMObjFiller {
-public:
-  EGXtraModFromVMObjFiller()=delete;
-  ~EGXtraModFromVMObjFiller()=delete;
-
-  //will do a UserData add but specialisations exist for float and ints
-  template<typename ObjType,typename MapType>
-  static void 
-  addValueToObject(ObjType& obj,
-		   const ValueMapData<MapType>& vmData,
-		   bool overrideExistingValues);
-  
-  template<typename ObjType,typename MapType>
-  static void 
-  addValuesToObject(ObjType& obj,
-		    const std::vector<ValueMapData<MapType> >& vmapsData,
-		    bool overrideExistingValues){
-    for(auto& vmapData : vmapsData){
-      addValueToObject(obj,vmapData,overrideExistingValues);
-    }  
-  }
-};		    
-		    
+    
+    //will do a UserData add but specialisations exist for float and ints
+    template<typename ObjType>
+    static void addValue(ObjType& obj,const std::string& name,const OutputType& value){obj.addUserData(name,value,true);}
+    template<typename ObjType>
+    static bool hasValue(ObjType& obj,const std::string& name){return obj.hasUserData(name);}
+    
+  };		    
+}
 
 template<typename MapType,typename OutputType=MapType>
 class EGExtraInfoModifierFromValueMaps : public ModifyObjectValueBase {
@@ -91,15 +98,15 @@ public:
   EGExtraInfoModifierFromValueMaps(const edm::ParameterSet& conf);
   
   void setEvent(const edm::Event&) final;
-  void setEventContent(const edm::EventSetup&) final;
+  void setEventContent(const edm::EventSetup&) final{}
   void setConsumes(edm::ConsumesCollector&) final;
   
   void modifyObject(pat::Electron&) const final;
   void modifyObject(pat::Photon&) const final;
  
 private:
-  std::vector<ValueMapData<MapType> > eleVMData_;
-  std::vector<ValueMapData<MapType> > phoVMData_;
+  std::vector<egmodifier::ValueMapData<MapType> > eleVMData_;
+  std::vector<egmodifier::ValueMapData<MapType> > phoVMData_;
   bool overrideExistingValues_;
 };
 
@@ -114,7 +121,7 @@ EGExtraInfoModifierFromValueMaps(const edm::ParameterSet& conf) :
     const std::vector<std::string>& parameters = ele_cfg.getParameterNames();
     for( const std::string& name : parameters ) {
       if( ele_cfg.existsAs<edm::InputTag>(name) ) {
-        eleVMData_.emplace_back(ValueMapData<MapType>(name,ele_cfg.getParameter<edm::InputTag>(name)));
+        eleVMData_.emplace_back(egmodifier::ValueMapData<MapType>(name,ele_cfg.getParameter<edm::InputTag>(name)));
       }
     }    
   }
@@ -123,12 +130,11 @@ EGExtraInfoModifierFromValueMaps(const edm::ParameterSet& conf) :
     const std::vector<std::string>& parameters = pho_cfg.getParameterNames();
     for( const std::string& name : parameters ) {
       if( pho_cfg.existsAs<edm::InputTag>(name) ) {
-        phoVMData_.emplace_back(ValueMapData<MapType>(name,pho_cfg.getParameter<edm::InputTag>(name)));
+        phoVMData_.emplace_back(egmodifier::ValueMapData<MapType>(name,pho_cfg.getParameter<edm::InputTag>(name)));
       }
     }    
   }
 }
-
 
 template<typename MapType,typename OutputType>
 void EGExtraInfoModifierFromValueMaps<MapType,OutputType>::
@@ -141,109 +147,69 @@ setEvent(const edm::Event& evt) {
 
 template<typename MapType,typename OutputType>
 void EGExtraInfoModifierFromValueMaps<MapType,OutputType>::
-setEventContent(const edm::EventSetup& evs) {
-}
-
-template<typename MapType,typename OutputType>
-void EGExtraInfoModifierFromValueMaps<MapType,OutputType>::
 setConsumes(edm::ConsumesCollector& cc) {  
   for( auto& data : eleVMData_) data.setToken(cc);
   for( auto& data : phoVMData_) data.setToken(cc);
 }
 
-
 template<typename MapType,typename OutputType>
 void EGExtraInfoModifierFromValueMaps<MapType,OutputType>::
 modifyObject(pat::Electron& ele) const {
-  edm::Ptr<reco::GsfElectron> ptr;
-  if(!ele.parentRefs().empty()) ptr = ele.parentRefs().back();
-
-  //now we go through and modify the objects using the valuemaps we read in 
-  EGXtraModFromVMObjFiller<OutputType>::addValuesToObject(ele,eleVMData_,overrideExistingValues_);
+  egmodifier::EGXtraModFromVMObjFiller<OutputType>::addValuesToObject(ele,eleVMData_,overrideExistingValues_);
 }
-
 
 template<typename MapType,typename OutputType>
 void EGExtraInfoModifierFromValueMaps<MapType,OutputType>::
 modifyObject(pat::Photon& pho) const {
-  edm::Ptr<reco::Photon> ptr;
-  if(!pho.parentRefs().empty()) ptr = pho.parentRefs().back();
-  //now we go through and modify the objects using the valuemaps we read in
-  EGXtraModFromVMObjFiller<OutputType>::addValuesToObject(pho,phoVMData_,overrideExistingValues_);
-							  
+  egmodifier::EGXtraModFromVMObjFiller<OutputType>::addValuesToObject(pho,phoVMData_,overrideExistingValues_);
 }
-
 
 template<typename OutputType>
 template<typename ObjType,typename MapType>
-void EGXtraModFromVMObjFiller<OutputType>::
+void egmodifier::EGXtraModFromVMObjFiller<OutputType>::
 addValueToObject(ObjType& obj,
-		 const ValueMapData<MapType>& mapData,
-		 bool overrideExistingValues)
-{
-
-  if(obj.parentRefs().empty()){
-    throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set before calling the modifier";
-  }
-  auto ptr = obj.parentRefs().back();
-  auto value = (*mapData.handle)[ptr];
-  if( overrideExistingValues || !obj.hasUserData(mapData.name) ) {
-    obj.addUserData(mapData.name,value,true);
-  } else {
-    throw cms::Exception("ValueNameAlreadyExists")
-      << "Trying to add new UserData = " << mapData.name
-      << " failed because it already exists and you didnt specify to override it (set in the config overrideExistingValues=cms.bool(True) )";
-  }
-}  
-
-template<>
-template<typename ObjType,typename MapType>
-void EGXtraModFromVMObjFiller<float>::
-addValueToObject(ObjType& obj,
-		 const ValueMapData<MapType>& mapData,
+		 const egmodifier::ValueMapData<MapType>& mapData,
 		 bool overrideExistingValues)
 {
   if(obj.parentRefs().empty()){
     throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set before calling the modifier";
   }
   auto ptr = obj.parentRefs().back();
-  auto value = (*mapData.handle)[ptr];
-
-  if( overrideExistingValues || !obj.hasUserFloat(mapData.name) ) {
-    obj.addUserFloat(mapData.name,value,true);
+  if( overrideExistingValues || hasValue(obj,mapData.name()) ) {
+    addValue(obj,mapData.name(),mapData.value(ptr));
   } else {
     throw cms::Exception("ValueNameAlreadyExists")
-      << "Trying to add new UserFloat = " << mapData.name
+      << "Trying to add new UserData = " << mapData.name()
       << " failed because it already exists and you didnt specify to override it (set in the config overrideExistingValues=cms.bool(True) )";
   }
 }
 
+
 template<>
-template<typename ObjType,typename MapType>
-void EGXtraModFromVMObjFiller<int>::
-addValueToObject(ObjType& obj,
-		 const ValueMapData<MapType>& mapData,
-		 bool overrideExistingValues)
-{
-  if(obj.parentRefs().empty()){
-    throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set before calling the modifier";
-  }
-  auto ptr = obj.parentRefs().back();
-  auto value = (*mapData.handle)[ptr];
-  if( overrideExistingValues || !obj.hasUserInt(mapData.name) ) {
-    obj.addUserInt(mapData.name,value,true);
-  } else {
-    throw cms::Exception("ValueNameAlreadyExists")
-      << "Trying to add new UserInt = " << mapData.name
-      << " failed because it already exists and you didnt specify to override it (set in the config overrideExistingValues=cms.bool(True) )";
-  }
-}  
+template<typename ObjType>
+void egmodifier::EGXtraModFromVMObjFiller<float>::
+addValue(ObjType& obj,const std::string& name,const float& value){obj.addUserFloat(name,value,true);}
+
+template<>
+template<typename ObjType>
+bool egmodifier::EGXtraModFromVMObjFiller<float>::
+hasValue(ObjType& obj,const std::string& name){return obj.hasUserFloat(name);}
+
+template<>
+template<typename ObjType>
+void egmodifier::EGXtraModFromVMObjFiller<int>::
+addValue(ObjType& obj,const std::string& name,const int& value){obj.addUserInt(name,value,true);}
+
+template<>
+template<typename ObjType>
+bool egmodifier::EGXtraModFromVMObjFiller<int>::
+hasValue(ObjType& obj,const std::string& name){return obj.hasUserInt(name);}
 
 template<>
 template<>
-void EGXtraModFromVMObjFiller<egmodifier::EGID>::
+void egmodifier::EGXtraModFromVMObjFiller<egmodifier::EGID>::
 addValuesToObject(pat::Electron& obj,
-		  const std::vector<ValueMapData<float> >& vmapsData,
+		  const std::vector<egmodifier::ValueMapData<float> >& vmapsData,
 		  bool overrideExistingValues)
 {
   std::vector<std::pair<std::string,float >> ids;
@@ -252,8 +218,8 @@ addValuesToObject(pat::Electron& obj,
   }    
   auto ptr = obj.parentRefs().back();
   for( auto& vmapData : vmapsData ) {
-    float idVal = (*vmapData.handle)[ptr];
-    ids.push_back({vmapData.name,idVal});
+    float idVal = vmapData.value(ptr);
+    ids.push_back({vmapData.name(),idVal});
   }   
   std::sort(ids.begin(),ids.end(),[](auto& lhs,auto& rhs){return lhs.first<rhs.first;});
   obj.setElectronIDs(ids);
@@ -261,9 +227,9 @@ addValuesToObject(pat::Electron& obj,
 
 template<>
 template<>
-void EGXtraModFromVMObjFiller<egmodifier::EGID>::
+void egmodifier::EGXtraModFromVMObjFiller<egmodifier::EGID>::
 addValuesToObject(pat::Photon& obj,
-		  const std::vector<ValueMapData<float> >& vmapsData,
+		  const std::vector<egmodifier::ValueMapData<float> >& vmapsData,
 		  bool overrideExistingValues)
 {
   //we do a float->bool conversion here to make things easier to be consistent with electrons
@@ -273,12 +239,11 @@ addValuesToObject(pat::Photon& obj,
   }
   auto ptr = obj.parentRefs().back();
   for( auto& vmapData : vmapsData ) {
-    float idVal = (*vmapData.handle)[ptr];
-    ids.push_back({vmapData.name,idVal});
+    float idVal = vmapData.value(ptr);
+    ids.push_back({vmapData.name(),idVal});
   }  
   std::sort(ids.begin(),ids.end(),[](auto& lhs,auto& rhs){return lhs.first<rhs.first;});
   obj.setPhotonIDs(ids);
 }
-
 
 #endif
