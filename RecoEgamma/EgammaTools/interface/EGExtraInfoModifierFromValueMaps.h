@@ -172,10 +172,10 @@ addValueToObject(ObjType& obj,
 		 bool overrideExistingValues)
 {
   if(obj.parentRefs().empty()){
-    throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set before calling the modifier";
+    throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set with ::addParentRef before calling the modifier";
   }
   auto ptr = obj.parentRefs().back();
-  if( overrideExistingValues || hasValue(obj,mapData.name()) ) {
+  if( overrideExistingValues || !hasValue(obj,mapData.name()) ) {
     addValue(obj,mapData.name(),mapData.value(ptr));
   } else {
     throw cms::Exception("ValueNameAlreadyExists")
@@ -214,7 +214,7 @@ addValuesToObject(pat::Electron& obj,
 {
   std::vector<std::pair<std::string,float >> ids;
   if(obj.parentRefs().empty()){
-    throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set before calling the modifier";
+    throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set with ::addParentRef before calling the modifier";
   }    
   auto ptr = obj.parentRefs().back();
   for( auto& vmapData : vmapsData ) {
@@ -235,7 +235,7 @@ addValuesToObject(pat::Photon& obj,
   //we do a float->bool conversion here to make things easier to be consistent with electrons
   std::vector<std::pair<std::string,bool> > ids;
   if(obj.parentRefs().empty()){
-    throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set before calling the modifier";
+    throw cms::Exception("LogicError") << " object "<<typeid(obj).name()<<" has no parent references, these should be set with ::addParentRef before calling the modifier";
   }
   auto ptr = obj.parentRefs().back();
   for( auto& vmapData : vmapsData ) {

@@ -27,7 +27,10 @@ Photon::Photon( const Photon& rhs ) :
   saturationInfo_ ( rhs.saturationInfo_ ),
   eCorrections_(rhs.eCorrections_),
   mipVariableBlock_ (rhs.mipVariableBlock_),
-  pfIsolation_ ( rhs.pfIsolation_ )
+  pfIsolation_ ( rhs.pfIsolation_ ),
+  pfID_ ( rhs.pfID_),
+  parentRefs_ (rhs.parentRefs_)
+  
  {}
 
 
