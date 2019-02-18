@@ -5,12 +5,14 @@ import RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Spring16_G
 import RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Spring16_HZZ_V1_cff as ele_spring16_hzz_v1
 import RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_iso_V1_cff as ele_fall17_iso_v1
 import RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff as ele_fall17_noIso_v1
-
+import RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_iso_V2_cff as ele_fall17_iso_v2
+import RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff as ele_fall17_noIso_v2
 
 #photon mva ids
 import RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring16_nonTrig_V1_cff as pho_spring16_nt_v1
 import RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1_cff as pho_fall17_94X_v1
 import RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1p1_cff as pho_fall17_94X_v1p1
+import RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V2_cff as pho_fall17_94X_v2
 
 
 ele_mva_prod_name = 'electronMVAValueMapProducer'
@@ -43,6 +45,8 @@ for ele_mva_cff in [
           ele_spring16_hzz_v1,
           ele_fall17_iso_v1,
           ele_fall17_noIso_v1,
+          ele_fall17_iso_v2,
+          ele_fall17_noIso_v2,
         ]:
 
     setup_mva(egamma_modifications[0].electron_config,
@@ -54,6 +58,7 @@ for pho_mva_cff in [
           pho_spring16_nt_v1,
           pho_fall17_94X_v1,
           pho_fall17_94X_v1p1,
+          pho_fall17_94X_v2,
         ]:
 
     setup_mva(egamma_modifications[0].photon_config,
