@@ -9,7 +9,7 @@
 #include "DataFormats/Math/interface/deltaPhi.h"
 
 #include <vdt/vdtMath.h>
-
+#include "TFile.h"
 using namespace reco;
 
 //--------------------------------------------------------------------------------------------------
@@ -38,6 +38,21 @@ void SCEnergyCorrectorSemiParm::setTokens(const edm::ParameterSet &iConfig, edm:
   uncertaintyKeyEB_ = iConfig.getParameter<std::string>("uncertaintyKeyEB");
   regressionKeyEE_  = iConfig.getParameter<std::string>("regressionKeyEE");
   uncertaintyKeyEE_ = iConfig.getParameter<std::string>("uncertaintyKeyEE");
+  if(iConfig.existsAs<bool>("readFromFile")){
+    readFromFile_ = iConfig.getParameter<bool>("readFromFile");
+    if(readFromFile_){
+      edm::FileInPath filenameEB(iConfig.getParameter<std::string>("filenameEB")); 
+      TFile* fileEB = TFile::Open(filenameEB.fullPath().c_str(),"READ");
+      foresteb_ = dynamic_cast<const GBRForestD*>(fileEB->Get("EBCorrection"));
+      forestsigmaeb_ = dynamic_cast<const GBRForestD*>(fileEB->Get("EBUncertainty"));
+      edm::FileInPath filenameEE(iConfig.getParameter<std::string>("filenameEB")); 
+      TFile* fileEE = TFile::Open(filenameEE.fullPath().c_str(),"READ");
+      forestee_ = dynamic_cast<const GBRForestD*>(fileEE->Get("EECorrection"));
+      forestsigmaee_ = dynamic_cast<const GBRForestD*>(fileEE->Get("EEUncertainty"));
+      delete fileEB;
+      delete fileEE;
+    }
+  }
  
   if (not isHLT_)
     tokenVertices_     = cc.consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexCollection"));
@@ -51,20 +66,22 @@ void SCEnergyCorrectorSemiParm::setEventSetup(const edm::EventSetup &es) {
   es.get<CaloTopologyRecord>().get(calotopo_);
   es.get<CaloGeometryRecord>().get(calogeom_);
 
-  edm::ESHandle<GBRForestD> readereb;
-  edm::ESHandle<GBRForestD> readerebvar;
-  edm::ESHandle<GBRForestD> readeree;
-  edm::ESHandle<GBRForestD> readereevar;
+  if(!readFromFile_){
+    edm::ESHandle<GBRForestD> readereb;
+    edm::ESHandle<GBRForestD> readerebvar;
+    edm::ESHandle<GBRForestD> readeree;
+    edm::ESHandle<GBRForestD> readereevar;
     
-  es.get<GBRDWrapperRcd>().get(regressionKeyEB_,  readereb);
-  es.get<GBRDWrapperRcd>().get(uncertaintyKeyEB_, readerebvar);
-  es.get<GBRDWrapperRcd>().get(regressionKeyEE_,  readeree);
-  es.get<GBRDWrapperRcd>().get(uncertaintyKeyEE_, readereevar);
-
-  foresteb_      = readereb.product();
-  forestsigmaeb_ = readerebvar.product();
-  forestee_      = readeree.product();
-  forestsigmaee_ = readereevar.product();
+    es.get<GBRDWrapperRcd>().get(regressionKeyEB_,  readereb);
+    es.get<GBRDWrapperRcd>().get(uncertaintyKeyEB_, readerebvar);
+    es.get<GBRDWrapperRcd>().get(regressionKeyEE_,  readeree);
+    es.get<GBRDWrapperRcd>().get(uncertaintyKeyEE_, readereevar);
+    
+    foresteb_      = readereb.product();
+    forestsigmaeb_ = readerebvar.product();
+    forestee_      = readeree.product();
+    forestsigmaee_ = readereevar.product();
+  }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -117,7 +134,7 @@ std::pair<double, double> SCEnergyCorrectorSemiParm::getCorrections(const reco::
   std::vector<float> localCovariances = EcalClusterTools::localCovariances(seedCluster,recHits,topo) ;
   
   if (not isHLT_) {
-    std::array<float, 29> eval;  
+    std::array<float, 30> eval;  
     
     const float eLeft = EcalClusterTools::eLeft(seedCluster,recHits,topo);
     const float eRight = EcalClusterTools::eRight(seedCluster,recHits,topo);
@@ -215,6 +232,8 @@ std::pair<double, double> SCEnergyCorrectorSemiParm::getCorrections(const reco::
       EEDetId eeseedid(seedCluster.seed());
       eval[27] = eeseedid.ix();
       eval[28] = eeseedid.iy();
+      //only for the experimental regression
+      eval[29] = seedCluster.eta();
     }  
     
     //magic numbers for MINUIT-like transformation of BDT output onto limited range

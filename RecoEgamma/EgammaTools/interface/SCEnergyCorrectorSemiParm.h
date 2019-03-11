@@ -70,5 +70,7 @@ class SCEnergyCorrectorSemiParm {
   bool isHLT_;
   int nHitsAboveThreshold_;
   float eThreshold_;
+  bool readFromFile_;
+  
 };
 #endif
