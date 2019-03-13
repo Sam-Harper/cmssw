@@ -56,9 +56,9 @@ def _getEnergyCorrectionFile(era):
     if era=="2016-Legacy":
         return "EgammaAnalysis/ElectronTools/data/ScalesSmearings/Legacy2016_07Aug2017_FineEtaR9_v3_ele_unc"
     if era=="2016-Feb17ReMiniAOD":
-        raise RuntimeError('Error in postRecoEgammaTools, era 2016-Feb17ReMiniAOD is not currently implimented') 
+        raise RuntimeError('Error in postRecoEgammaTools, era 2016-Feb17ReMiniAOD is not currently implimented')
     if era=="2018-Prompt":
-        raise RuntimeError('Error in postRecoEgammaTools, era 2018-Prompt does not have energy corrections availible yet, runEnergyCorrections must be set to false') 
+        return "EgammaAnalysis/ElectronTools/data/ScalesSmearings/Run2018_Step2Closure_CoarseEtaR9Gain"
     raise RuntimeError('Error in postRecoEgammaTools, era '+era+' not recognised. Allowed eras are 2017-Nov17ReReco, 2016-Legacy, 2016-Feb17ReMiniAOD')
 
 def _is80XRelease(era):
@@ -355,9 +355,7 @@ def setupEgammaPostRecoSeq(process,
             setupAllVIDIdsInModule(process,idmod,setupVIDPhotonSelection)
 
     if autoAdjustParams:
-        if era == "2018-Prompt" and runEnergyCorrections: 
-            print "EgammaPostRecoTools:\n  2018-Prompt does not yet have residual scales and smearings availible, setting runEnergyCorrections to False. To override, set autoAdjustParams = False"
-            runEnergyCorrections=False
+        pass #no auto adjustment needed
 
     if isMiniAOD:
         _setupEgammaPostRECOSequenceMiniAOD(process,applyEnergyCorrections=applyEnergyCorrections,applyVIDOnCorrectedEgamma=applyVIDOnCorrectedEgamma,era=era,runVID=runVID,runEnergyCorrections=runEnergyCorrections,applyEPCombBug=applyEPCombBug)
