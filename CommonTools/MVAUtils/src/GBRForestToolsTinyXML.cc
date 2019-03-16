@@ -7,53 +7,9 @@
 #include <cstdlib>
 #include <RVersion.h>
 #include <cmath>
-#include <zlib.h>
 #include <tinyxml2.h>
 
 namespace {
-
-    bool hasEnding(std::string const& fullString, std::string const& ending)
-    {
-        if (fullString.length() >= ending.length()) {
-            return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
-        } else {
-            return false;
-        }
-    }
-
-    char* readGzipFile(const std::string& weightFile)
-    {
-        FILE* f = fopen(weightFile.c_str(), "r");
-        if (f == nullptr) {
-            throw cms::Exception("InvalidFileState") << "Failed to open MVA file = " << weightFile << " !!\n";
-        }
-        int magic;
-        int size;
-        fread(&magic, 4, 1, f);
-        fseek(f, -4, SEEK_END);
-        fread(&size, 4, 1, f);
-        fclose(f);
-        // printf("%x, %i\n", magic, size);
-
-        gzFile file = gzopen(weightFile.c_str(), "r");
-
-        int bytes_read;
-        char* buffer = (char*)malloc(size);
-        bytes_read = gzread(file, buffer, size - 1);
-        buffer[bytes_read] = '\0';
-        if (!gzeof(file)) {
-            int err;
-            const char* error_string;
-            error_string = gzerror(file, &err);
-            if (err) {
-                free(buffer);
-                throw cms::Exception("InvalidFileState") << "Error while reading gzipped file = "
-                                                         << weightFile << " !!\n" << error_string;
-            }
-        }
-        gzclose(file);
-        return buffer;
-    }
 
     size_t readVariables(tinyxml2::XMLElement* root, const char * key, std::vector<std::string>& names)
     {
@@ -184,6 +140,8 @@ namespace {
       // Load weights file, for gzipped or raw xml file
       //
       tinyxml2::XMLDocument xmlDoc;
+
+      using namespace reco::details;
 
       if (hasEnding(weightsFileFullPath, ".xml")) {
           xmlDoc.LoadFile(weightsFileFullPath.c_str());
