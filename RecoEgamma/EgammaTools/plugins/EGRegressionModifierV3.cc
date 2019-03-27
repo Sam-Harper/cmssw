@@ -232,6 +232,8 @@ std::array<float,32> EGRegressionModifierV3::getRegData(const reco::GsfElectron&
     int iEta,iPhi;
     getSeedCrysCoord(*seedClus,iEta,iPhi);
     int signIEta = iEta > 0 ? +1 : -1;
+    data[26] = iEta;
+    data[27] = iPhi;
     data[28] = (iEta-signIEta)%5;
     data[29] = (iPhi-1)%2;
     data[30] = (std::abs(iEta)<=25)*((iEta-signIEta)) + (std::abs(iEta)>25)*((iEta-26*signIEta)%20);  
