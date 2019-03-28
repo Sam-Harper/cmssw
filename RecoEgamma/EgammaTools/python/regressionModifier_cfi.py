@@ -82,7 +82,7 @@ regressionModifierNewCfg = cms.PSet(
 )
 
 
-regressionModifierBParking = cms.PSet(
+regressionModifierLowPtEle = cms.PSet(
     modifierName = cms.string('EGRegressionModifierV3'),       
     rhoTag = cms.InputTag('fixedGridRhoFastjetAll'),  
     useClosestToCentreSeedCrysDef = cms.bool(False),
@@ -163,3 +163,4 @@ regressionModifier80X = \
                                           uncertaintyKey_50ns = cms.vstring('gedphoton_EBUncertainty_50ns', 'gedphoton_EEUncertainty_50ns'),
                                           )
               )
+
