@@ -9,7 +9,7 @@ import RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noI
 
 #photon mva ids
 import RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring16_nonTrig_V1_cff as pho_spring16_nt_v1
-import RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1_cff as pho_fall17_94X_v1
+#import RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1_cff as pho_fall17_94X_v1
 import RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1p1_cff as pho_fall17_94X_v1p1
 
 
@@ -25,11 +25,7 @@ def setup_mva(val_pset,cat_pset,prod_name,mva_name):
 egamma_modifications = cms.VPSet(
     cms.PSet( modifierName    = cms.string('EGExtraInfoModifierFromFloatValueMaps'),
               electron_config = cms.PSet( ),
-              photon_config   = cms.PSet( phoChargedIsolation         = cms.InputTag('photonIDValueMapProducer:phoChargedIsolation'),
-                                          phoNeutralHadronIsolation   = cms.InputTag('photonIDValueMapProducer:phoNeutralHadronIsolation'),
-                                          phoPhotonIsolation          = cms.InputTag('photonIDValueMapProducer:phoPhotonIsolation'),
-                                          phoWorstChargedIsolation    = cms.InputTag('photonIDValueMapProducer:phoWorstChargedIsolation')
-                                          )
+              photon_config   = cms.PSet( )
               ),
     cms.PSet( modifierName    = cms.string('EGExtraInfoModifierFromIntValueMaps'),
               electron_config = cms.PSet( ),
@@ -52,7 +48,7 @@ for ele_mva_cff in [
 
 for pho_mva_cff in [
           pho_spring16_nt_v1,
-          pho_fall17_94X_v1,
+#          pho_fall17_94X_v1,
           pho_fall17_94X_v1p1,
         ]:
 
