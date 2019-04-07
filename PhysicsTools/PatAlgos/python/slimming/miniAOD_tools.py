@@ -315,23 +315,13 @@ def miniAOD_customizeCommon(process):
     process.patPhotons.addPhotonID = cms.bool(True)
     photon_ids = ['RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Fall17_94X_V1_TrueVtx_cff',
                   'RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Fall17_94X_V2_cff',
-                  'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1_cff', 
                   'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1p1_cff', 
                   'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V2_cff',
                   'RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Spring16_V2p2_cff',
                   'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Spring16_nonTrig_V1_cff']
     switchOnVIDPhotonIdProducer(process,DataFormat.AOD, task) 
-    process.egmPhotonIsolation.srcToIsolate = \
-        cms.InputTag("reducedEgamma","reducedGedPhotons")  
-    for iPSet in process.egmPhotonIsolation.isolationConeDefinitions:
-        iPSet.particleBasedIsolation = cms.InputTag("reducedEgamma","reducedPhotonPfCandMap")    
-
     process.egmPhotonIDs.physicsObjectSrc = \
         cms.InputTag("reducedEgamma","reducedGedPhotons")
-    process.photonIDValueMapProducer.src = \
-        cms.InputTag("reducedEgamma","reducedGedPhotons")
-    process.photonIDValueMapProducer.particleBasedIsolation = \
-        cms.InputTag("reducedEgamma","reducedPhotonPfCandMap")
     process.photonMVAValueMapProducer.src = \
         cms.InputTag('reducedEgamma','reducedGedPhotons')
     for idmod in photon_ids:
