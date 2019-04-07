@@ -674,6 +674,18 @@ void GEDPhotonProducer::fillPhotonCollection(edm::Event& evt,
     showerShape.e2x5Right     = ( hits != nullptr ? EcalClusterTools::e2x5Right(*(scRef->seed()), &(*hits), &(*topology)) : 0.f );
     showerShape.e2x5Top       = ( hits != nullptr ? EcalClusterTools::e2x5Top(*(scRef->seed()), &(*hits), &(*topology)) : 0.f );
     showerShape.e2x5Bottom    = ( hits != nullptr ? EcalClusterTools::e2x5Bottom(*(scRef->seed()), &(*hits), &(*topology)) : 0.f );
+    if(hits){
+      Cluster2ndMoments clus2ndMoments = EcalClusterTools::cluster2ndMoments(*(scRef->seed()),*hits);
+      showerShape.smajor = clus2ndMoments.sMaj;
+      showerShape.sminor = clus2ndMoments.sMin;
+      showerShape.smajorAlpha = clus2ndMoments.alpha;
+    }else{
+      showerShape.smajor = 0.f;
+      showerShape.sminor = 0.f;
+      showerShape.smajorAlpha = 0.f;
+    }
+
+
     // fill preshower shapes
     EcalClusterLazyTools toolsforES(evt, es, barrelEcalHits_, endcapEcalHits_, preshowerHits_);
     const float sigmaRR =  toolsforES.eseffsirir( *scRef );
@@ -727,6 +739,16 @@ void GEDPhotonProducer::fillPhotonCollection(edm::Event& evt,
     full5x5_showerShape.e2x5Right     = ( hits != nullptr ? noZS::EcalClusterTools::e2x5Right(*(scRef->seed()), &(*hits), &(*topology)) : 0.f );
     full5x5_showerShape.e2x5Top       = ( hits != nullptr ? noZS::EcalClusterTools::e2x5Top(*(scRef->seed()), &(*hits), &(*topology)) : 0.f );
     full5x5_showerShape.e2x5Bottom    = ( hits != nullptr ? noZS::EcalClusterTools::e2x5Bottom(*(scRef->seed()), &(*hits), &(*topology)) : 0.f );
+    if(hits){
+      Cluster2ndMoments clus2ndMoments = noZS::EcalClusterTools::cluster2ndMoments(*(scRef->seed()),*hits);
+      full5x5_showerShape.smajor = clus2ndMoments.sMaj;
+      full5x5_showerShape.sminor = clus2ndMoments.sMin;
+      full5x5_showerShape.smajorAlpha = clus2ndMoments.alpha;
+    }else{
+      full5x5_showerShape.smajor = 0.f;
+      full5x5_showerShape.sminor = 0.f;
+      full5x5_showerShape.smajorAlpha = 0.f;
+    }
      // fill preshower shapes
     full5x5_showerShape.effSigmaRR = sigmaRR;
     newCandidate.full5x5_setShowerShapeVariables ( full5x5_showerShape );     

@@ -7,7 +7,8 @@
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectronCoreFwd.h"
-#include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h" 
+#include "DataFormats/EgammaCandidates/interface/Conversion.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
@@ -66,6 +67,7 @@ class GsfElectronAlgo {
        edm::EDGetTokenT<reco::BeamSpot> beamSpotTag ;
        edm::EDGetTokenT<reco::GsfPFRecTrackCollection> gsfPfRecTracksTag ;
        edm::EDGetTokenT<reco::VertexCollection> vtxCollectionTag;
+       edm::EDGetTokenT<reco::ConversionCollection> conversions;
 
       //IsoVals (PF and EcalDriven)
       edm::ParameterSet pfIsoVals;
@@ -291,6 +293,7 @@ class GsfElectronAlgo {
       edm::Handle<reco::ElectronSeedCollection> seeds ;
       edm::Handle<reco::GsfPFRecTrackCollection> gsfPfRecTracks ;
       edm::Handle<reco::VertexCollection> vertices;
+      edm::Handle<reco::ConversionCollection> conversions;
 
       // isolation helpers
       EgammaTowerIsolation hadDepth1Isolation03, hadDepth1Isolation04 ;

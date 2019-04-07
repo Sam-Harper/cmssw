@@ -29,6 +29,7 @@
 #include "RecoEgamma/EgammaElectronAlgos/interface/ElectronUtilities.h"
 #include "RecoEgamma/EgammaElectronAlgos/interface/GsfElectronAlgo.h"
 #include "RecoEgamma/EgammaTools/interface/ConversionFinder.h"
+#include "RecoEgamma/EgammaTools/interface/ConversionTools.h"
 
 #include <Math/Point3D.h>
 #include <sstream>
@@ -508,6 +509,7 @@ void GsfElectronAlgo::beginEvent( edm::Event & event )
       .seeds             = event.getHandle(generalData_->inputCfg.seedsTag),
       .gsfPfRecTracks    = generalData_->strategyCfg.useGsfPfRecTracks ? event.getHandle(generalData_->inputCfg.gsfPfRecTracksTag) : edm::Handle<reco::GsfPFRecTrackCollection>{},
       .vertices          = event.getHandle(generalData_->inputCfg.vtxCollectionTag),
+      .conversions       = event.getHandle(generalData_->inputCfg.conversions),
       .hadDepth1Isolation03 = EgammaTowerIsolation(egHcalIsoConeSizeOutSmall,egHcalIsoConeSizeIn,egHcalIsoPtMin,egHcalDepth1,&towers),
       .hadDepth1Isolation04 = EgammaTowerIsolation(egHcalIsoConeSizeOutLarge,egHcalIsoConeSizeIn,egHcalIsoPtMin,egHcalDepth1,&towers),
       .hadDepth2Isolation03 = EgammaTowerIsolation(egHcalIsoConeSizeOutSmall,egHcalIsoConeSizeIn,egHcalIsoPtMin,egHcalDepth2,&towers),
@@ -1064,12 +1066,13 @@ void GsfElectronAlgo::createElectron(const gsfAlgoHelpers::HeavyObjectCache* hoc
   // 3     : Partner track found in the GSF collection using the electron's GSF track
   ConversionInfo conversionInfo = conversionFinder.getConversionInfo
    (*electronData_->coreRef,ctfTracks,eventData_->originalGsfTracks,BInTesla) ;
-
+ 
   reco::GsfElectron::ConversionRejection conversionVars ;
   conversionVars.flags = conversionInfo.flag()  ;
   conversionVars.dist = conversionInfo.dist()  ;
   conversionVars.dcot = conversionInfo.dcot()  ;
   conversionVars.radius = conversionInfo.radiusOfConversion()  ;
+  conversionVars.vtxFitProb = ConversionTools::getVtxFitProb(ConversionTools::matchedConversion(*electronData_->coreRef, *eventData_->conversions, eventData_->beamspot->position()));
   if ((conversionVars.flags==0)or(conversionVars.flags==1))
     conversionVars.partner = TrackBaseRef(conversionInfo.conversionPartnerCtfTk())  ;
   else if ((conversionVars.flags==2)or(conversionVars.flags==3))

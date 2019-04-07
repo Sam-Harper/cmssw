@@ -33,6 +33,7 @@ void GsfElectronBaseProducer::fillDescriptions( edm::ConfigurationDescriptions &
   desc.add<edm::InputTag>("previousGsfElectronsTag", edm::InputTag(""));
   desc.add<edm::InputTag>("hcalTowers", edm::InputTag("towerMaker"));
   desc.add<edm::InputTag>("vtxTag", edm::InputTag("offlinePrimaryVertices"));
+  desc.add<edm::InputTag>("conversionsTag", edm::InputTag("allConversions"));
   desc.add<edm::InputTag>("gsfPfRecTracksTag", edm::InputTag("pfTrackElec"));
   desc.add<edm::InputTag>("barrelRecHitCollectionTag", edm::InputTag("ecalRecHit","EcalRecHitsEB"));
   desc.add<edm::InputTag>("endcapRecHitCollectionTag", edm::InputTag("ecalRecHit","EcalRecHitsEE"));
@@ -229,6 +230,7 @@ GsfElectronBaseProducer::GsfElectronBaseProducer( const edm::ParameterSet& cfg, 
   inputCfg_.beamSpotTag = consumes<reco::BeamSpot>(cfg.getParameter<edm::InputTag>("beamSpotTag"));
   inputCfg_.gsfPfRecTracksTag = consumes<reco::GsfPFRecTrackCollection>(cfg.getParameter<edm::InputTag>("gsfPfRecTracksTag"));
   inputCfg_.vtxCollectionTag = consumes<reco::VertexCollection>(cfg.getParameter<edm::InputTag>("vtxTag"));
+  inputCfg_.conversions = consumes<reco::ConversionCollection>(cfg.getParameter<edm::InputTag>("conversionsTag"));
 
   if ( cfg.getParameter<bool>("useIsolationValues") ) {
     inputCfg_.pfIsoVals = cfg.getParameter<edm::ParameterSet> ("pfIsolationValues");
