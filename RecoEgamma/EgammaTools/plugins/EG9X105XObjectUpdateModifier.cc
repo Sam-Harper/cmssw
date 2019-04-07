@@ -145,23 +145,14 @@ void EG9X105XObjectUpdateModifier::modifyObject(reco::Photon& pho)const
   const reco::CaloClusterPtr seedClus = pho.superCluster()->seed();
   const bool isEB = seedClus->seed().subdetId()==EcalBarrel;
   const auto& recHits = isEB ? *ecalRecHitsEB_.handle : *ecalRecHitsEE_.handle;
-  if(!recHits.empty()){
-    Cluster2ndMoments clus2ndMomFrac = EcalClusterTools::cluster2ndMoments(*seedClus,recHits);
-    Cluster2ndMoments clus2ndMomFull = noZS::EcalClusterTools::cluster2ndMoments(*seedClus,recHits);
-    fracSS.smajor = clus2ndMomFrac.sMaj;
-    fracSS.sminor = clus2ndMomFrac.sMin;
-    fracSS.smajorAlpha = clus2ndMomFrac.alpha;
-    fullSS.smajor = clus2ndMomFull.sMaj;
-    fullSS.sminor = clus2ndMomFull.sMin;
-    fullSS.smajorAlpha = clus2ndMomFull.alpha;
-  }else{
-    fracSS.smajor = 0.;
-    fracSS.sminor = 0.;
-    fracSS.smajorAlpha = 0.;
-    fullSS.smajor = 0.;
-    fullSS.sminor = 0.;
-    fullSS.smajorAlpha = 0.;
-  }
+  Cluster2ndMoments clus2ndMomFrac = EcalClusterTools::cluster2ndMoments(*seedClus,recHits);
+  Cluster2ndMoments clus2ndMomFull = noZS::EcalClusterTools::cluster2ndMoments(*seedClus,recHits);
+  fracSS.smajor = clus2ndMomFrac.sMaj;
+  fracSS.sminor = clus2ndMomFrac.sMin;
+  fracSS.smajorAlpha = clus2ndMomFrac.alpha;
+  fullSS.smajor = clus2ndMomFull.sMaj;
+  fullSS.sminor = clus2ndMomFull.sMin;
+  fullSS.smajorAlpha = clus2ndMomFull.alpha;
   pho.setShowerShapeVariables(fracSS);
   pho.full5x5_setShowerShapeVariables(fullSS);
 
