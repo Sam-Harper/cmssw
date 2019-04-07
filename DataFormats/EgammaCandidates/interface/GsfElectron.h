@@ -188,6 +188,10 @@ class GsfElectron : public RecoCandidate
     bool ecalDrivenSeed() const { return core()->ecalDrivenSeed() ; }
     bool trackerDrivenSeed() const { return core()->trackerDrivenSeed() ; }
     virtual SuperClusterRef parentSuperCluster() const { return core()->parentSuperCluster() ; }
+    bool closestTrackValid() const { return closestTrack().isAvailable() && closestTrack().isNonnull() ; }
+    //methods used for MVA variables
+    float closestTrackChi2() const; 
+    int closestTrackNHits() const; 
 
     // backward compatibility
     struct ClosestCtfTrack
@@ -595,11 +599,13 @@ class GsfElectron : public RecoCandidate
       float dist ; // distance to the conversion partner
       float dcot ; // difference of cot(angle) with the conversion partner track
       float radius ; // signed conversion radius
+      float vtxFitProb ; //fit probablity (chi2/ndof) of the matched conversion vtx
       ConversionRejection()
        : flags(-1),
          dist(std::numeric_limits<float>::max()),
          dcot(std::numeric_limits<float>::max()),
-         radius(std::numeric_limits<float>::max())
+         radius(std::numeric_limits<float>::max()),
+	 vtxFitProb(std::numeric_limits<float>::max())
        {}
      } ;
 
@@ -609,8 +615,9 @@ class GsfElectron : public RecoCandidate
     float convDist() const { return conversionRejection_.dist ; }
     float convDcot() const { return conversionRejection_.dcot ; }
     float convRadius() const { return conversionRejection_.radius ; }
+    float convVtxFitProb() const { return conversionRejection_.vtxFitProb ; } 
     const ConversionRejection & conversionRejectionVariables() const { return conversionRejection_ ; }
-
+    void setConversionRejectionVariables(const ConversionRejection& convRej) { conversionRejection_ = convRej ; }
   private:
 
     // attributes
