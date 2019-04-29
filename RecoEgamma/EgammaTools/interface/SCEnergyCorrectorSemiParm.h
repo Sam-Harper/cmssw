@@ -67,7 +67,8 @@ class SCEnergyCorrectorSemiParm {
   std::string uncertaintyKeyEE_;
 
  private:
-  bool isHLT_;
+  bool isHLT_; 
+  bool applySigmaIetaIphiBug_; //there was a bug in sigmaIetaIphi for the 74X training
   int nHitsAboveThreshold_;
   float eThreshold_;
 };
