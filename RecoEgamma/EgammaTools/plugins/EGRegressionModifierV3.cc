@@ -61,6 +61,8 @@ private:
   edm::EDGetTokenT<double> rhoToken_;
 
   bool useClosestToCentreSeedCrysDef_;
+  bool applyBugs_;
+  bool debug_;
   edm::ESHandle<CaloGeometry> caloGeomHandle_;
 
 };
@@ -74,7 +76,9 @@ EGRegressionModifierV3::EGRegressionModifierV3(const edm::ParameterSet& conf,
   ModifyObjectValueBase(conf),
   rhoValue_(0.),
   rhoToken_(cc.consumes<double>(conf.getParameter<edm::InputTag>("rhoTag"))),
-  useClosestToCentreSeedCrysDef_(conf.getParameter<bool>("useClosestToCentreSeedCrysDef"))
+  useClosestToCentreSeedCrysDef_(conf.getParameter<bool>("useClosestToCentreSeedCrysDef")),
+  applyBugs_(true),
+  debug_(false)
 {   
   if(conf.exists("eleRegs")) {
     eleRegs_ = std::make_unique<EleRegs>(conf.getParameter<edm::ParameterSet>("eleRegs"));
@@ -132,6 +136,8 @@ void EGRegressionModifierV3::modifyObject(reco::GsfElectron& ele) const
   const float corrEnergy = (rawEnergy + rawESEnergy)*ecalMeanCorr;
   const float corrEnergyErr = corrEnergy*ecalSigma;
   
+  if(debug_) std::cout <<"ecal mean "<<ecalMean<<" corrEnergy "<<corrEnergy<<std::endl;
+
   ele.setCorrectedEcalEnergy(corrEnergy);
   ele.setCorrectedEcalEnergyError(corrEnergyErr);
 
@@ -231,9 +237,17 @@ std::array<float,32> EGRegressionModifierV3::getRegData(const reco::GsfElectron&
     data[26] = iEta;
     data[27] = iPhi;
     data[28] = (iEta-signIEta)%5;
-    data[29] = (iPhi-1)%2;
-    data[30] = (std::abs(iEta)<=25)*((iEta-signIEta)) + (std::abs(iEta)>25)*((iEta-26*signIEta)%20);  
-    data[31] = (iPhi-1)%20;
+    data[29] = (iPhi-1)%2; 
+    if(applyBugs_){
+      const int iEtaCorr = iEta - (iEta > 0 ? +1 : -1);
+      const int iEtaCorr26 = iEta - (iEta > 0 ? +26 : -26);
+      data[30] = std::abs(iEta<=25) ? iEtaCorr%20 : iEtaCorr26%20;
+      data[31] = (iPhi-2)%20;
+    }else{
+      data[30] = (std::abs(iEta)<=25)*((iEta-signIEta)) + (std::abs(iEta)>25)*((iEta-26*signIEta)%20);  
+      data[31] = (iPhi-1)%20;
+    }
+    
   }else{
     int iX,iY;
     getSeedCrysCoord(*seedClus,iX,iY);
@@ -241,6 +255,12 @@ std::array<float,32> EGRegressionModifierV3::getRegData(const reco::GsfElectron&
     data[27] = iY;
     data[28] = rawESEnergy/rawEnergy;
   }
+  if(debug_){
+    size_t maxSize = isEB ? 32 : 29;
+    for(size_t i=0;i<maxSize;i++){
+      std::cout <<i<<" "<<data[i]<<std::endl;
+    }
+  }		
   return data;
 }
 
@@ -294,8 +314,15 @@ std::array<float,32> EGRegressionModifierV3::getRegData(const reco::Photon& pho)
     int signIEta = iEta > 0 ? +1 : -1;
     data[28] = (iEta-signIEta)%5;
     data[29] = (iPhi-1)%2;
-    data[30] = (std::abs(iEta)<=25)*((iEta-signIEta)) + (std::abs(iEta)>25)*((iEta-26*signIEta)%20);  
-    data[31] = (iPhi-1)%20;
+    if(applyBugs_){
+      const int iEtaCorr = iEta - (iEta > 0 ? +1 : -1);
+      const int iEtaCorr26 = iEta - (iEta > 0 ? +26 : -26);
+      data[30] = std::abs(iEta<=25) ? iEtaCorr%20 : iEtaCorr26%20;
+      data[31] = (iPhi-2)%20;
+    }else{
+      data[30] = (std::abs(iEta)<=25)*((iEta-signIEta)) + (std::abs(iEta)>25)*((iEta-26*signIEta)%20);  
+      data[31] = (iPhi-1)%20;
+    }
   }else{
     int iX,iY;
     getSeedCrysCoord(*seedClus,iX,iY);
