@@ -203,7 +203,19 @@ from RecoHGCal.TICL.ticl_iterations import TICL_iterations_withReco
 #)
 
 
-process.FEVTDEBUGHLTEventContent.outputCommands.extend(["keep *_ecalDrivenGsfElectrons*_*_*"])
+#process.FEVTDEBUGHLTEventContent.outputCommands.extend(["keep *_ecalDrivenGsfElectrons*_*_*"])
+process.FEVTDEBUGHLTEventContent.outputCommands.extend(["keep *_hgcalDigis_*_*",
+                                                        "keep *_particleFlowClusterECAL_*_*",
+                                                        "keep *_siPhase2Clusters_*_*",
+                                                        "keep *_siStripDigis_*_*",
+                                                        "keep *_siPixelClusters_*_*",
+                                                        "keep *_siPixelClustersCache_*_*", 
+                                                        "keep *_siPixelClusterShapeCache_*_*",
+                                                        "keep *_siPixelRecHits*_*_*",
+                                                        "keep *_trackerDrivenElectronSeeds_*_*",
+                                                        "keep *_pfTrackElec_*_*"
+                                                    ])
+
 #process.FEVTDEBUGHLTEventContent.outputCommands.extend(["keep *_*FromTICL*_*_*"])
 
 

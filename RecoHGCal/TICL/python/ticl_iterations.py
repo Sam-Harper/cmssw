@@ -74,7 +74,7 @@ def TICL_iterations_withReco(process):
   return process
 
 def TICL_iterations(process):
-  process.FEVTDEBUGHLTEventContent.outputCommands.extend(['keep *_MultiClustersFromTracksters*_*_*'])
+#  process.FEVTDEBUGHLTEventContent.outputCommands.extend(['keep *_MultiClustersFromTracksters*_*_*'])
 
   process.TICLLayerTileProducer = ticlLayerTileProducer.clone()
 
@@ -130,7 +130,7 @@ def TICL_iterations(process):
       process.Tracksters,
       process.MultiClustersFromTracksters,
       process.hgcalMultiClusters)
-  process.schedule = cms.Schedule(process.raw2digi_step,process.FEVTDEBUGHLToutput_step)
-  process.schedule.associate(process.TICL_Task)
+ # process.schedule = cms.Schedule(process.raw2digi_step,process.FEVTDEBUGHLToutput_step)
+ # process.schedule.associate(process.TICL_Task)
   return process
 
