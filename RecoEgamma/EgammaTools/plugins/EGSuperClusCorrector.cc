@@ -58,13 +58,23 @@ EGSuperClusCorrector::EGSuperClusCorrector(const edm::ParameterSet& config)
 //   descriptions.add("egSuperClusCorrector",desc);
 // }
 
+namespace {
+  template<typename T> 
+  edm::Handle<T> getHandle(const edm::Event& iEvent,const edm::EDGetTokenT<T>& token)
+  {
+    edm::Handle<T> handle;
+    iEvent.getByToken(token,handle);
+    return handle;
+  }
+}
+
 void EGSuperClusCorrector::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   corrector_.setEvent(iEvent);
   corrector_.setEventSetup(iSetup);
   for(auto& coll : scColls_){
     auto outSCs = std::make_unique<reco::SuperClusterCollection>();
-    const auto& inSCs = *iEvent.getHandle(coll.token);
+    const auto& inSCs = *getHandle(iEvent,coll.token);
     for(const auto& inSC : inSCs){
       outSCs->push_back(inSC);
       corrector_.modifyObject(outSCs->back());
