@@ -51,6 +51,7 @@ process.output = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0)
 )
 process.output.outputCommands.append('keep *_ecalDrivenGsfElectronsFromTICL_*_*')
+process.output.outputCommands.append('keep *_*FromTICL_*_*')
 
 # Additional output definition
 
@@ -93,6 +94,9 @@ del process.tripletElectronSeedLayers.BPix.skipClusters
 del process.tripletElectronSeedLayers.FPix.skipClusters
 #process.tripletElectronHitDoublets.produceSeedingHitSets = True
 process.ecalDrivenElectronSeedsFromTICL.SeedConfiguration.initialSeedsVector = cms.VInputTag("tripletElectronSeeds",)
+#disabling tracker driven seeds as that requires many more things to be re-run
+process.electronMergedSeedsFromTICL.TkBasedSeeds = cms.InputTag("")
+
 
 #do not add changes to your config after this point (unless you know what you are doing)
 from FWCore.ParameterSet.Utilities import convertToUnscheduled
