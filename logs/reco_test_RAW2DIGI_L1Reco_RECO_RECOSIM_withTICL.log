@@ -1,0 +1,386 @@
+Singletons:
+  debugFile          : 0
+                     - Create debug file
+  filePrepend        : 
+                     - String to prepend location of all files
+  isCRAB             : 0
+                     - CRAB run or not
+  maxEvents          : 20
+                     - Number of events to process (-1 for all)
+  outputFile         : output_GEN-SIM-RECO.root
+                     - Name of output file (if needed)
+  secondaryOutputFile: 
+                     - Name of second output file (if needed)
+  section            : 0
+                     - This section (from 1..totalSections inclusive)
+  sourceFile         : 
+                     - File containing list of input files
+  tag                : 
+                     - tag to add to output filename
+  totalSections      : 0
+                     - Total number of sections
+Lists:
+  inputFiles         : []
+                     - Files to process
+  secondaryInputFiles: []
+                     - Second group of files to process (if needed)
+
+20
+25-Jul-2019 09:38:20 CEST  Initiating request to open file root://se01.indiacms.res.in//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:07.789416 +0200][Error  ][AsyncSock         ] [dpms19.indiacms.res.in:1095 #0.0] Socket error while handshaking: [ERROR] Socket timeout
+[2019-07-25 09:39:07.789576 +0200][Error  ][PostMaster        ] [dpms19.indiacms.res.in:1095 #0] elapsed = 45, pConnectionWindow = 31 seconds.
+25-Jul-2019 09:39:15 CEST  Successfully opened file root://se01.indiacms.res.in//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945168 +0200][Warning][XRootD            ] [se01.indiacms.res.in:1094] Redirect limit has been reached for message kXR_open (file: /store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root?tried=+se01.indiacms.re.cmslocal@se01.indiacms.res.in,dpms19.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in&triedrc=enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent, mode: 0660, flags: kXR_open_read kXR_async kXR_retstat ), the last known error is: [ERROR] Error response: No such file or directory
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] Redirect trace-back:
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	0. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	1. Redirected from: root://se01.indiacms.res.in:11011/ to: root://xrootd-cms.infn.it:1094/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	2. Retrying: root://xrootd-cms.infn.it:1094/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	3. Redirected from: root://xrootd-cms.infn.it:1094/ to: root://se01.indiacms.res.in:11001/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	4. Redirected from: root://se01.indiacms.res.in:11001/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	5. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	6. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	7. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	8. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	9. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	10. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	11. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	12. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	13. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	14. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	15. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	16. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	17. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	18. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	19. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	20. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	21. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	22. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	23. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	24. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	25. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	26. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	27. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	28. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	29. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:39:24.945681 +0200][Warning][XRootD            ] 	30. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+Begin processing the 1st record. Run 1, Event 1, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:19.550 CEST
+[2019-07-25 09:41:21.418856 +0200][Warning][XRootD            ] [se01.indiacms.res.in:1094] Redirect limit has been reached for message kXR_open (file: /store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root?tried=+se01.indiacms.re.cmslocal@se01.indiacms.res.in,dpms19.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in,se01.indiacms.res.in&triedrc=enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent,enoent, mode: 0660, flags: kXR_open_read kXR_async kXR_retstat ), the last known error is: [ERROR] Error response: No such file or directory
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] Redirect trace-back:
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	0. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	1. Redirected from: root://se01.indiacms.res.in:11011/ to: root://xrootd-cms.infn.it:1094/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	2. Redirected from: root://xrootd-cms.infn.it:1094/ to: root://se01.indiacms.res.in:11001/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	3. Redirected from: root://se01.indiacms.res.in:11001/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	4. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	5. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	6. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	7. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	8. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	9. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	10. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	11. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	12. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	13. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	14. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	15. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	16. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	17. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	18. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	19. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	20. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	21. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	22. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	23. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	24. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	25. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	26. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	27. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	28. Redirected from: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root to: root://se01.indiacms.res.in:11011/
+[2019-07-25 09:41:21.419222 +0200][Warning][XRootD            ] 	29. Redirected from: root://se01.indiacms.res.in:11011/ to: root://se01.indiacms.res.in:1094//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+corrSCEnergy 1.12e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.10e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.81e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.97e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.06e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.10e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:22 CEST Run: 1 Event: 1
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:22 CEST Run: 1 Event: 1
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 2nd record. Run 1, Event 2, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:31.347 CEST
+corrSCEnergy 6.95e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 6.61e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 6.02e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 5.74e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 6.51e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 6.51e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:31 CEST Run: 1 Event: 2
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:31 CEST Run: 1 Event: 2
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 3rd record. Run 1, Event 3, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:34.864 CEST
+corrSCEnergy 4.19e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.23e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.85e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.79e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.74e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.88e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:35 CEST Run: 1 Event: 3
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:35 CEST Run: 1 Event: 3
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 4th record. Run 1, Event 4, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:38.250 CEST
+corrSCEnergy 1.06e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.88e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.15e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 8.95e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.24e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.88e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:38 CEST Run: 1 Event: 4
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:38 CEST Run: 1 Event: 4
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 5th record. Run 1, Event 5, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:41.796 CEST
+corrSCEnergy 4.27e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.72e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.86e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.19e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.44e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.10e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:42 CEST Run: 1 Event: 5
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:42 CEST Run: 1 Event: 5
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 6th record. Run 1, Event 6, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:45.236 CEST
+corrSCEnergy 4.05e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.97e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.60e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.46e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.87e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.65e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:45 CEST Run: 1 Event: 6
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:45 CEST Run: 1 Event: 6
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 7th record. Run 1, Event 7, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:48.644 CEST
+corrSCEnergy 3.91e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.80e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.42e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.26e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.73e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.62e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:48 CEST Run: 1 Event: 7
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:48 CEST Run: 1 Event: 7
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 8th record. Run 1, Event 8, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:52.092 CEST
+corrSCEnergy 5.51e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 5.31e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.84e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.72e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.96e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 5.19e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:52 CEST Run: 1 Event: 8
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:52 CEST Run: 1 Event: 8
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 9th record. Run 1, Event 9, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:55.507 CEST
+corrSCEnergy 1.11e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.06e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.83e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.34e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.70e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.02e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:55 CEST Run: 1 Event: 9
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:55 CEST Run: 1 Event: 9
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 10th record. Run 1, Event 10, LumiSection 1 on stream 0 at 25-Jul-2019 09:41:59.079 CEST
+corrSCEnergy 3.69e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.70e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.31e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.22e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.42e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.33e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:59 CEST Run: 1 Event: 10
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:41:59 CEST Run: 1 Event: 10
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 11th record. Run 1, Event 11, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:02.507 CEST
+corrSCEnergy 1.30e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.30e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.15e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.17e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.23e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.23e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:02 CEST Run: 1 Event: 11
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:02 CEST Run: 1 Event: 11
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 12th record. Run 1, Event 12, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:06.116 CEST
+corrSCEnergy 8.24e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.28e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.07e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.15e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.10e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.17e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.20e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:06 CEST Run: 1 Event: 12
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:06 CEST Run: 1 Event: 12
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 13th record. Run 1, Event 13, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:08.850 CEST
+corrSCEnergy 8.68e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 8.94e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 7.94e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 7.74e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 8.47e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 8.73e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:09 CEST Run: 1 Event: 13
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:09 CEST Run: 1 Event: 13
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 14th record. Run 1, Event 14, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:14.394 CEST
+corrSCEnergy 5.08e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.74e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.19e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.59e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.71e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 4.59e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:14 CEST Run: 1 Event: 14
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:14 CEST Run: 1 Event: 14
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 15th record. Run 1, Event 15, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:17.227 CEST
+corrSCEnergy 6.21e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 6.01e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 5.56e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 5.39e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 5.81e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 5.67e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:17 CEST Run: 1 Event: 15
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:17 CEST Run: 1 Event: 15
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 16th record. Run 1, Event 16, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:20.772 CEST
+corrSCEnergy 1.00e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.70e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 7.98e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 8.52e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 8.96e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.21e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:21 CEST Run: 1 Event: 16
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:21 CEST Run: 1 Event: 16
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 17th record. Run 1, Event 17, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:23.537 CEST
+corrSCEnergy 1.41e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.42e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.29e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.26e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.14e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.26e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 2.41e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:23 CEST Run: 1 Event: 17
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:23 CEST Run: 1 Event: 17
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 18th record. Run 1, Event 18, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:27.068 CEST
+corrSCEnergy 3.76e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.66e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.33e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.11e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.39e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.47e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:27 CEST Run: 1 Event: 18
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:27 CEST Run: 1 Event: 18
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 19th record. Run 1, Event 19, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:29.827 CEST
+corrSCEnergy 1.13e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.05e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.00e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 9.45e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.05e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 1.04e+02, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:30 CEST Run: 1 Event: 19
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:30 CEST Run: 1 Event: 19
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+Begin processing the 20th record. Run 1, Event 20, LumiSection 1 on stream 0 at 25-Jul-2019 09:42:33.400 CEST
+corrSCEnergy 3.24e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 2.70e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 7.52e+00, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 2.85e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 2.01e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 6.15e+00, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 3.14e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 2.23e+01, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+corrSCEnergy 7.24e+00, corrPS1Energy 0.00e+00, corrPS2Energy 0.00e+00 
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:33 CEST Run: 1 Event: 20
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+%MSG-e PFEGammaProducer:  PFEGammaProducer:particleFlowEGamma  25-Jul-2019 09:42:33 CEST Run: 1 Event: 20
+PFBLOCKALGO BUG!!!! Found a SuperCluster in a block by itself!
+%MSG
+25-Jul-2019 09:42:37 CEST  Closed file root://se01.indiacms.res.in//store/user/sobhatta/SingleElectronFlatPtGun_pT-15_eta-1p5-3p0/crab_SingleElectronFlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-DIGI-RAW/190514_150429/0000/output_1.root
+
+=============================================
+
+MessageLogger Summary
+
+ type     category        sev    module        subroutine        count    total
+ ---- -------------------- -- ---------------- ----------------  -----    -----
+    1 PFEGammaProducer     -e PFEGammaProducer                      40       40
+    2 fileAction           -s file_close                             1        1
+    3 fileAction           -s file_open                              2        2
+
+ type    category    Examples: run/evt        run/evt          run/evt
+ ---- -------------------- ---------------- ---------------- ----------------
+    1 PFEGammaProducer     1/1              1/1              1/20
+    2 fileAction           PostGlobalEndRun                  
+    3 fileAction           pre-events       pre-events       
+
+Severity    # Occurrences   Total Occurrences
+--------    -------------   -----------------
+Error                  40                  40
+System                  3                   3
+
+dropped waiting message count 0

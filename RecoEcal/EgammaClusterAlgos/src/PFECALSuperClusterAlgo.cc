@@ -407,6 +407,7 @@ void PFECALSuperClusterAlgo::buildSuperCluster(CalibClusterPtr& seed, CalibClust
   posZ /= energyweighttot;
 
   // now build the supercluster
+  //printf("corrSCEnergy %0.2e, corrPS1Energy %0.2e, corrPS2Energy %0.2e \n", corrSCEnergy, corrPS1Energy, corrPS2Energy);
   reco::SuperCluster new_sc(corrSCEnergy, math::XYZPoint(posX, posY, posZ));
   new_sc.setCorrectedEnergy(corrSCEnergy);
   new_sc.setSeed(clustered.front()->the_ptr());

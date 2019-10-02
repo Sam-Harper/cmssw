@@ -1,0 +1,9 @@
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/7EB42C57-6FC7-6F44-B7ED-C9CA9DB1C8F4.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/F03BE45E-2071-3845-BC78-67B21D4D4030.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/64C9DFD9-0471-3447-83F2-9FFDB043C6AE.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/FECBF3B0-4304-874C-81D3-73BA0A9064E2.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/3B84AB97-597A-664B-86BD-85768C6F65F1.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/0D8F003D-771A-4F40-A50E-1A8F4D48F46D.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/E1BB0C52-F3C5-8949-926B-10BC44571578.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/2D332C4A-0BA4-5F44-9588-FDB188B22934.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_patch2/RelValZEE_14/GEN-SIM-DIGI-RAW/106X_upgrade2023_realistic_v3_2023D41noPU-v1/10000/B26AC61B-DA6F-B148-9FAB-143D0ED18869.root

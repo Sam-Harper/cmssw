@@ -25,22 +25,8 @@ void PFClusterFromHGCalMultiCluster::buildClusters(const edm::Handle<reco::PFRec
     double energy = 0.0, highest_energy = 0.0;
     output.emplace_back();
     reco::PFCluster& back = output.back();
-    //for (const auto& cl : mcl) {
-      //const auto& hitsAndFractions = cl->hitsAndFractions();
-      const auto& hitsAndFractions_mcl = mcl.hitsAndFractions();
-      
-      std::vector <std::pair <DetId, float> > hitsAndFractions;
-      hitsAndFractions.insert(hitsAndFractions.end(), hitsAndFractions_mcl.begin(), hitsAndFractions_mcl.end());
-
-      if(!hitsAndFractions.size())
-      {
-        for (const auto& cl : mcl) 
-        {
-            const auto& hAndF_temp = cl->hitsAndFractions();
-            hitsAndFractions.insert(hitsAndFractions.end(), hAndF_temp.begin(), hAndF_temp.end());
-        }
-      }
-      
+    for (const auto& cl : mcl) {
+      const auto& hitsAndFractions = cl->hitsAndFractions();
       for (const auto& hAndF : hitsAndFractions) {
         auto itr = detIdToIndex.find(hAndF.first);
         if (itr == detIdToIndex.end()) {
@@ -60,7 +46,7 @@ void PFClusterFromHGCalMultiCluster::buildClusters(const edm::Handle<reco::PFRec
           seed = ref->detId();
         }
       }  // end of hitsAndFractions
-    //}    // end of loop over clusters (2D/layer)
+    }    // end of loop over clusters (2D/layer)
     if (energy <= 1) {
       output.pop_back();
       continue;
