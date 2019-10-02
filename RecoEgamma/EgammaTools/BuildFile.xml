@@ -2,6 +2,7 @@
 <use   name="DataFormats/HcalRecHit"/>
 <use   name="DataFormats/EgammaReco"/>
 <use   name="DataFormats/EgammaCandidates"/>
+<use   name="DataFormats/PatCandidates"/>
 <use   name="Geometry/CaloGeometry"/>
 <use   name="FastSimulation/CaloGeometryTools"/>
 <use   name="RecoLocalCalo/HGCalRecAlgos"/>
