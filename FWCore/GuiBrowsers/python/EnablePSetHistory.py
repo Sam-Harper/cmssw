@@ -64,6 +64,8 @@ cms.Process.resetModifiedObjects=new_resetModifiedObjects
 def new__place(self, name, mod, d):
     self.old__place(name, mod, d)
     if self._okToPlace(name, mod, d):
+        if '_Process__modifiedobjects' not in self.__dict__:
+            self.__dict__['_Process__modifiedobjects'] = []
         self.__dict__['_Process__modifiedobjects'].append(mod)
 cms.Process.old__place=cms.Process._place
 cms.Process._place=new__place
