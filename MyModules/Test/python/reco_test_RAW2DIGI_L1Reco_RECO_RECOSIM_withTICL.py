@@ -221,3 +221,19 @@ process = customiseLogErrorHarvesterUsingOutputCommands(process)
 #process = customiseEarlyDelete(process)
 # End adding early deletion
 
+def customiseForHLT(process):
+    process.particleFlowSuperClusterHGCalFromTICL.BeamSpot = "hltOnlineBeamSpot"
+    process.particleFlowSuperClusterHGCalFromTICL.regressionConfig = cms.PSet(
+        uncertaintyKeyEB = cms.string( "pfscecal_EBUncertainty_online" ),
+        ecalRecHitsEE = cms.InputTag( 'hltEcalRecHit','EcalRecHitsEE' ),
+        ecalRecHitsEB = cms.InputTag( 'hltEcalRecHit','EcalRecHitsEB' ),
+        regressionKeyEE = cms.string( "pfscecal_EECorrection_online" ),
+        regressionKeyEB = cms.string( "pfscecal_EBCorrection_online" ),
+        uncertaintyKeyEE = cms.string( "pfscecal_EEUncertainty_online" ),
+        isHLT = cms.bool( True )
+    )
+    process.ticlSeedingGlobal.tracks = cms.InputTag("")
+    process.particleFlowSuperClusterHGCalFromTICL.ESAssociation = cms.InputTag("")
+    return process
+
+process = customiseForHLT(process)
