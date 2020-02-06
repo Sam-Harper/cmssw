@@ -8,7 +8,7 @@
 
 class GEDGsfElectronProducer : public GsfElectronBaseProducer {
 public:
-  explicit GEDGsfElectronProducer(const edm::ParameterSet&, const GsfElectronAlgo::HeavyObjectCache*);
+  explicit GEDGsfElectronProducer(const edm::ParameterSet&, const gsfAlgoHelpers::HeavyObjectCache*);
   void produce(edm::Event&, const edm::EventSetup&) override;
 
 private:
@@ -20,7 +20,7 @@ private:
   void fillGsfElectronValueMap(edm::Event& event, edm::ValueMap<reco::GsfElectronRef>::Filler& filler);
   void matchWithPFCandidates(edm::Event& event);
   void setMVAOutputs(reco::GsfElectronCollection& electrons,
-                     const GsfElectronAlgo::HeavyObjectCache*,
+                     const gsfAlgoHelpers::HeavyObjectCache*,
                      const std::map<reco::GsfTrackRef, reco::GsfElectron::MvaOutput>& mvaOutputs,
                      reco::VertexCollection const& vertices) const;
 };

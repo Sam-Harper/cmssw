@@ -59,14 +59,73 @@ namespace {
                         const CalibClusterPtr& seed,
                         const double threshold,
                         const double majority,
-                        const double maxDEta,
-                        const double maxDPhi) {
+                        double maxDEta,
+                        double maxDPhi) {
+    
+    //printf("Entering isLinkedByRecHit(...). \n");
+    
     if (seed->energy_nocalib() < threshold) {
+      //printf("\t seed->energy_nocalib() < threshold \n");
+      //printf("Leaving isLinkedByRecHit(...). \n");
       return false;
     }
-    const double dEta = std::abs(seed->eta() - x->eta());
-    const double dPhi = std::abs(TVector2::Phi_mpi_pi(seed->phi() - x->phi()));
+    const double dEta = std::fabs(seed->eta() - x->eta());
+    const double dPhi = std::fabs(TVector2::Phi_mpi_pi(seed->phi() - x->phi()));
+    
+    //printf("\t seed E %0.2f (%0.2f), eta %+0.2f, sat E %0.2f, dEta %0.2f (%0.2f), dPhi %0.2f (%0.2f) \n",
+    //    seed->energy_nocalib(), threshold, seed->eta(), x->energy(), dEta, maxDEta, dPhi, maxDPhi
+    //);
+    
+    //double absSeedEta = std::fabs(seed->eta());
+    //
+    //int etaBin = ((int)(absSeedEta >= 1.479) + (int)(absSeedEta >= 1.75) + (int)(absSeedEta >= 2.0));
+    //
+    //switch (etaBin) {
+    //     case 0:  // EB
+    //       //yoffset = yoffsetEB;
+    //       //scale = scaleEB;
+    //       //xoffset = xoffsetEB;
+    //       //width = 1.0 / widthEB;
+    //       //saturation = 0.14;
+    //       maxDPhi = 0.60;
+    //       break;
+    //     case 1:  // 1.479 -> 1.75
+    //       //yoffset = yoffsetEE_0;
+    //       //scale = scaleEE_0;
+    //       //xoffset = xoffsetEE_0;
+    //       //width = 1.0 / widthEE_0;
+    //       //saturation = 0.14;
+    //       maxDPhi = 0.55;
+    //       break;
+    //     case 2:  // 1.75 -> 2.0
+    //       //yoffset = yoffsetEE_1;
+    //       //scale = scaleEE_1;
+    //       //xoffset = xoffsetEE_1;
+    //       //width = 1.0 / widthEE_1;
+    //       //saturation = 0.12;
+    //       maxDPhi = 0.45;
+    //       break;
+    //     case 3:  // 2.0 and up
+    //       //yoffset = yoffsetEE_2;
+    //       //scale = scaleEE_2;
+    //       //xoffset = xoffsetEE_2;
+    //       //width = 1.0 / widthEE_2;
+    //       //saturation = 0.12;
+    //       maxDPhi = 0.30;
+    //       break;
+    //     default:
+    //       throw cms::Exception("InValidEtaBin")
+    //           << "Calculated invalid eta bin = " << etaBin << " in \"inDynamicDPhiWindow\"" << std::endl;
+    //}
+    
+    //bool inDynPhi = reco::MustacheKernel::inDynamicDPhiWindow(
+    //    seed->eta(), seed->phi(), x->energy_nocalib(), x->eta(), x->phi()
+    //);
+    
     if (maxDEta < dEta || maxDPhi < dPhi) {
+    //if (maxDEta < dEta || !inDynPhi) {
+      //printf("\t maxDEta < dEta || maxDPhi < dPhi \n");
+      //printf("Leaving isLinkedByRecHit(...). \n");
       return false;
     }
     // now see if the clusters overlap in rechits
@@ -81,6 +140,10 @@ namespace {
         }
       }
     }
+    
+    //printf("\t x_rechits_match %d, x_rechits_tot %d, ratio %0.2f (%0.2f) \n", (int) x_rechits_match, (int) x_rechits_tot, x_rechits_match/x_rechits_tot, majority);
+    //printf("Leaving isLinkedByRecHit(...). \n");
+    
     return x_rechits_match / x_rechits_tot > majority;
   }
 
@@ -88,19 +151,72 @@ namespace {
                    const CalibClusterPtr seed,
                    const PFECALSuperClusterAlgo::clustering_type type,
                    const bool dyn_dphi,
+                   const bool useHGCalParam,
                    const double etawidthSuperCluster,
-                   const double phiwidthSuperCluster) {
-    const double dphi = std::abs(TVector2::Phi_mpi_pi(seed->phi() - x->phi()));
+                   double phiwidthSuperCluster) {
+    
+    //printf("Entering isClustered(...). \n");
+    
+    const double dphi = std::fabs(TVector2::Phi_mpi_pi(seed->phi() - x->phi()));
+    
+    //double absSeedEta = std::fabs(seed->eta());
+    //
+    //int etaBin = ((int)(absSeedEta >= 1.479) + (int)(absSeedEta >= 1.75) + (int)(absSeedEta >= 2.0));
+    //
+    //switch (etaBin) {
+    //    case 0:  // EB
+    //      //yoffset = yoffsetEB;
+    //      //scale = scaleEB;
+    //      //xoffset = xoffsetEB;
+    //      //width = 1.0 / widthEB;
+    //      //saturation = 0.14;
+    //      phiwidthSuperCluster = 0.60;
+    //      break;
+    //    case 1:  // 1.479 -> 1.75
+    //      //yoffset = yoffsetEE_0;
+    //      //scale = scaleEE_0;
+    //      //xoffset = xoffsetEE_0;
+    //      //width = 1.0 / widthEE_0;
+    //      //saturation = 0.14;
+    //      phiwidthSuperCluster = 0.55;
+    //      break;
+    //    case 2:  // 1.75 -> 2.0
+    //      //yoffset = yoffsetEE_1;
+    //      //scale = scaleEE_1;
+    //      //xoffset = xoffsetEE_1;
+    //      //width = 1.0 / widthEE_1;
+    //      //saturation = 0.12;
+    //      phiwidthSuperCluster = 0.45;
+    //      break;
+    //    case 3:  // 2.0 and up
+    //      //yoffset = yoffsetEE_2;
+    //      //scale = scaleEE_2;
+    //      //xoffset = xoffsetEE_2;
+    //      //width = 1.0 / widthEE_2;
+    //      //saturation = 0.12;
+    //      phiwidthSuperCluster = 0.30;
+    //      break;
+    //    default:
+    //      throw cms::Exception("InValidEtaBin")
+    //          << "Calculated invalid eta bin = " << etaBin << " in \"inDynamicDPhiWindow\"" << std::endl;
+    //}
+    
     const bool passes_dphi = ((!dyn_dphi && dphi < phiwidthSuperCluster) ||
                               (dyn_dphi && reco::MustacheKernel::inDynamicDPhiWindow(
-                                               seed->eta(), seed->phi(), x->energy_nocalib(), x->eta(), x->phi())));
-
+                                               seed->eta(), seed->phi(), x->energy_nocalib(), x->eta(), x->phi(), useHGCalParam)));
+    
     if (type == PFECALSuperClusterAlgo::kBOX) {
-      return (std::abs(seed->eta() - x->eta()) < etawidthSuperCluster && passes_dphi);
+      return (std::fabs(seed->eta() - x->eta()) < etawidthSuperCluster && passes_dphi);
     }
     if (type == PFECALSuperClusterAlgo::kMustache) {
-      return (passes_dphi &&
-              reco::MustacheKernel::inMustache(seed->eta(), seed->phi(), x->energy_nocalib(), x->eta(), x->phi()));
+      
+      bool isInMustache = reco::MustacheKernel::inMustache(seed->eta(), seed->phi(), x->energy_nocalib(), x->eta(), x->phi());
+      
+      //printf("\t seed E %0.2f, eta %+0.2f, clus E %0.2f, eta %+0.2f, passes_dphi %d, isInMustache %d \n",
+      //  seed->energy_nocalib(), seed->eta(), x->energy(), x->eta(), passes_dphi, isInMustache
+      //);
+      
+      return (passes_dphi && isInMustache);
     }
     return false;
   }
@@ -193,7 +309,8 @@ void PFECALSuperClusterAlgo::loadAndSortPFClusters(const edm::Event& iEvent) {
         break;
       case PFLayer::HGCAL:
       case PFLayer::ECAL_ENDCAP:
-        if (calib_cluster->energy() > threshPFClusterEndcap_) {
+        if (calib_cluster->energy() > threshPFClusterEndcap_)
+        {
           _clustersEE.push_back(calib_cluster);
         }
         break;
@@ -227,10 +344,68 @@ void PFECALSuperClusterAlgo::loadAndSortPFClusters(const edm::Event& iEvent) {
 }
 
 void PFECALSuperClusterAlgo::run() {
+  
+  //double clusTotE_EEP = 0;
+  //double clusTotE_EEM = 0;
+  //
+  //double clusUncalibTotE_EEP = 0;
+  //double clusUncalibTotE_EEM = 0;
+  //
+  //for(int iClus = 0; iClus < (int) _clustersEE.size(); iClus++)
+  //{
+  //    auto clus = _clustersEE.at(iClus);
+  //    
+  //    if(clus->eta() > 0)
+  //    {
+  //      clusTotE_EEP += clus->energy();
+  //      clusUncalibTotE_EEP += clus->energy_nocalib();
+  //    }
+  //    
+  //    else
+  //    {
+  //      clusTotE_EEM += clus->energy();
+  //      clusUncalibTotE_EEM += clus->energy_nocalib();
+  //    }
+  //}
+  //
+  //printf("Before SCing: clusTotE_EEP %0.2f (%0.2f), clusTotE_EEM %0.2f (%0.2f) \n", clusTotE_EEP, clusUncalibTotE_EEP, clusTotE_EEM, clusUncalibTotE_EEM);
+  
+  
   // clusterize the EB
+  //printf("********** Building EB superclusters (seed ET > %0.2f) ********** \n", threshPFClusterSeedBarrel_);
   buildAllSuperClusters(_clustersEB, threshPFClusterSeedBarrel_);
+  //printf("\n\n");
+  
   // clusterize the EE
+  //printf("********** Building EE superclusters (seed ET > %0.2f) ********** \n", threshPFClusterSeedEndcap_);
   buildAllSuperClusters(_clustersEE, threshPFClusterSeedEndcap_);
+  //printf("\n\n");
+  
+  
+  //clusTotE_EEP = 0;
+  //clusTotE_EEM = 0;
+  //
+  //clusUncalibTotE_EEP = 0;
+  //clusUncalibTotE_EEM = 0;
+  //
+  //for(int iClus = 0; iClus < (int) _clustersEE.size(); iClus++)
+  //{
+  //    auto clus = _clustersEE.at(iClus);
+  //    
+  //    if(clus->eta() > 0)
+  //    {
+  //      clusTotE_EEP += clus->energy();
+  //      clusUncalibTotE_EEP += clus->energy_nocalib();
+  //    }
+  //    
+  //    else
+  //    {
+  //      clusTotE_EEM += clus->energy();
+  //      clusUncalibTotE_EEM += clus->energy_nocalib();
+  //    }
+  //}
+  //
+  //printf("After SCing: clusTotE_EEP %0.2f (%0.2f), clusTotE_EEM %0.2f (%0.2f) \n", clusTotE_EEP, clusUncalibTotE_EEP, clusTotE_EEM, clusUncalibTotE_EEM);
 }
 
 void PFECALSuperClusterAlgo::buildAllSuperClusters(CalibClusterPtrVector& clusters, double seedthresh) {
@@ -241,8 +416,28 @@ void PFECALSuperClusterAlgo::buildAllSuperClusters(CalibClusterPtrVector& cluste
   // in the cluster energy and remains so through each iteration
   // NB: since clusters is sorted in loadClusters any_of has O(1)
   //     timing until you run out of seeds!
+  
+  int nSCiter = 0;
   while (std::any_of(clusters.cbegin(), clusters.cend(), seedable)) {
+    
+    std::string tab;
+    
+    for(int i = 0; i < std::min(nSCiter, 20); i++)
+    {
+        tab = std::string("  ") + tab;
+    }
+    
+    //printf("%sStarting SC iter %d: nCluster %d, seed ET %0.2f \n",
+    //    tab.c_str(), nSCiter, (int) clusters.size(), ptFast(clusters.front()->the_ptr()->energy(), clusters.front()->the_ptr()->position(), math::XYZPoint(0, 0, 0))
+    //);
+    
     buildSuperCluster(clusters.front(), clusters);
+    
+    //printf("%sFinished SC iter %d: nCluster %d, seed ET %0.2f \n",
+    //    tab.c_str(), nSCiter, (int) clusters.size(), ptFast(clusters.front()->the_ptr()->energy(), clusters.front()->the_ptr()->position(), math::XYZPoint(0, 0, 0))
+    //);
+    
+    nSCiter++;
   }
 }
 
@@ -269,8 +464,9 @@ void PFECALSuperClusterAlgo::buildSuperCluster(CalibClusterPtr& seed, CalibClust
       break;
   }
   auto isClusteredWithSeed =
-      std::bind(isClustered, _1, seed, _clustype, useDynamicDPhi_, etawidthSuperCluster, phiwidthSuperCluster);
+      std::bind(isClustered, _1, seed, _clustype, useDynamicDPhi_, useHGCalParam_, etawidthSuperCluster, phiwidthSuperCluster);
   auto matchesSeedByRecHit = std::bind(isLinkedByRecHit, _1, seed, satelliteThreshold_, fractionForMajority_, 0.1, 0.2);
+  //auto matchesSeedByRecHit = std::bind(isLinkedByRecHit, _1, seed, satelliteThreshold_, fractionForMajority_, 0.2, 0.4);
 
   // this function shuffles the list of clusters into a list
   // where all clustered sub-clusters are at the front
@@ -407,12 +603,16 @@ void PFECALSuperClusterAlgo::buildSuperCluster(CalibClusterPtr& seed, CalibClust
   posZ /= energyweighttot;
 
   // now build the supercluster
+  //printf("corrSCEnergy %0.2e, corrPS1Energy %0.2e, corrPS2Energy %0.2e \n", corrSCEnergy, corrPS1Energy, corrPS2Energy);
   reco::SuperCluster new_sc(corrSCEnergy, math::XYZPoint(posX, posY, posZ));
   new_sc.setCorrectedEnergy(corrSCEnergy);
   new_sc.setSeed(clustered.front()->the_ptr());
   new_sc.setPreshowerEnergy(corrPS1Energy + corrPS2Energy);
   new_sc.setPreshowerEnergyPlane1(corrPS1Energy);
   new_sc.setPreshowerEnergyPlane2(corrPS2Energy);
+  
+  //printf("Stage start: new_sc: E %0.2f, eta %+0.2f, \n", new_sc.energy(), new_sc.eta());
+  
   for (const auto& clus : clustered) {
     new_sc.addCluster(clus->the_ptr());
 
@@ -445,7 +645,9 @@ void PFECALSuperClusterAlgo::buildSuperCluster(CalibClusterPtr& seed, CalibClust
       }
     }
   }
-
+  
+  //printf("\t Stage 2: new_sc: E %0.2f, eta %+0.2f, \n", new_sc.energy(), new_sc.eta());
+  
   // calculate linearly weighted cluster widths
   PFClusterWidthAlgo pfwidth(bare_ptrs);
   new_sc.setEtaWidth(pfwidth.pflowEtaWidth());
@@ -458,7 +660,9 @@ void PFECALSuperClusterAlgo::buildSuperCluster(CalibClusterPtr& seed, CalibClust
   if (useRegression_) {
     regr_->modifyObject(new_sc);
   }
-
+  
+  //printf("\t Stage 3: new_sc: E %0.2f, eta %+0.2f, \n", new_sc.energy(), new_sc.eta());
+  
   // save the super cluster to the appropriate list (if it passes the final
   // Et threshold)
   //Note that Et is computed here with respect to the beamspot position
@@ -467,6 +671,9 @@ void PFECALSuperClusterAlgo::buildSuperCluster(CalibClusterPtr& seed, CalibClust
   double scEtBS = ptFast(new_sc.energy(), new_sc.position(), beamSpot_->position());
 
   if (scEtBS > threshSuperClusterEt_) {
+    
+    //printf("\t SC passed ET threshold. \n");
+    
     switch (seed->the_ptr()->layer()) {
       case PFLayer::ECAL_BARREL:
         if (isOOTCollection_) {
@@ -478,17 +685,25 @@ void PFECALSuperClusterAlgo::buildSuperCluster(CalibClusterPtr& seed, CalibClust
         superClustersEB_->push_back(new_sc);
         break;
       case PFLayer::HGCAL:
+        //printf("\t SC is in HGCAL \n");
       case PFLayer::ECAL_ENDCAP:
+        //printf("\t SC is in ECAL_ENDCAP \n");
         if (isOOTCollection_) {
           DetId seedId = new_sc.seed()->seed();
           EcalRecHitCollection::const_iterator seedRecHit = endcapRecHits_->find(seedId);
           if (!seedRecHit->checkFlag(EcalRecHit::kOutOfTime))
+          {
+            //printf("\t SC is OOT. \n");
             break;
+          }
         }
+        //printf("\t Adding SC to list. \n");
         superClustersEE_->push_back(new_sc);
         break;
       default:
         break;
     }
   }
+  
+  //printf("Stage end: new_sc: E %0.2f, ET %0.2f (%0.2f), eta %+0.2f, \n", new_sc.energy(), scEtBS, threshSuperClusterEt_, new_sc.eta());
 }

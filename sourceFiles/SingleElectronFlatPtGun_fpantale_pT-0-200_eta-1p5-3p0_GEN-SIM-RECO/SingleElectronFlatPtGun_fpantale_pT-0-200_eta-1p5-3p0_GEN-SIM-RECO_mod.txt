@@ -1,0 +1,1 @@
+file:/eos/cms/store/group/phys_egamma/sobhatta/out_GEN-SIM-RECO_10k_1p5_3p0_1_200GeV_01.root

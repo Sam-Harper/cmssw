@@ -81,6 +81,8 @@ PFECALSuperClusterProducer::PFECALSuperClusterProducer(const edm::ParameterSet& 
 
   bool useDynamicDPhi = iConfig.getParameter<bool>("useDynamicDPhiWindow");
 
+  bool useHGCalParam = iConfig.getParameter<bool>("useHGCalParam");
+
   double threshPFClusterSeedBarrel = iConfig.getParameter<double>("thresh_PFClusterSeedBarrel");
   double threshPFClusterBarrel = iConfig.getParameter<double>("thresh_PFClusterBarrel");
 
@@ -106,6 +108,7 @@ PFECALSuperClusterProducer::PFECALSuperClusterProducer(const edm::ParameterSet& 
   superClusterAlgo_.setEnergyWeighting(_theenergyweight);
   superClusterAlgo_.setUseETForSeeding(seedThresholdIsET);
   superClusterAlgo_.setUseDynamicDPhi(useDynamicDPhi);
+  superClusterAlgo_.setUseHGCalParam(useHGCalParam);
 
   superClusterAlgo_.setThreshSuperClusterEt(iConfig.getParameter<double>("thresh_SCEt"));
 
@@ -190,28 +193,61 @@ void PFECALSuperClusterProducer::produce(edm::Event& iEvent, const edm::EventSet
       }
     }
   }
+  
+  int nEESC = 0;
+  
   for (const auto& eesc : *(superClusterAlgo_.getEEOutputSCCollection())) {
+    
+    double caloClusTotE = 0;
+    
     for (reco::CaloCluster_iterator pfclus = eesc.clustersBegin(); pfclus != eesc.clustersEnd(); ++pfclus) {
       if (!pfClusterMapEE.count(*pfclus)) {
         reco::CaloCluster caloclus(**pfclus);
         caloClustersEE->push_back(caloclus);
         pfClusterMapEE[*pfclus] = caloClustersEE->size() - 1;
+        caloClusTotE += caloclus.energy();
       } else {
         throw cms::Exception("PFECALSuperClusterProducer::produce")
             << "Found an EE pfcluster matched to more than one EE supercluster!" << std::dec << std::endl;
       }
     }
+    
+    double PSclusTotE = 0;
+    
     for (reco::CaloCluster_iterator pfclus = eesc.preshowerClustersBegin(); pfclus != eesc.preshowerClustersEnd();
          ++pfclus) {
       if (!pfClusterMapES.count(*pfclus)) {
         reco::CaloCluster caloclus(**pfclus);
         caloClustersES->push_back(caloclus);
         pfClusterMapES[*pfclus] = caloClustersES->size() - 1;
+        PSclusTotE += caloclus.energy();
       } else {
         throw cms::Exception("PFECALSuperClusterProducer::produce")
             << "Found an ES pfcluster matched to more than one EE supercluster!" << std::dec << std::endl;
       }
     }
+    
+    //printf(
+    //    "EESC %d: "
+    //    "E %0.2f, "
+    //    //"rawE %0.2f, "
+    //    //"corrE %0.2f, "
+    //    "eta %+0.2f, "
+    //    "size %d, "
+    //    "caloClusTotE %0.2f, "
+    //    "PSclusTotE %0.2f, "
+    //    "\n",
+    //    nEESC+1,
+    //    eesc.energy(),
+    //    //eesc.rawEnergy(),
+    //    //eesc.correctedEnergy(),
+    //    eesc.eta(),
+    //    (int) eesc.size(),
+    //    caloClusTotE,
+    //    PSclusTotE
+    //);
+    
+    nEESC++;
   }
 
   //create ValueMaps from output CaloClusters back to original PFClusters
@@ -302,6 +338,7 @@ void PFECALSuperClusterProducer::fillDescriptions(edm::ConfigurationDescriptions
   desc.add<double>("thresh_SCEt", 4.0);
   desc.add<double>("etawidth_SuperClusterEndcap", 0.04);
   desc.add<double>("phiwidth_SuperClusterEndcap", 0.6);
+  desc.add<bool>("useHGCalParam", false);
   desc.add<bool>("useDynamicDPhiWindow", true);
   desc.add<std::string>("PFSuperClusterCollectionBarrel", "particleFlowSuperClusterECALBarrel");
   {

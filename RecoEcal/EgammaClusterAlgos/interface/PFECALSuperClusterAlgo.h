@@ -74,6 +74,8 @@ public:
   void setUseETForSeeding(bool useET) { threshIsET_ = useET; }
 
   void setUseDynamicDPhi(bool useit) { useDynamicDPhi_ = useit; }
+  
+  void setUseHGCalParam(bool useit) { useHGCalParam_ = useit; }
 
   void setUseRegression(bool useRegression) { useRegression_ = useRegression; }
 
@@ -152,6 +154,8 @@ private:
   bool dropUnseedable_;
 
   bool useDynamicDPhi_;
+  
+  bool useHGCalParam_;
 
   bool applyCrackCorrections_;
   bool threshIsET_;

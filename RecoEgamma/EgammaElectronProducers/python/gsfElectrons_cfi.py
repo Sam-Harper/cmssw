@@ -8,7 +8,8 @@ from RecoEgamma.EgammaIsolationAlgos.electronTrackIsolations_cfi import trkIsol0
 # Producer of transient ecal driven gsf electrons
 #==============================================================================
 
-ecalDrivenGsfElectrons = cms.EDProducer("GsfElectronBaseProducer",
+ecalDrivenGsfElectrons = cms.EDProducer("GsfElectronEcalDrivenProducer",
+#ecalDrivenGsfElectrons = cms.EDProducer("GsfElectronBaseProducer",
 
     # input collections
     previousGsfElectronsTag = cms.InputTag(""),
@@ -25,7 +26,9 @@ ecalDrivenGsfElectrons = cms.EDProducer("GsfElectronBaseProducer",
     applyAmbResolution = cms.bool(False),
     useEcalRegression = cms.bool(False),
     useCombinationRegression = cms.bool(False),
-
+    
+    #useDefaultEnergyCorrection = cms.bool(True),
+    
     # preselection parameters (ecal driven electrons)
     preselection = cms.PSet(
         minSCEtBarrel = cms.double(4.0),
@@ -117,11 +120,3 @@ gsfElectrons = cms.EDProducer("GsfElectronProducer",
 ecalDrivenGsfElectronsFromMultiCl = ecalDrivenGsfElectrons.clone(
   gsfElectronCoresTag = "ecalDrivenGsfElectronCoresFromMultiCl",
 )
-
-from Configuration.ProcessModifiers.egamma_lowPt_exclusive_cff import egamma_lowPt_exclusive
-egamma_lowPt_exclusive.toModify(gsfElectrons.preselection,
-                           minSCEtBarrel = 1.0, 
-                           minSCEtEndcaps = 1.0) 
-
-egamma_lowPt_exclusive.toModify(gsfElectrons,
-                           applyPreselection = False) 

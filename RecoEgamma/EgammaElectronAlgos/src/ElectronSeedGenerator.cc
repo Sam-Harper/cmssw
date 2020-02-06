@@ -283,10 +283,16 @@ void ElectronSeedGenerator::seedsFromThisCluster(edm::Ref<reco::SuperClusterColl
 
     // try electron
     auto elePixelSeeds = electronMatcher_(*initialSeedCollectionVector_, clusterPos, vertexPos, clusterEnergy, -1.);
+    //printf("\t seedsFromThisCluster electron (before seedsFromTrajectorySeeds): elePixelSeeds.size() %d, out.size() %d \n", (int) elePixelSeeds.size(), (int) out.size());
     seedsFromTrajectorySeeds(elePixelSeeds, caloCluster, out, false);
+    //printf("\t seedsFromThisCluster electron (after  seedsFromTrajectorySeeds): elePixelSeeds.size() %d, out.size() %d \n", (int) elePixelSeeds.size(), (int) out.size());
+    
+    
     // try positron
     auto posPixelSeeds = positronMatcher_(*initialSeedCollectionVector_, clusterPos, vertexPos, clusterEnergy, 1.);
+    //printf("\t seedsFromThisCluster positron (before seedsFromTrajectorySeeds): elePixelSeeds.size() %d, out.size() %d \n", (int) elePixelSeeds.size(), (int) out.size());
     seedsFromTrajectorySeeds(posPixelSeeds, caloCluster, out, true);
+    //printf("\t seedsFromThisCluster positron (after  seedsFromTrajectorySeeds): elePixelSeeds.size() %d, out.size() %d \n", (int) elePixelSeeds.size(), (int) out.size());
 
   } else if (vertices)  // here we use the reco vertices
   {

@@ -4,6 +4,7 @@
 #include "FWCore/Utilities/interface/typelookup.h"
 #include "GsfElectronCoreEcalDrivenProducer.h"
 #include "GsfElectronCoreProducer.h"
+#include "GsfElectronBaseProducer.h"
 #include "GsfElectronProducer.h"
 
 #include "GEDGsfElectronCoreProducer.h"
@@ -12,6 +13,7 @@
 
 DEFINE_FWK_MODULE(GsfElectronCoreEcalDrivenProducer);
 DEFINE_FWK_MODULE(GsfElectronCoreProducer);
+DEFINE_FWK_MODULE(GsfElectronBaseProducer);
 DEFINE_FWK_MODULE(GsfElectronProducer);
 DEFINE_FWK_MODULE(GEDGsfElectronCoreProducer);
 DEFINE_FWK_MODULE(GEDGsfElectronProducer);

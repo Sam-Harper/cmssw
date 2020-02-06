@@ -1,0 +1,9 @@
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/E97A8B61-DE53-B945-9ACA-672AE82989ED.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/8F100A0F-0A0A-E24D-AF1D-D77B9BEE44F9.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/1E88534E-AA94-004E-8298-436DA552DDCC.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/01D3E17A-0A1E-554A-8550-52E8BE89A3CC.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/65A474EC-0161-9143-A30B-7A131D3EB672.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/A9DDDB83-A48D-A646-98E0-47006FDB2087.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/2B9630F8-F48C-6F40-B3B0-9841640E0E16.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/35093E27-8A04-9949-921B-54C61A98DAAA.root
+root://cms-xrd-global.cern.ch//store/relval/CMSSW_10_6_0_pre4/RelValElectronGunPt2To100/GEN-SIM-RECO/106X_upgrade2023_realistic_v2_2023D41noPU-v1/10000/A2DDCE05-A15E-5E44-BEC6-6D304831CDC8.root

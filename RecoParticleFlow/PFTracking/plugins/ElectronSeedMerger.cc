@@ -117,6 +117,8 @@ void ElectronSeedMerger::produce(Event& iEvent, const EventSetup& iSetup) {
     if (!TSeedMatched[it])
       output->push_back(TSeed[it]);
   }
+  
+  printf("ElectronSeedMerger: output->size() %d \n", (int) output->size());
 
   //PUT THE MERGED COLLECTION IN THE EVENT
   iEvent.put(std::move(output));

@@ -172,10 +172,18 @@ void ElectronSeedProducer::produce(edm::Event& e, const edm::EventSetup& iSetup)
 
   auto seeds = std::make_unique<ElectronSeedCollection>();
   auto const& beamSportPosition = e.get(beamSpotTag_).position();
-
+  
+  //printf("ElectronSeedProducer: initialSeedCollections.size() before calo seeds: %d, seeds.size() %d \n", (int) initialSeedCollections.size(), (int) seeds->size());
+  
   // loop over barrel + endcap
   for (unsigned int i = 0; i < 2; i++) {
     auto clusterRefs = filterClusters(beamSportPosition, e.getHandle(superClusters_[i]));
+    
+    //if(i == 1)
+    {
+        //printf("ElectronSeedProducer: calo[%d] clusterRefs.size() %d \n", (int) i, (int) clusterRefs.size());
+    }
+    
     if (prefilteredSeeds_) {
       for (auto const& sclRef : clusterRefs) {
         seedFilter_->seeds(e, iSetup, sclRef, initialSeedCollectionPtr.get());
@@ -183,7 +191,24 @@ void ElectronSeedProducer::produce(edm::Event& e, const edm::EventSetup& iSetup)
         LogDebug("ElectronSeedProducer") << "Number of Seeds: " << initialSeedCollections.back()->size();
       }
     }
+    
+    //printf("ElectronSeedProducer: initialSeedCollections.size() after calo seeds: %d, seeds.size() %d \n", (int) initialSeedCollections.size(), (int) seeds->size());
+    
     matcher_->run(e, iSetup, clusterRefs, initialSeedCollections, *seeds);
+    
+    //printf("ElectronSeedProducer: initialSeedCollections.size() after calo[%d] seeds, after matching: %d, seeds.size() %d \n", (int) i, (int) initialSeedCollections.size(), (int) seeds->size());
+  }
+  
+  int nSeed = 0;
+  for (auto const& seed : *seeds) {
+    nSeed++;
+    SuperClusterRef superCluster = seed.caloCluster().castTo<SuperClusterRef>();
+    /*std::cout << "ElectronSeedProducer: " << "seed " << nSeed << " with " << seed.nHits() << " hits"
+                                     << ", charge " << seed.getCharge() << " and cluster energy "
+                                     << superCluster->energy() << " PID " << superCluster.id()
+                                     << " isTrackerDriven " << seed.isTrackerDriven()
+                                     << " isEcalDriven " << seed.isEcalDriven()
+                                     << "\n";*/
   }
 
   // store the accumulated result

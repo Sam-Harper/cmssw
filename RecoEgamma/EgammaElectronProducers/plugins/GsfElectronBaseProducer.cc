@@ -73,6 +73,8 @@ void GsfElectronBaseProducer::fillDescriptions(edm::ConfigurationDescriptions& d
   desc.add<unsigned int>("ambClustersOverlapStrategy", 1);
   desc.add<bool>("addPflowElectrons", true);  // this one should be transfered to the "core" level
   desc.add<bool>("fillConvVtxFitProb", true);
+  
+  desc.add<bool>("useDefaultEnergyCorrection", true);
 
   // Ecal rec hits configuration
   desc.add<std::vector<std::string>>("recHitFlagsToBeExcludedBarrel");
@@ -235,7 +237,7 @@ namespace {
   }
 };  // namespace
 
-GsfElectronBaseProducer::GsfElectronBaseProducer(const edm::ParameterSet& cfg, const GsfElectronAlgo::HeavyObjectCache*)
+GsfElectronBaseProducer::GsfElectronBaseProducer(const edm::ParameterSet& cfg, const gsfAlgoHelpers::HeavyObjectCache*)
     : cutsCfg_(makeCutsConfiguration(cfg.getParameter<edm::ParameterSet>("preselection"))),
       cutsCfgPflow_(makeCutsConfiguration(cfg.getParameter<edm::ParameterSet>("preselectionPflow"))),
       ecalSeedingParametersChecked_(false),
@@ -295,6 +297,8 @@ GsfElectronBaseProducer::GsfElectronBaseProducer(const edm::ParameterSet& cfg, c
   strategyCfg_.useEcalRegression = cfg.getParameter<bool>("useEcalRegression");
   strategyCfg_.useCombinationRegression = cfg.getParameter<bool>("useCombinationRegression");
   strategyCfg_.fillConvVtxFitProb = cfg.getParameter<bool>("fillConvVtxFitProb");
+  
+  strategyCfg_.useDefaultEnergyCorrection = cfg.getParameter<bool>("useDefaultEnergyCorrection");
 
   // hcal helpers
   auto const& psetPreselection = cfg.getParameter<edm::ParameterSet>("preselection");
@@ -570,6 +574,3 @@ bool GsfElectronBaseProducer::isPreselected(GsfElectron const& ele) const {
 
   return true;
 }
-
-#include "FWCore/Framework/interface/MakerMacros.h"
-DEFINE_FWK_MODULE(GsfElectronBaseProducer);

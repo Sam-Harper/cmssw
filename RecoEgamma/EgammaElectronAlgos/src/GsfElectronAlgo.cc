@@ -39,17 +39,6 @@
 using namespace edm;
 using namespace reco;
 
-GsfElectronAlgo::HeavyObjectCache::HeavyObjectCache(const edm::ParameterSet& conf) {
-  // soft electron MVA
-  SoftElectronMVAEstimator::Configuration sconfig;
-  sconfig.vweightsfiles = conf.getParameter<std::vector<std::string> >("SoftElecMVAFilesString");
-  sElectronMVAEstimator.reset(new SoftElectronMVAEstimator(sconfig));
-  // isolated electron MVA
-  ElectronMVAEstimator::Configuration iconfig;
-  iconfig.vweightsfiles = conf.getParameter<std::vector<std::string> >("ElecMVAFilesString");
-  iElectronMVAEstimator.reset(new ElectronMVAEstimator(iconfig));
-}
-
 GsfElectronAlgo::EventSetupData::EventSetupData()
     : cacheIDGeom(0),
       cacheIDTopo(0),
@@ -467,11 +456,7 @@ GsfElectronAlgo::EventData GsfElectronAlgo::beginEvent(edm::Event const& event) 
                                                 eventSetupData_.caloGeom,
                                                 *endcapRecHits,
                                                 eventSetupData_.sevLevel.product(),
-                                                DetId::Ecal),
-      .pfIsolationValues = {},
-      .edIsolationValues = {},
-      .originalCtfTracks = {},
-      .originalGsfTracks = {}};
+                                                DetId::Ecal)};
 
   eventData.ecalBarrelIsol03.setUseNumCrystals(generalData_.isoCfg.useNumCrystals);
   eventData.ecalBarrelIsol03.setVetoClustered(generalData_.isoCfg.vetoClustered);
@@ -500,12 +485,15 @@ GsfElectronAlgo::EventData GsfElectronAlgo::beginEvent(edm::Event const& event) 
 void GsfElectronAlgo::completeElectrons(reco::GsfElectronCollection& electrons,
                                         edm::Event const& event,
                                         edm::EventSetup const& eventSetup,
-                                        const GsfElectronAlgo::HeavyObjectCache* hoc) {
+                                        const gsfAlgoHelpers::HeavyObjectCache* hoc) {
   checkSetup(eventSetup);
   auto eventData = beginEvent(event);
 
   const GsfElectronCoreCollection* coreCollection = eventData.coreElectrons.product();
   for (unsigned int i = 0; i < coreCollection->size(); ++i) {
+    
+    //printf("GsfElectronAlgo core %d/%d \n", i+1, (int) coreCollection->size());
+    
     // check there is no existing electron with this core
     const GsfElectronCoreRef coreRef = edm::Ref<GsfElectronCoreCollection>(eventData.coreElectrons, i);
     bool coreFound = false;
@@ -516,18 +504,27 @@ void GsfElectronAlgo::completeElectrons(reco::GsfElectronCollection& electrons,
       }
     }
     if (coreFound)
+    {
+      //printf("\t coreFound \n");
       continue;
+    }
 
     // check there is a super-cluster
     if (coreRef->superCluster().isNull())
+    {
+      //printf("\t coreRef->superCluster().isNull() \n");
       continue;
+    }
 
     // prepare internal structure for electron specific data
     ElectronData electronData(coreRef, *eventData.beamspot);
 
     // calculate and check Trajectory StatesOnSurface....
     if (!electronData.calculateTSOS(*eventSetupData_.mtsTransform, *eventSetupData_.constraintAtVtx))
+    {
+      //printf("\t Invalid TSOS \n");
       continue;
+    }
 
     createElectron(electrons, electronData, eventData, hoc);
 
@@ -656,7 +653,7 @@ void GsfElectronAlgo::setCutBasedPreselectionFlag(GsfElectron& ele, const reco::
 void GsfElectronAlgo::createElectron(reco::GsfElectronCollection& electrons,
                                      ElectronData& electronData,
                                      EventData& eventData,
-                                     const GsfElectronAlgo::HeavyObjectCache* hoc) {
+                                     const gsfAlgoHelpers::HeavyObjectCache* hoc) {
   // eventually check ctf track
   if (generalData_.strategyCfg.ctfTracksCheck && electronData.ctfTrackRef.isNull()) {
     electronData.ctfTrackRef =
@@ -855,10 +852,15 @@ void GsfElectronAlgo::createElectron(reco::GsfElectronCollection& electrons,
                          conversionVars,
                          saturationInfo);
   auto& ele = electrons.back();
+  
+  //printf("GsfElectron ele created. \n");
+  
   // Will be overwritten later in the case of the regression
   ele.setCorrectedEcalEnergyError(generalData_.superClusterErrorFunction->getValue(*(ele.superCluster()), 0));
   ele.setP4(GsfElectron::P4_FROM_SUPER_CLUSTER, momentum, 0, true);
-
+  
+  //printf("\t GsfElectronAlgo stage 1 ele: E %0.2f (%0.2f), eta %+0.2f, \n", ele.energy(), ele.p4().e(), ele.eta());
+  
   //====================================================
   // brems fractions
   //====================================================
@@ -879,7 +881,9 @@ void GsfElectronAlgo::createElectron(reco::GsfElectronCollection& electrons,
       ele.setSuperClusterFbrem(0);
     }
   }
-
+  
+  //printf("\t GsfElectronAlgo stage 2 ele: E %0.2f (%0.2f), eta %+0.2f, \n", ele.energy(), ele.p4().e(), ele.eta());
+  
   //====================================================
   // classification and corrections
   //====================================================
@@ -910,18 +914,29 @@ void GsfElectronAlgo::createElectron(reco::GsfElectronCollection& electrons,
       }
     }
   }
-
+  
+  //printf("\t GsfElectronAlgo stage 3 ele: E %0.2f (%0.2f), eta %+0.2f, \n", ele.energy(), ele.p4().e(), ele.eta());
+  
   // momentum
   // Keep the default correction running first. The track momentum error is computed in there
-  if (ele.core()->ecalDrivenSeed()) {
+  //if (ele.core()->ecalDrivenSeed()) {
+  if (generalData_.strategyCfg.useDefaultEnergyCorrection && ele.core()->ecalDrivenSeed()) {
+    
+    //printf("\t GsfElectronAlgo default mom. corr. \n");
+    
     ElectronMomentumCorrector theMomCorrector;
     theMomCorrector.correct(ele, electronData.vtxTSOS);
   }
   if (generalData_.strategyCfg.useCombinationRegression)  // new
   {
+    
+    //printf("\t GsfElectronAlgo regression mom. corr. \n");
+    
     generalData_.regHelper.applyCombinationRegression(ele);
   }
-
+  
+  //printf("\t GsfElectronAlgo stage 4 ele: E %0.2f (%0.2f), eta %+0.2f, \n", ele.energy(), ele.p4().e(), ele.eta());
+  
   //====================================================
   // now isolation variables
   //====================================================
@@ -971,6 +986,8 @@ void GsfElectronAlgo::createElectron(reco::GsfElectronCollection& electrons,
   setPixelMatchInfomation(ele);
 
   LogTrace("GsfElectronAlgo") << "Constructed new electron with energy  " << ele.p4().e();
+  
+  //printf("GsfElectronAlgo stage end ele: E %0.2f (%0.2f), eta %+0.2f, \n", ele.energy(), ele.p4().e(), ele.eta());
 }
 
 // Pixel match variables
@@ -1001,3 +1018,4 @@ void GsfElectronAlgo::setPixelMatchInfomation(reco::GsfElectron& ele) {
   ele.setPixelMatchDRz1(dRz1);
   ele.setPixelMatchDRz2(dRz2);
 }
+

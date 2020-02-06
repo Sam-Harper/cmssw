@@ -66,28 +66,52 @@ namespace reco {
     }
 
     bool inDynamicDPhiWindow(
-        const float seedEta, const float seedPhi, const float ClustE, const float ClusEta, const float ClusPhi) {
+        const float seedEta, const float seedPhi, const float ClustE, const float ClusEta, const float ClusPhi, bool useHGCalParam) {
+      
+      //if(useHGCalParam)
+      //{
+      //  printf("***** In inDynamicDPhiWindow(...): Using HGCal parametrization. ***** \n");
+      //}
+      
       // from Rishi's fits 06 June 2013 in log base 10
-      constexpr double yoffsetEB = 7.151e-02;
-      constexpr double scaleEB = 5.656e-01;
-      constexpr double xoffsetEB = 2.931e-01;
-      constexpr double widthEB = 2.976e-01;
+      double yoffsetEB = 7.151e-02;
+      double scaleEB = 5.656e-01;
+      double xoffsetEB = 2.931e-01;
+      double widthEB = 2.976e-01;
 
-      constexpr double yoffsetEE_0 = 5.058e-02;
-      constexpr double scaleEE_0 = 7.131e-01;
-      constexpr double xoffsetEE_0 = 1.668e-02;
-      constexpr double widthEE_0 = 4.114e-01;
+      double yoffsetEE_0 = 5.058e-02;
+      double scaleEE_0 = 7.131e-01;
+      double xoffsetEE_0 = 1.668e-02;
+      double widthEE_0 = 4.114e-01;
 
-      constexpr double yoffsetEE_1 = -9.913e-02;
-      constexpr double scaleEE_1 = 4.404e+01;
-      constexpr double xoffsetEE_1 = -5.326e+00;
-      constexpr double widthEE_1 = 1.184e+00;
+      double yoffsetEE_1 = -9.913e-02;
+      double scaleEE_1 = 4.404e+01;
+      double xoffsetEE_1 = -5.326e+00;
+      double widthEE_1 = 1.184e+00;
 
-      constexpr double yoffsetEE_2 = -6.346e-01;
-      constexpr double scaleEE_2 = 1.317e+01;
-      constexpr double xoffsetEE_2 = -7.037e+00;
-      constexpr double widthEE_2 = 2.836e+00;
-
+      double yoffsetEE_2 = -6.346e-01;
+      double scaleEE_2 = 1.317e+01;
+      double xoffsetEE_2 = -7.037e+00;
+      double widthEE_2 = 2.836e+00;
+      
+      if(useHGCalParam)
+      {
+        yoffsetEE_0 = +3.561e-2;
+        scaleEE_0   = +6.971e-1;
+        xoffsetEE_0 = +5.187e-2;
+        widthEE_0   = +2.795e+0;
+        
+        yoffsetEE_1 = -2.295e-2;
+        scaleEE_1   = +5.539e+0;
+        xoffsetEE_1 = -1.736e+0;
+        widthEE_1   = +1.499e+0;
+        
+        yoffsetEE_2 = -2.708e-2;
+        scaleEE_2   = +3.576e+1;
+        xoffsetEE_2 = -3.404e+0;
+        widthEE_2   = +1.400e+0;
+      }
+      
       const double absSeedEta = std::abs(seedEta);
       const int etaBin = ((int)(absSeedEta >= 1.479) + (int)(absSeedEta >= 1.75) + (int)(absSeedEta >= 2.0));
       const double logClustEt = std::log10(ClustE / std::cosh(ClusEta));
@@ -111,6 +135,13 @@ namespace reco {
           width = 1.0 / widthEE_0;
           saturation = 0.14;
           cutoff = 0.55;
+          
+          if(useHGCalParam)
+          {
+            saturation = 0.01;
+            cutoff = 0.55;
+          }
+          
           break;
         case 2:  // 1.75 -> 2.0
           yoffset = yoffsetEE_1;
@@ -119,6 +150,13 @@ namespace reco {
           width = 1.0 / widthEE_1;
           saturation = 0.12;
           cutoff = 0.45;
+          
+          if(useHGCalParam)
+          {
+            saturation = 0.01;
+            cutoff = 0.5;
+          }
+          
           break;
         case 3:  // 2.0 and up
           yoffset = yoffsetEE_2;
@@ -127,6 +165,13 @@ namespace reco {
           width = 1.0 / widthEE_2;
           saturation = 0.12;
           cutoff = 0.30;
+          
+          if(useHGCalParam)
+          {
+            saturation = 0.01;
+            cutoff = 0.45;
+          }
+          
           break;
         default:
           throw cms::Exception("InValidEtaBin")

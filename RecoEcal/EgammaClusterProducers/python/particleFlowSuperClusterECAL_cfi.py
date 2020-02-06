@@ -13,6 +13,8 @@ particleFlowSuperClusterECALBox = cms.EDProducer(
     #this overrides both dphi cuts below if true!
     useDynamicDPhiWindow = cms.bool(False),
     
+    useHGCalParam = cms.bool(False),
+    
     #PFClusters collection
     PFClusters = cms.InputTag("particleFlowClusterECAL"),
     ESAssociation = cms.InputTag("particleFlowClusterECAL"),
@@ -86,7 +88,9 @@ particleFlowSuperClusterECALMustache = cms.EDProducer(
 
     #this overrides both dphi cuts below if true!
     useDynamicDPhiWindow = cms.bool(True), 
-                                              
+    
+    useHGCalParam = cms.bool(False),
+    
     #PFClusters collection
     PFClusters = cms.InputTag("particleFlowClusterECAL"),
     ESAssociation = cms.InputTag("particleFlowClusterECAL"),
@@ -155,10 +159,3 @@ from Configuration.Eras.Modifier_pp_on_AA_2018_cff import pp_on_AA_2018
 pp_on_AA_2018.toModify(particleFlowSuperClusterECAL, useDynamicDPhiWindow = False)
 pp_on_AA_2018.toModify(particleFlowSuperClusterECAL, phiwidth_SuperClusterBarrel = 0.20)
 pp_on_AA_2018.toModify(particleFlowSuperClusterECAL, phiwidth_SuperClusterEndcap = 0.20)
-
-from Configuration.ProcessModifiers.egamma_lowPt_exclusive_cff import egamma_lowPt_exclusive
-egamma_lowPt_exclusive.toModify(particleFlowSuperClusterECAL,
-                           thresh_SCEt = 1.0,
-                           thresh_PFClusterSeedBarrel = 0.5,
-                           thresh_PFClusterSeedEndcap = 0.5)
-

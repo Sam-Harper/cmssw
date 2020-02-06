@@ -27,6 +27,7 @@
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterFunctionBaseClass.h"
 #include "RecoEgamma/EgammaElectronAlgos/interface/ElectronHcalHelper.h"
+#include "RecoEgamma/EgammaElectronAlgos/interface/GsfElectronAlgoHeavyObjectCache.h"
 #include "RecoEgamma/EgammaElectronAlgos/interface/RegressionHelper.h"
 #include "RecoEgamma/EgammaIsolationAlgos/interface/EgammaRecHitIsolation.h"
 #include "RecoEgamma/EgammaIsolationAlgos/interface/EgammaTowerIsolation.h"
@@ -47,13 +48,6 @@
 
 class GsfElectronAlgo {
 public:
-  class HeavyObjectCache {
-  public:
-    HeavyObjectCache(const edm::ParameterSet&);
-    std::unique_ptr<const SoftElectronMVAEstimator> sElectronMVAEstimator;
-    std::unique_ptr<const ElectronMVAEstimator> iElectronMVAEstimator;
-  };
-
   struct InputTagsConfiguration {
     edm::EDGetTokenT<reco::GsfElectronCollection> previousGsfElectrons;
     edm::EDGetTokenT<reco::GsfElectronCollection> pflowGsfElectronsTag;
@@ -99,6 +93,9 @@ public:
     // GED-Regression (ECAL and combination)
     bool useEcalRegression;
     bool useCombinationRegression;
+    
+    bool useDefaultEnergyCorrection;
+    
     //heavy ion in 2015 has no conversions and so cant fill conv vtx fit prob so this bool
     //stops it from being filled
     bool fillConvVtxFitProb;
@@ -204,7 +201,7 @@ public:
   void completeElectrons(reco::GsfElectronCollection& electrons,  // do not redo cloned electrons done previously
                          edm::Event const& event,
                          edm::EventSetup const& eventSetup,
-                         const HeavyObjectCache* hoc);
+                         const gsfAlgoHelpers::HeavyObjectCache* hoc);
 
 private:
   // internal structures
@@ -350,7 +347,7 @@ private:
   void createElectron(reco::GsfElectronCollection& electrons,
                       ElectronData& electronData,
                       EventData& eventData,
-                      const HeavyObjectCache*);
+                      const gsfAlgoHelpers::HeavyObjectCache*);
 
   void setMVAepiBasedPreselectionFlag(reco::GsfElectron& ele);
   void setCutBasedPreselectionFlag(reco::GsfElectron& ele, const reco::BeamSpot&);

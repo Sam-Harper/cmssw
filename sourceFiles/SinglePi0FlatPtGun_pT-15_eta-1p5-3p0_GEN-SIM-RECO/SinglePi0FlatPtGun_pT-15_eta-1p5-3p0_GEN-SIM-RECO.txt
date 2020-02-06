@@ -1,0 +1,1 @@
+file:/afs/cern.ch/work/s/sobhatta/private/HGCal_ele-reco/CMSSW_10_6_0_pre4/src/output/SinglePi0FlatPtGun_pT-15_eta-1p5-3p0_GEN-SIM-RECO/output.root

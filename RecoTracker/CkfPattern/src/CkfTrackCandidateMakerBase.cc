@@ -190,6 +190,8 @@ namespace cms {
 
     edm::Handle<View<TrajectorySeed>> collseed;
     e.getByToken(theSeedLabel, collseed);
+    
+    //printf("CkfTrackCandidateMakerBase: src collseed.size(): %d \n", (int) collseed->size());
 
     // Step C: Create empty output collection
     auto output = std::make_unique<TrackCandidateCollection>();
@@ -214,10 +216,15 @@ namespace cms {
       unsigned int lastCleanResult = 0;
       std::vector<Trajectory> rawResult;
       rawResult.reserve(collseed->size() * 4);
-
+      
+      //printf("CkfTrackCandidateMakerBase: Step D: collseed.size(): %d \n", (int) collseed->size());
+      //printf("CkfTrackCandidateMakerBase: Step D: rawResult.size() before theSeedCleaner->init(&rawResult): %d \n", (int) rawResult.size());
+      
       if (theSeedCleaner)
         theSeedCleaner->init(&rawResult);
-
+      
+      //printf("CkfTrackCandidateMakerBase: Step D: rawResult.size() after theSeedCleaner->init(&rawResult): %d \n", (int) rawResult.size());
+      
       // method for debugging
       countSeedsDebugger();
 
@@ -272,6 +279,7 @@ namespace cms {
         // to be moved inside a par section (how with tbb??)
         std::vector<Trajectory> theTmpTrajectories;
 
+        //std::cout << "======== Begin to look for trajectories from seed " << j << " ========\n";
         LogDebug("CkfPattern") << "======== Begin to look for trajectories from seed " << j << " ========\n";
 
         {
@@ -298,6 +306,9 @@ namespace cms {
           }
         }
 
+        //std::cout << "======== In-out trajectory building found " << theTmpTrajectories.size()
+        //          << " trajectories from seed " << j << " ========\n";
+        
         LogDebug("CkfPattern") << "======== In-out trajectory building found " << theTmpTrajectories.size()
                                << " trajectories from seed " << j << " ========\n"
                                << PrintoutHelper::dumpCandidates(theTmpTrajectories);
@@ -305,7 +316,10 @@ namespace cms {
         if (cleanTrajectoryAfterInOut) {
           // Select the best trajectory from this seed (declare others invalid)
           theTrajectoryCleaner->clean(theTmpTrajectories);
-
+          
+          //std::cout << "======== In-out trajectory cleaning gave the following "
+          //          << theTmpTrajectories.size() << " valid trajectories from seed " << j << " ========\n";
+          
           LogDebug("CkfPattern") << "======== In-out trajectory cleaning gave the following "
                                  << theTmpTrajectories.size() << " valid trajectories from seed " << j << " ========\n"
                                  << PrintoutHelper::dumpCandidates(theTmpTrajectories);
@@ -317,6 +331,9 @@ namespace cms {
         if (doSeedingRegionRebuilding) {
           theTrajectoryBuilder->rebuildTrajectories(startTraj, (*collseed)[j], theTmpTrajectories);
 
+          //std::cout << "======== Out-in trajectory building found " << theTmpTrajectories.size()
+          //          << " valid/invalid trajectories from seed " << j << " ========\n";
+          
           LogDebug("CkfPattern") << "======== Out-in trajectory building found " << theTmpTrajectories.size()
                                  << " valid/invalid trajectories from seed " << j << " ========\n"
                                  << PrintoutHelper::dumpCandidates(theTmpTrajectories);
@@ -330,6 +347,9 @@ namespace cms {
         // Select the best trajectory from this seed (after seed region rebuilding, can be more than one)
         theTrajectoryCleaner->clean(theTmpTrajectories);
 
+        //std::cout << "======== Trajectory cleaning gave the following " << theTmpTrajectories.size()
+        //          << " valid trajectories from seed " << j << " ========\n";
+        
         LogDebug("CkfPattern") << "======== Trajectory cleaning gave the following " << theTmpTrajectories.size()
                                << " valid trajectories from seed " << j << " ========\n"
                                << PrintoutHelper::dumpCandidates(theTmpTrajectories);
@@ -353,6 +373,8 @@ namespace cms {
 
         theTmpTrajectories.clear();
 
+        //std::cout << "rawResult trajectories found so far = " << rawResult.size() << "\n";
+        
         LogDebug("CkfPattern") << "rawResult trajectories found so far = " << rawResult.size();
 
         {
@@ -413,9 +435,15 @@ namespace cms {
       }
 
       vector<Trajectory>& unsmoothedResult(rawResult);
+      
+      //printf("CkfTrackCandidateMakerBase: unsmoothedResult.size() before erase: %d \n", (int) unsmoothedResult.size());
+      
       unsmoothedResult.erase(
           std::remove_if(unsmoothedResult.begin(), unsmoothedResult.end(), std::not_fn(&Trajectory::isValid)),
           unsmoothedResult.end());
+      
+      //printf("CkfTrackCandidateMakerBase: unsmoothedResult.size() after erase: %d \n", (int) unsmoothedResult.size());
+      
       unsmoothedResult.shrink_to_fit();
       // If requested, reverse the trajectories creating a new 1-hit seed on the last measurement of the track
       if (reverseTrajectories) {
@@ -462,6 +490,9 @@ namespace cms {
       if (theTrackCandidateOutput) {
         // Step F: Convert to TrackCandidates
         output->reserve(unsmoothedResult.size());
+        
+        //printf("CkfTrackCandidateMakerBase: unsmoothedResult.size() %d \n", (int) unsmoothedResult.size());
+        
         Traj2TrackHits t2t(theTrajectoryBuilder->hitBuilder(), true);
 
         for (vector<Trajectory>::const_iterator it = unsmoothedResult.begin(); it != unsmoothedResult.end(); ++it) {
@@ -538,9 +569,11 @@ namespace cms {
 
     // Step G: write output to file
     if (theTrackCandidateOutput) {
+      //printf("CkfTrackCandidateMakerBase: output.size() %d \n", (int) output->size());
       e.put(std::move(output));
     }
     if (theTrajectoryOutput) {
+      //printf("CkfTrackCandidateMakerBase: outputT.size() %d \n", (int) output->size());
       e.put(std::move(outputT));
     }
     e.put(std::move(outputSeedStopInfos));
