@@ -61,6 +61,13 @@ namespace std {
       return h1 ^ (h2 << 1);
     }
   };
+  template <>
+  struct equal_to<std::pair<int, GlobalPoint> >
+      : public std::binary_function<std::pair<int, GlobalPoint>, std::pair<int, GlobalPoint>, bool> {
+    bool operator()(const std::pair<int, GlobalPoint>& a, const std::pair<int, GlobalPoint>& b) const {
+      return (a.first == b.first) & (a.second == b.second);
+    }
+  };
 }  // namespace std
 
 class TrajSeedMatcher {
@@ -215,7 +222,7 @@ private:
                                       const GlobalPoint& candPos,
                                       const GlobalPoint& vprim,
                                       const float energy,
-                                      const int charge);
+                                      const TrajectoryStateOnSurface& initialTrajState);
 
   static float getZVtxFromExtrapolation(const GlobalPoint& primeVtxPos,
                                         const GlobalPoint& hitPos,
@@ -244,6 +251,10 @@ private:
                                                         const GlobalPoint& point,
                                                         const PropagatorWithMaterial& propagator);
 
+  TrajectoryStateOnSurface makeTrajStateOnSurface(const GlobalPoint& pos,
+                                                  const GlobalPoint& vtx,
+                                                  const float energy,
+                                                  const int charge) const;
   void clearCache();
 
   bool passesMatchSel(const SCHitMatch& hit, const size_t hitNr) const;
@@ -263,6 +274,12 @@ private:
 
   size_t getNrHitsRequired(const int nrValidLayers) const;
 
+  //parameterised b-fields may not be valid for entire detector, just tracker volume
+  //however need we ecal so we auto select based on the position
+  const MagneticField& getMagField(const GlobalPoint& point) const {
+    return useParamMagFieldIfDefined_ && magFieldParam_->isDefined(point) ? *magFieldParam_ : *magField_;
+  }
+
 private:
   static constexpr float kElectronMass_ = 0.000511;
   static constexpr float kPhiCut_ = -0.801144;  //cos(2.5)
@@ -270,13 +287,18 @@ private:
   std::unique_ptr<PropagatorWithMaterial> backwardPropagator_;
   unsigned long long cacheIDMagField_;
   edm::ESHandle<MagneticField> magField_;
+  edm::ESHandle<MagneticField> magFieldParam_;
   edm::Handle<MeasurementTrackerEvent> measTkEvt_;
   edm::ESHandle<NavigationSchool> navSchool_;
   edm::ESHandle<DetLayerGeometry> detLayerGeom_;
+  std::string paramMagFieldLabel_;
   std::string navSchoolLabel_;
   std::string detLayerGeomLabel_;
 
   bool useRecoVertex_;
+  bool enableHitSkipping_;
+  bool requireExactMatchCount_;
+  bool useParamMagFieldIfDefined_;
   std::vector<std::unique_ptr<MatchingCuts> > matchingCuts_;
 
   //these two varibles determine how hits we require
