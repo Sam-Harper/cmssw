@@ -98,6 +98,9 @@ public:
     // GED-Regression (ECAL and combination)
     bool useEcalRegression;
     bool useCombinationRegression;
+
+    bool useDefaultEnergyCorrection;
+
     //heavy ion in 2015 has no conversions and so cant fill conv vtx fit prob so this bool
     //stops it from being filled
     bool fillConvVtxFitProb;
