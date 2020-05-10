@@ -12,7 +12,11 @@
 <use   name="CondFormats/DataRecord"/>
 <use   name="Geometry/TrackerGeometryBuilder"/>
 <use   name="DataFormats/L1Trigger"/>
+<use   name="DataFormats/L1TrackTrigger"/>
+<user  name="SimDataFormats/TrackingAnalysis"/>
 <use   name="TrackingTools/GsfTools"/>
+<use   name="SimTracker/TrackTriggerAssociation"/>
+
 <library   file="*.cc" name="RecoEgammaEgammaHLTProducersPlugins">
   <flags   EDM_PLUGIN="1"/>
 </library>
