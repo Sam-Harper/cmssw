@@ -19,6 +19,6 @@ namespace reco {
   typedef edm::RefVector<EgTrigSumObjCollection> EgTrigSumObjRefVector;
   /// iterator over a vector of reference to EgTrigSumObjs
   typedef EgTrigSumObjRefVector::iterator egTrigSumObj_iterator;
-}
+}  // namespace reco
 
 #endif
