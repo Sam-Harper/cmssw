@@ -52,7 +52,12 @@ public:
   PFRecHitQTestDBThreshold(const edm::ParameterSet& iConfig)
       : PFRecHitQTestBase(iConfig),
         applySelectionsToAllCrystals_(iConfig.getParameter<bool>("applySelectionsToAllCrystals")),
-        eventSetup_(nullptr) {}
+	recHitThresLabel_(),
+        eventSetup_(nullptr) {
+    if(iConfig.exists("recHitThresLabel")){
+      recHitThresLabel_ = iConfig.getParameter<std::string>("recHitThresLabel");
+    }
+  }
 
   void beginEvent(const edm::Event& event, const edm::EventSetup& iSetup) override { eventSetup_ = &iSetup; }
 
@@ -72,11 +77,12 @@ public:
 
 protected:
   bool applySelectionsToAllCrystals_;
+  std::string recHitThresLabel_;
   const edm::EventSetup* eventSetup_;
 
   bool pass(const reco::PFRecHit& hit) {
     edm::ESHandle<EcalPFRecHitThresholds> ths;
-    (*eventSetup_).get<EcalPFRecHitThresholdsRcd>().get(ths);
+    (*eventSetup_).get<EcalPFRecHitThresholdsRcd>().get(recHitThresLabel_,ths);
 
     float threshold = (*ths)[hit.detId()];
     return hit.energy() > threshold;
