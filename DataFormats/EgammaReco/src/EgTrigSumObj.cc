@@ -1,18 +1,6 @@
 #include "DataFormats/EgammaReco/interface/EgTrigSumObj.h"
 
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
-// namespace reco{
-//   class RecoEcalCandidate{
-//   public:
-//     float et()const{return 0.;}
-//     float pt()const{return 0.;}
-//     float eta()const{return 0.;}
-//     float phi()const{return 0.;}
-//     float energy()const{return 0.;}
-//     reco::SuperClusterRef superCluster()const{return reco::SuperClusterRef();}
-//   };
-// }
-//#include <iostream>
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"

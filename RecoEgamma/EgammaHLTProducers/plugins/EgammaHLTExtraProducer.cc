@@ -50,18 +50,21 @@ private:
   //eg rechits needs to access geometry, trk dr is also w.r.t the track eta/phi
   //still could collapse into a single function
   template <typename RecHitCollection>
-  std::unique_ptr<RecHitCollection> filterRecHits(const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection> >& egTrigObjs,
-                                                  const edm::Handle<RecHitCollection>& recHits,
-                                                  const CaloGeometry& geom,
-                                                  float maxDR2 = 0.4 * 0.4) const;
+  std::unique_ptr<RecHitCollection> filterRecHits(
+      const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection>>& egTrigObjs,
+      const edm::Handle<RecHitCollection>& recHits,
+      const CaloGeometry& geom,
+      float maxDR2 = 0.4 * 0.4) const;
 
-  std::unique_ptr<reco::TrackCollection> filterTrks(const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection> >& egTrigObjs,
-                                                    const edm::Handle<reco::TrackCollection>& trks,
-                                                    float maxDR2 = 0.4 * 0.4) const;
+  std::unique_ptr<reco::TrackCollection> filterTrks(
+      const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection>>& egTrigObjs,
+      const edm::Handle<reco::TrackCollection>& trks,
+      float maxDR2 = 0.4 * 0.4) const;
 
-  std::unique_ptr<reco::PFClusterCollection> filterPFClusIso(const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection> >& egTrigObjs,
-                                                             const edm::Handle<reco::PFClusterCollection>& pfClus,
-                                                             float maxDR2 = 0.4 * 0.4) const;
+  std::unique_ptr<reco::PFClusterCollection> filterPFClusIso(
+      const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection>>& egTrigObjs,
+      const edm::Handle<reco::PFClusterCollection>& pfClus,
+      float maxDR2 = 0.4 * 0.4) const;
 
   struct Tokens {
     //these are the tokens which comprise the E/gamma candidate (eg cand,gsf track, pixel seeds)
@@ -70,7 +73,7 @@ private:
       edm::EDGetTokenT<reco::GsfTrackCollection> gsfTracks;
       edm::EDGetTokenT<reco::ElectronSeedCollection> pixelSeeds;
     };
-    std::vector<std::pair<EgObjTokens,std::string > > egCands;
+    std::vector<std::pair<EgObjTokens, std::string>> egCands;
 
     std::vector<std::pair<edm::EDGetTokenT<EcalRecHitCollection>, std::string>> ecal;
     std::vector<std::pair<edm::EDGetTokenT<HBHERecHitCollection>, std::string>> hcal;
@@ -111,13 +114,13 @@ private:
     static void setToken(std::vector<std::pair<EgObjTokens, std::string>>& tokens,
                          edm::ConsumesCollector& cc,
                          const edm::ParameterSet& pset,
-			 const std::string& tagname) {
+                         const std::string& tagname) {
       const auto& collectionPSets = pset.getParameter<std::vector<edm::ParameterSet>>(tagname);
       for (const auto& collPSet : collectionPSets) {
-	EgObjTokens objTokens;
-	setToken(objTokens.ecalCands,cc,collPSet,"ecalCands");
-	setToken(objTokens.gsfTracks,cc,collPSet,"gsfTracks");
-	setToken(objTokens.pixelSeeds,cc,collPSet,"pixelSeeds");
+        EgObjTokens objTokens;
+        setToken(objTokens.ecalCands, cc, collPSet, "ecalCands");
+        setToken(objTokens.gsfTracks, cc, collPSet, "gsfTracks");
+        setToken(objTokens.pixelSeeds, cc, collPSet, "pixelSeeds");
         std::string label = collPSet.getParameter<std::string>("label");
         tokens.emplace_back(std::make_pair(objTokens, label));
       }
@@ -173,14 +176,14 @@ void EgammaHLTExtraProducer::fillDescriptions(edm::ConfigurationDescriptions& de
   edm::ParameterSetDescription egCandsDesc;
   egCandsDesc.add<edm::InputTag>("ecalCands", edm::InputTag(""));
   egCandsDesc.add<edm::InputTag>("pixelSeeds", edm::InputTag(""));
-  egCandsDesc.add<edm::InputTag>("gsfTracks", edm::InputTag("")); 
+  egCandsDesc.add<edm::InputTag>("gsfTracks", edm::InputTag(""));
   egCandsDesc.add<std::string>("label", "");
   std::vector<edm::ParameterSet> egCandsDefaults(1);
   egCandsDefaults[0].addParameter("ecalCands", edm::InputTag("hltEgammaCandidates"));
   egCandsDefaults[0].addParameter("pixelSeeds", edm::InputTag("hltEgammaElectronPixelSeeds"));
   egCandsDefaults[0].addParameter("gsfTracks", edm::InputTag("hltEgammaGsfTracks"));
   egCandsDefaults[0].addParameter("label", std::string(""));
-  
+
   edm::ParameterSetDescription tokenLabelDesc;
   tokenLabelDesc.add<edm::InputTag>("src", edm::InputTag(""));
   tokenLabelDesc.add<std::string>("label", "");
@@ -213,13 +216,11 @@ void EgammaHLTExtraProducer::fillDescriptions(edm::ConfigurationDescriptions& de
 void EgammaHLTExtraProducer::produce(edm::StreamID streamID,
                                      edm::Event& event,
                                      const edm::EventSetup& eventSetup) const {
-  
   std::vector<edm::Handle<reco::RecoEcalCandidateIsolationMap>> valueMapHandles;
   event.getManyByType(valueMapHandles);
-  
-  std::vector<std::unique_ptr<reco::EgTrigSumObjCollection> >egTrigObjColls;
-  for(const auto& egCandsToken : tokens_.egCands){
-    
+
+  std::vector<std::unique_ptr<reco::EgTrigSumObjCollection>> egTrigObjColls;
+  for (const auto& egCandsToken : tokens_.egCands) {
     auto ecalCandsHandle = event.getHandle(egCandsToken.first.ecalCands);
     auto gsfTrksHandle = event.getHandle(egCandsToken.first.gsfTracks);
     auto pixelSeedsHandle = event.getHandle(egCandsToken.first.pixelSeeds);
@@ -239,19 +240,17 @@ void EgammaHLTExtraProducer::produce(edm::StreamID streamID,
   edm::ESHandle<CaloGeometry> caloGeomHandle;
   eventSetup.get<CaloGeometryRecord>().get(caloGeomHandle);
 
-  auto filterAndStoreRecHits = [caloGeomHandle, &event, this](const auto& egTrigObjs,
-                                                              const auto& tokenLabels) {
+  auto filterAndStoreRecHits = [caloGeomHandle, &event, this](const auto& egTrigObjs, const auto& tokenLabels) {
     for (const auto& tokenLabel : tokenLabels) {
       auto handle = event.getHandle(tokenLabel.first);
       auto recHits = filterRecHits(egTrigObjs, handle, *caloGeomHandle);
       event.put(std::move(recHits), tokenLabel.second);
     }
   };
-  auto filterAndStore = [&event, this](const auto& egTrigObjs, 
-				       const auto& tokenLabels, auto filterFunc) {
+  auto filterAndStore = [&event, this](const auto& egTrigObjs, const auto& tokenLabels, auto filterFunc) {
     for (const auto& tokenLabel : tokenLabels) {
       auto handle = event.getHandle(tokenLabel.first);
-      auto filtered = (this->*filterFunc)(egTrigObjs, handle,0.4*0.4);
+      auto filtered = (this->*filterFunc)(egTrigObjs, handle, 0.4 * 0.4);
       event.put(std::move(filtered), tokenLabel.second);
     }
   };
@@ -261,8 +260,8 @@ void EgammaHLTExtraProducer::produce(edm::StreamID streamID,
   filterAndStore(egTrigObjColls, tokens_.pfClusIso, &EgammaHLTExtraProducer::filterPFClusIso);
   filterAndStore(egTrigObjColls, tokens_.trks, &EgammaHLTExtraProducer::filterTrks);
 
-  for(size_t collNr = 0;collNr<egTrigObjColls.size();collNr++){
-    event.put(std::move(egTrigObjColls[collNr]),tokens_.egCands[collNr].second);
+  for (size_t collNr = 0; collNr < egTrigObjColls.size(); collNr++) {
+    event.put(std::move(egTrigObjColls[collNr]), tokens_.egCands[collNr].second);
   }
 }
 
@@ -329,10 +328,11 @@ void EgammaHLTExtraProducer::setSeeds(reco::EgTrigSumObj& egTrigObj,
 }
 
 template <typename RecHitCollection>
-std::unique_ptr<RecHitCollection> EgammaHLTExtraProducer::filterRecHits(const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection> >& egTrigObjColls,
-                                                                        const edm::Handle<RecHitCollection>& recHits,
-                                                                        const CaloGeometry& geom,
-                                                                        float maxDR2) const {
+std::unique_ptr<RecHitCollection> EgammaHLTExtraProducer::filterRecHits(
+    const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection>>& egTrigObjColls,
+    const edm::Handle<RecHitCollection>& recHits,
+    const CaloGeometry& geom,
+    float maxDR2) const {
   auto filteredHits = std::make_unique<RecHitCollection>();
   if (!recHits.isValid())
     return filteredHits;
@@ -341,11 +341,11 @@ std::unique_ptr<RecHitCollection> EgammaHLTExtraProducer::filterRecHits(const st
   for (const auto& egTrigObjs : egTrigObjColls) {
     for (const auto& egTrigObj : *egTrigObjs) {
       if (egTrigObj.pt() >= minPtToSaveHits_) {
-	etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi()});
-	if (saveHitsPlusPi_)
-	  etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi() + 3.14159});
-	if (saveHitsPlusHalfPi_)
-	  etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi() + 3.14159 / 2.});
+        etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi()});
+        if (saveHitsPlusPi_)
+          etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi() + 3.14159});
+        if (saveHitsPlusHalfPi_)
+          etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi() + 3.14159 / 2.});
       }
     }
   }
@@ -373,7 +373,7 @@ std::unique_ptr<RecHitCollection> EgammaHLTExtraProducer::filterRecHits(const st
 }
 
 std::unique_ptr<reco::TrackCollection> EgammaHLTExtraProducer::filterTrks(
-    const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection> >& egTrigObjColls,
+    const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection>>& egTrigObjColls,
     const edm::Handle<reco::TrackCollection>& trks,
     float maxDR2) const {
   auto filteredTrks = std::make_unique<reco::TrackCollection>();
@@ -386,11 +386,11 @@ std::unique_ptr<reco::TrackCollection> EgammaHLTExtraProducer::filterTrks(
   for (const auto& egTrigObjs : egTrigObjColls) {
     for (const auto& egTrigObj : *egTrigObjs) {
       if (egTrigObj.pt() >= minPtToSaveHits_) {
-	etaPhisTmp.push_back({egTrigObj.eta(), egTrigObj.phi()});
-	//also save the eta /phi of all gsf tracks with the object
-	for (const auto& gsfTrk : egTrigObj.gsfTracks()) {
-	  etaPhisTmp.push_back({gsfTrk->eta(), gsfTrk->phi()});
-	}
+        etaPhisTmp.push_back({egTrigObj.eta(), egTrigObj.phi()});
+        //also save the eta /phi of all gsf tracks with the object
+        for (const auto& gsfTrk : egTrigObj.gsfTracks()) {
+          etaPhisTmp.push_back({gsfTrk->eta(), gsfTrk->phi()});
+        }
       }
     }
   }
@@ -419,7 +419,7 @@ std::unique_ptr<reco::TrackCollection> EgammaHLTExtraProducer::filterTrks(
 }
 
 std::unique_ptr<reco::PFClusterCollection> EgammaHLTExtraProducer::filterPFClusIso(
-    const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection> >& egTrigObjColls,
+    const std::vector<std::unique_ptr<reco::EgTrigSumObjCollection>>& egTrigObjColls,
     const edm::Handle<reco::PFClusterCollection>& pfClus,
     float maxDR2) const {
   auto filteredPFClus = std::make_unique<reco::PFClusterCollection>();
@@ -430,11 +430,11 @@ std::unique_ptr<reco::PFClusterCollection> EgammaHLTExtraProducer::filterPFClusI
   for (const auto& egTrigObjs : egTrigObjColls) {
     for (const auto& egTrigObj : *egTrigObjs) {
       if (egTrigObj.pt() >= minPtToSaveHits_) {
-	etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi()});
-	if (saveHitsPlusPi_)
-	  etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi() + 3.14159});
-	if (saveHitsPlusHalfPi_)
-	  etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi() + 3.14159 / 2.});
+        etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi()});
+        if (saveHitsPlusPi_)
+          etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi() + 3.14159});
+        if (saveHitsPlusHalfPi_)
+          etaPhis.push_back({egTrigObj.eta(), egTrigObj.phi() + 3.14159 / 2.});
       }
     }
   }
