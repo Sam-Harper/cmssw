@@ -170,7 +170,7 @@ EgammaHLTExtraProducer::EgammaHLTExtraProducer(const edm::ParameterSet& pset)
 void EgammaHLTExtraProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<double>("minPtToSaveHits", 0.);
-  desc.add<bool>("saveHitsPlusPi", true);
+  desc.add<bool>("saveHitsPlusPi", false);
   desc.add<bool>("saveHitsPlusHalfPi", true);
 
   edm::ParameterSetDescription egCandsDesc;
@@ -188,9 +188,9 @@ void EgammaHLTExtraProducer::fillDescriptions(edm::ConfigurationDescriptions& de
   tokenLabelDesc.add<edm::InputTag>("src", edm::InputTag(""));
   tokenLabelDesc.add<std::string>("label", "");
   std::vector<edm::ParameterSet> ecalDefaults(2);
-  ecalDefaults[0].addParameter("src", edm::InputTag("hltEcalRecHit", "EcalRecHitEB"));
+  ecalDefaults[0].addParameter("src", edm::InputTag("hltEcalRecHit", "EcalRecHitsEB"));
   ecalDefaults[0].addParameter("label", std::string("EcalRecHitsEB"));
-  ecalDefaults[1].addParameter("src", edm::InputTag("hltEcalRecHit", "EcalRecHitEE"));
+  ecalDefaults[1].addParameter("src", edm::InputTag("hltEcalRecHit", "EcalRecHitsEE"));
   ecalDefaults[1].addParameter("label", std::string("EcalRecHitsEE"));
   std::vector<edm::ParameterSet> hcalDefaults(1);
   hcalDefaults[0].addParameter("src", edm::InputTag("hltHbhereco"));
@@ -198,11 +198,13 @@ void EgammaHLTExtraProducer::fillDescriptions(edm::ConfigurationDescriptions& de
   std::vector<edm::ParameterSet> trksDefaults(1);
   trksDefaults[0].addParameter("src", edm::InputTag("generalTracks"));
   trksDefaults[0].addParameter("label", std::string(""));
-  std::vector<edm::ParameterSet> pfClusIsoDefaults(2);
-  pfClusIsoDefaults[0].addParameter("src", edm::InputTag("hltParticleFlowClusterECALUnseeded"));
+  std::vector<edm::ParameterSet> pfClusIsoDefaults(3);
+  pfClusIsoDefaults[0].addParameter("src", edm::InputTag("hltParticleFlowClusterECALL1Seeded"));
   pfClusIsoDefaults[0].addParameter("label", std::string("Ecal"));
-  pfClusIsoDefaults[1].addParameter("src", edm::InputTag("hltParticleFlowClusterHCAL"));
-  pfClusIsoDefaults[1].addParameter("label", std::string("Hcal"));
+  pfClusIsoDefaults[1].addParameter("src", edm::InputTag("hltParticleFlowClusterECALUnseeded"));
+  pfClusIsoDefaults[1].addParameter("label", std::string("EcalUnseeded"));
+  pfClusIsoDefaults[2].addParameter("src", edm::InputTag("hltParticleFlowClusterHCAL"));
+  pfClusIsoDefaults[2].addParameter("label", std::string("Hcal"));
 
   desc.addVPSet("egCands", egCandsDesc, egCandsDefaults);
   desc.addVPSet("ecal", tokenLabelDesc, ecalDefaults);

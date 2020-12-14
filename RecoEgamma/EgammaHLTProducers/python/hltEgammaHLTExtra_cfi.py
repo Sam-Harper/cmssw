@@ -17,18 +17,33 @@ hltEgammaHLTExtra = cms.EDProducer("EgammaHLTExtraProducer",
                                    ),                 
                                    ecal = cms.VPSet(
                                        cms.PSet(
-                                           src= cms.InputTag("hltEcalRecHit","EcalRecHitEB"),
+                                           src= cms.InputTag("hltEcalRecHit","EcalRecHitsEB"),
                                            label = cms.string("EcalRecHitsEB")
                                        ),
                                        cms.PSet(
-                                           src= cms.InputTag("hltEcalRecHit","EcalRecHitEE"),
+                                           src= cms.InputTag("hltEcalRecHit","EcalRecHitsEE"),
                                            label = cms.string("EcalRecHitsEE")
                                        )
                                    ),
+                                   pfClusIso = cms.VPSet(
+                                       cms.PSet(
+                                           src = cms.InputTag("hltParticleFlowClusterECALL1Seeded"),
+                                           label = cms.string("Ecal")
+                                       ),
+                                       cms.PSet(
+                                           src = cms.InputTag("hltParticleFlowClusterECALUnseeded"),
+                                           label = cms.string("EcalUnseeded")
+                                       ),
+                                       cms.PSet(
+                                           src = cms.InputTag("hltParticleFlowClusterHCAL"),
+                                           label = cms.string("Hcal")
+                                       ),
+                                   ),
                                    hcal = cms.VPSet(cms.PSet(src=cms.InputTag("hltHbhereco"),label=cms.string(""))),
-                                   trks = cms.VPSet(cms.PSet(src=cms.InputTag("hltMergedTracks"),label=cms.string(""))),
-                                   pixelSeeds = cms.InputTag("hltEgammaElectronPixelSeeds"),
-                                   gsfTracks = cms.InputTag("hltEgammaGsfTracks"),
-                                   minPtToSaveHits = cms.double(8.)
+                                   trks = cms.VPSet(cms.PSet(src=cms.InputTag("hltMergedTracks"),label=cms.string(""))),                                  
+                                   minPtToSaveHits = cms.double(8.),
+                                   saveHitsPlusHalfPi = cms.bool(True),
+                                   saveHitsPlusPi = cms.bool(False)
+                                   
 )
 
