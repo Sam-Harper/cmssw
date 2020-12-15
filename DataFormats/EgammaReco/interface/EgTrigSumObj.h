@@ -36,8 +36,8 @@ namespace reco {
     const reco::ElectronSeedRefVector& seeds() const { return seeds_; }
 
     void setSuperCluster(const reco::SuperClusterRef& sc) { superCluster_ = sc; }
-    void setGsfTracks(const reco::GsfTrackRefVector&& trks) { gsfTracks_ = trks; }
-    void setSeeds(const reco::ElectronSeedRefVector&& seeds);
+    void setGsfTracks(reco::GsfTrackRefVector&& trks) { gsfTracks_ = trks; }
+    void setSeeds(reco::ElectronSeedRefVector&& seeds);
 
     bool hasVar(const std::string& varName) const;
     float var(const std::string& varName, bool raiseExcept = true) const;

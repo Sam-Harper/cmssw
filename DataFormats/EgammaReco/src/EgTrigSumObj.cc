@@ -16,7 +16,7 @@ reco::EgTrigSumObj::EgTrigSumObj(const reco::RecoEcalCandidate& ecalCand)
       hasPixelMatch_(false),
       superCluster_(ecalCand.superCluster()) {}
 
-void reco::EgTrigSumObj::setSeeds(const reco::ElectronSeedRefVector&& seeds) {
+void reco::EgTrigSumObj::setSeeds(reco::ElectronSeedRefVector&& seeds) {
   seeds_ = seeds;
   hasPixelMatch_ = false;
   for (const auto& seed : seeds_) {
