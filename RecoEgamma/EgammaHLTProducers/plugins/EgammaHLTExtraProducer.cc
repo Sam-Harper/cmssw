@@ -107,7 +107,7 @@ private:
       for (const auto& collPSet : collectionPSets) {
         edm::EDGetTokenT<T> token = cc.consumes<T>(collPSet.getParameter<edm::InputTag>("src"));
         std::string label = collPSet.getParameter<std::string>("label");
-        tokens.emplace_back(std::make_pair(token, label));
+        tokens.emplace_back(token, std::move(label));
       }
     }
 
@@ -122,7 +122,7 @@ private:
         setToken(objTokens.gsfTracks, cc, collPSet, "gsfTracks");
         setToken(objTokens.pixelSeeds, cc, collPSet, "pixelSeeds");
         std::string label = collPSet.getParameter<std::string>("label");
-        tokens.emplace_back(std::make_pair(objTokens, label));
+        tokens.emplace_back(objTokens, std::move(label));
       }
     }
     Tokens(const edm::ParameterSet& pset, edm::ConsumesCollector&& cc);
@@ -271,6 +271,7 @@ void EgammaHLTExtraProducer::setVars(
     reco::EgTrigSumObj& egTrigObj,
     const reco::RecoEcalCandidateRef& ecalCandRef,
     const std::vector<edm::Handle<reco::RecoEcalCandidateIsolationMap>>& valueMapHandles) {
+  std::vector<std::pair<std::string,float> > vars;
   for (auto& valueMapHandle : valueMapHandles) {
     auto mapIt = valueMapHandle->find(ecalCandRef);
     if (mapIt != valueMapHandle->end()) {
@@ -278,9 +279,12 @@ void EgammaHLTExtraProducer::setVars(
       if (!valueMapHandle.provenance()->productInstanceName().empty()) {
         name += "_" + valueMapHandle.provenance()->productInstanceName();
       }
-      egTrigObj.setVar(std::move(name), mapIt->val);
+      vars.emplace_back(std::move(name),mapIt->val);
+      
+      
     }
   }
+  egTrigObj.setVars(std::move(vars));
 }
 
 reco::GsfTrackRefVector EgammaHLTExtraProducer::matchingGsfTrks(
@@ -305,8 +309,7 @@ reco::GsfTrackRefVector EgammaHLTExtraProducer::matchingGsfTrks(
 
 void EgammaHLTExtraProducer::setGsfTracks(reco::EgTrigSumObj& egTrigObj,
                                           const edm::Handle<reco::GsfTrackCollection>& gsfTrksHandle) {
-  reco::GsfTrackRefVector gsfTrkRefs = matchingGsfTrks(egTrigObj.superCluster(), gsfTrksHandle);
-  egTrigObj.setGsfTracks(std::move(gsfTrkRefs));
+  egTrigObj.setGsfTracks(matchingGsfTrks(egTrigObj.superCluster(), gsfTrksHandle));
 }
 
 void EgammaHLTExtraProducer::setSeeds(reco::EgTrigSumObj& egTrigObj,

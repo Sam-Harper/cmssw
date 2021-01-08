@@ -16,8 +16,8 @@ reco::EgTrigSumObj::EgTrigSumObj(const reco::RecoEcalCandidate& ecalCand)
       hasPixelMatch_(false),
       superCluster_(ecalCand.superCluster()) {}
 
-void reco::EgTrigSumObj::setSeeds(reco::ElectronSeedRefVector&& seeds) {
-  seeds_ = seeds;
+void reco::EgTrigSumObj::setSeeds(reco::ElectronSeedRefVector seeds) {
+  seeds_ = std::move(seeds);
   hasPixelMatch_ = false;
   for (const auto& seed : seeds_) {
     if (!seed->hitInfo().empty()) {
@@ -27,12 +27,13 @@ void reco::EgTrigSumObj::setSeeds(reco::ElectronSeedRefVector&& seeds) {
   }
 }
 
-bool reco::EgTrigSumObj::hasVar(const std::string& varName) const { return vars_.find(varName) != vars_.end(); }
+bool reco::EgTrigSumObj::hasVar(const std::string& varName) const { return std::binary_search(vars_.begin(),vars_.end(),varName,VarComparer());}
 
 float reco::EgTrigSumObj::var(const std::string& varName, const bool raiseExcept) const {
-  auto varIt = vars_.find(varName);
-  if (varIt != vars_.end())
-    return varIt->second;
+  //here we have a guaranteed sorted vector with unique entries
+  auto varIt = std::equal_range(vars_.begin(),vars_.end(),varName,VarComparer());
+  if (varIt.first != varIt.second)
+    return varIt.first->second;
   else if (raiseExcept) {
     cms::Exception ex("AttributeError");
     ex << " error variable " << varName << " is not present, variables present are " << varNamesStr();
@@ -47,7 +48,6 @@ std::vector<std::string> reco::EgTrigSumObj::varNames() const {
   for (const auto& var : vars_) {
     names.push_back(var.first);
   }
-  std::sort(names.begin(), names.end());
   return names;
 }
 
@@ -62,14 +62,9 @@ std::string reco::EgTrigSumObj::varNamesStr() const {
   return retVal;
 }
 
-void reco::EgTrigSumObj::setVar(std::string name, float value, bool overwrite) {
-  auto res = vars_.emplace(std::make_pair(std::move(name), value));
-  if (!res.second) {  //insertion failed as already exists
-    if (overwrite) {
-      res.first->second = value;
-    } else {
-      throw cms::Exception("VarError") << "error, value " << res.first->first << " already exists with value "
-                                       << res.first->second << " and overwrite is set to false" << std::endl;
-    }
-  }
+void reco::EgTrigSumObj::setVars(std::vector<std::pair<std::string,float>> vars)
+{
+  vars_ = std::move(vars);
+  std::sort(vars_.begin(),vars_.end(),[](auto& lhs,auto& rhs){return lhs.first<rhs.first;});
 }
+

@@ -160,8 +160,8 @@
   <class name="edm::ValueMap<reco::SuperClusterRef>" />
   <class name="edm::Wrapper<edm::ValueMap<reco::SuperClusterRef> >" />
   
-  <class name="reco::EgTrigSumObj" ClassVersion="10">
-   <version ClassVersion="10" checksum="2636406548"/>
+  <class name="reco::EgTrigSumObj" ClassVersion="3">
+   <version ClassVersion="3" checksum="3841160556"/>
   </class>
   <class name="std::vector<reco::EgTrigSumObj>"/>
   <class name="edm::Wrapper<std::vector<reco::EgTrigSumObj> >"/>
