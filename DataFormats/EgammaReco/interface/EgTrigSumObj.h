@@ -46,13 +46,17 @@ namespace reco {
     //intended for debugging than normal use
     std::vector<std::string> varNames() const;
     std::string varNamesStr() const;
-    void setVars(std::vector<std::pair<std::string,float>> vars);
+    void setVars(std::vector<std::pair<std::string, float>> vars);
     void clearVars() { vars_.clear(); }
 
   private:
     struct VarComparer {
-      bool operator()(const std::string& lhs,const std::pair<std::string,float>& rhs)const{return lhs<rhs.first;}
-      bool operator()(const std::pair<std::string,float>& lhs,const std::string& rhs)const{return lhs.first<rhs;}
+      bool operator()(const std::string& lhs, const std::pair<std::string, float>& rhs) const {
+        return lhs < rhs.first;
+      }
+      bool operator()(const std::pair<std::string, float>& lhs, const std::string& rhs) const {
+        return lhs.first < rhs;
+      }
     };
 
     float energy_;

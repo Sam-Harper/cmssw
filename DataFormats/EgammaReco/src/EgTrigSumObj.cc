@@ -27,11 +27,13 @@ void reco::EgTrigSumObj::setSeeds(reco::ElectronSeedRefVector seeds) {
   }
 }
 
-bool reco::EgTrigSumObj::hasVar(const std::string& varName) const { return std::binary_search(vars_.begin(),vars_.end(),varName,VarComparer());}
+bool reco::EgTrigSumObj::hasVar(const std::string& varName) const {
+  return std::binary_search(vars_.begin(), vars_.end(), varName, VarComparer());
+}
 
 float reco::EgTrigSumObj::var(const std::string& varName, const bool raiseExcept) const {
   //here we have a guaranteed sorted vector with unique entries
-  auto varIt = std::equal_range(vars_.begin(),vars_.end(),varName,VarComparer());
+  auto varIt = std::equal_range(vars_.begin(), vars_.end(), varName, VarComparer());
   if (varIt.first != varIt.second)
     return varIt.first->second;
   else if (raiseExcept) {
@@ -62,9 +64,7 @@ std::string reco::EgTrigSumObj::varNamesStr() const {
   return retVal;
 }
 
-void reco::EgTrigSumObj::setVars(std::vector<std::pair<std::string,float>> vars)
-{
+void reco::EgTrigSumObj::setVars(std::vector<std::pair<std::string, float>> vars) {
   vars_ = std::move(vars);
-  std::sort(vars_.begin(),vars_.end(),[](auto& lhs,auto& rhs){return lhs.first<rhs.first;});
+  std::sort(vars_.begin(), vars_.end(), [](auto& lhs, auto& rhs) { return lhs.first < rhs.first; });
 }
-

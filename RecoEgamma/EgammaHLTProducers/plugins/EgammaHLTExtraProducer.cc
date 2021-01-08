@@ -271,7 +271,7 @@ void EgammaHLTExtraProducer::setVars(
     reco::EgTrigSumObj& egTrigObj,
     const reco::RecoEcalCandidateRef& ecalCandRef,
     const std::vector<edm::Handle<reco::RecoEcalCandidateIsolationMap>>& valueMapHandles) {
-  std::vector<std::pair<std::string,float> > vars;
+  std::vector<std::pair<std::string, float>> vars;
   for (auto& valueMapHandle : valueMapHandles) {
     auto mapIt = valueMapHandle->find(ecalCandRef);
     if (mapIt != valueMapHandle->end()) {
@@ -279,9 +279,7 @@ void EgammaHLTExtraProducer::setVars(
       if (!valueMapHandle.provenance()->productInstanceName().empty()) {
         name += "_" + valueMapHandle.provenance()->productInstanceName();
       }
-      vars.emplace_back(std::move(name),mapIt->val);
-      
-      
+      vars.emplace_back(std::move(name), mapIt->val);
     }
   }
   egTrigObj.setVars(std::move(vars));
