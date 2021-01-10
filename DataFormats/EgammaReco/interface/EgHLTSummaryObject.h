@@ -1,5 +1,5 @@
-#ifndef DataFormats_EgammaReco_EgTrigSumObj_h
-#define DataFormats_EgammaReco_EgTrigSumObj_h
+#ifndef DataFormats_EgammaReco_EgHLTSummaryObject_h
+#define DataFormats_EgammaReco_EgHLTSummaryObject_h
 
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
@@ -17,12 +17,12 @@ namespace reco {
 }
 
 namespace reco {
-  class EgTrigSumObj {
+  class EgHLTSummaryObject {
   public:
-    EgTrigSumObj() : energy_(0.), pt_(0.), eta_(0.), phi_(0.), hasPixelMatch_(false) {}
+    EgHLTSummaryObject() : energy_(0.), pt_(0.), eta_(0.), phi_(0.), hasPixelMatch_(false) {}
 
-    EgTrigSumObj(float energy, float pt, float eta, float phi);
-    EgTrigSumObj(const reco::RecoEcalCandidate& ecalCand);
+    EgHLTSummaryObject(float energy, float pt, float eta, float phi);
+    EgHLTSummaryObject(const reco::RecoEcalCandidate& ecalCand);
 
     float energy() const { return energy_; }
     float et() const { return pt(); }

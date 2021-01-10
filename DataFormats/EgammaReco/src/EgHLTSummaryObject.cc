@@ -1,14 +1,14 @@
-#include "DataFormats/EgammaReco/interface/EgTrigSumObj.h"
+#include "DataFormats/EgammaReco/interface/EgHLTSummaryObject.h"
 
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
 
-reco::EgTrigSumObj::EgTrigSumObj(float energy, float pt, float eta, float phi)
+reco::EgHLTSummaryObject::EgHLTSummaryObject(float energy, float pt, float eta, float phi)
     : energy_(energy), pt_(pt), eta_(eta), phi_(phi), hasPixelMatch_(false) {}
 
-reco::EgTrigSumObj::EgTrigSumObj(const reco::RecoEcalCandidate& ecalCand)
+reco::EgHLTSummaryObject::EgHLTSummaryObject(const reco::RecoEcalCandidate& ecalCand)
     : energy_(ecalCand.energy()),
       pt_(ecalCand.pt()),
       eta_(ecalCand.eta()),
@@ -16,7 +16,7 @@ reco::EgTrigSumObj::EgTrigSumObj(const reco::RecoEcalCandidate& ecalCand)
       hasPixelMatch_(false),
       superCluster_(ecalCand.superCluster()) {}
 
-void reco::EgTrigSumObj::setSeeds(reco::ElectronSeedRefVector seeds) {
+void reco::EgHLTSummaryObject::setSeeds(reco::ElectronSeedRefVector seeds) {
   seeds_ = std::move(seeds);
   hasPixelMatch_ = false;
   for (const auto& seed : seeds_) {
@@ -27,11 +27,11 @@ void reco::EgTrigSumObj::setSeeds(reco::ElectronSeedRefVector seeds) {
   }
 }
 
-bool reco::EgTrigSumObj::hasVar(const std::string& varName) const {
+bool reco::EgHLTSummaryObject::hasVar(const std::string& varName) const {
   return std::binary_search(vars_.begin(), vars_.end(), varName, VarComparer());
 }
 
-float reco::EgTrigSumObj::var(const std::string& varName, const bool raiseExcept) const {
+float reco::EgHLTSummaryObject::var(const std::string& varName, const bool raiseExcept) const {
   //here we have a guaranteed sorted vector with unique entries
   auto varIt = std::equal_range(vars_.begin(), vars_.end(), varName, VarComparer());
   if (varIt.first != varIt.second)
@@ -45,7 +45,7 @@ float reco::EgTrigSumObj::var(const std::string& varName, const bool raiseExcept
   }
 }
 
-std::vector<std::string> reco::EgTrigSumObj::varNames() const {
+std::vector<std::string> reco::EgHLTSummaryObject::varNames() const {
   std::vector<std::string> names;
   for (const auto& var : vars_) {
     names.push_back(var.first);
@@ -53,7 +53,7 @@ std::vector<std::string> reco::EgTrigSumObj::varNames() const {
   return names;
 }
 
-std::string reco::EgTrigSumObj::varNamesStr() const {
+std::string reco::EgHLTSummaryObject::varNamesStr() const {
   std::string retVal;
   auto names = varNames();
   for (const auto& name : names) {
@@ -64,7 +64,7 @@ std::string reco::EgTrigSumObj::varNamesStr() const {
   return retVal;
 }
 
-void reco::EgTrigSumObj::setVars(std::vector<std::pair<std::string, float>> vars) {
+void reco::EgHLTSummaryObject::setVars(std::vector<std::pair<std::string, float>> vars) {
   vars_ = std::move(vars);
   std::sort(vars_.begin(), vars_.end(), [](auto& lhs, auto& rhs) { return lhs.first < rhs.first; });
 }
