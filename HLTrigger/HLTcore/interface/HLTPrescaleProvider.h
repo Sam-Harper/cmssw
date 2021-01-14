@@ -15,6 +15,7 @@
  *  function calls were added. W. David Dagenhart
  */
 
+#include "HLTrigger/HLTcore/interface/FractionalPrescale.h"
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 #include "L1Trigger/GlobalTriggerAnalyzer/interface/L1GtUtils.h"
 #include "L1Trigger/L1TGlobal/interface/L1TGlobalUtil.h"
@@ -58,25 +59,53 @@ public:
   // negative == error
 
   /// combining the two methods above
-  unsigned int prescaleValue(const edm::Event& iEvent, const edm::EventSetup& iSetup, const std::string& trigger);
-
+  template<typename T = unsigned int>
+  T prescaleValue(const edm::Event& iEvent, const edm::EventSetup& iSetup, const std::string& trigger){
+    const int set(prescaleSet(iEvent, iSetup));
+    return set < 0 ? -1 : 
+      hltConfigProvider_.prescaleValue<T>(static_cast<unsigned int>(set), trigger);
+  }
+  
   /// Combined L1T (pair.first) and HLT (pair.second) prescales per HLT path
-  std::pair<int, int> prescaleValues(const edm::Event& iEvent,
-                                     const edm::EventSetup& iSetup,
-                                     const std::string& trigger);
+  template<typename T = int>
+  std::pair<T, T> prescaleValues(const edm::Event& iEvent,
+				 const edm::EventSetup& iSetup,
+				 const std::string& trigger){
+    return {convertL1PS<T>(getL1PrescaleValue(iEvent,iSetup,trigger)),
+	prescaleValue<T>(iEvent,iSetup,trigger)};
+  }
   // any one negative => error in retrieving this (L1T or HLT) prescale
 
   // In case of a complex Boolean expression as L1 seed
-  std::pair<std::vector<std::pair<std::string, int> >, int> prescaleValuesInDetail(const edm::Event& iEvent,
-                                                                                   const edm::EventSetup& iSetup,
-                                                                                   const std::string& trigger);
+  template<typename T = int>
+  std::pair<std::vector<std::pair<std::string, T> >, T> 
+    prescaleValuesInDetail(const edm::Event& iEvent,
+			   const edm::EventSetup& iSetup,
+			   const std::string& trigger){
+    std::pair<std::vector<std::pair<std::string, T> >,T> retval;
+    for(auto& entry : getL1PrescaleValueInDetail(iEvent,iSetup,trigger)){
+      retval.first.emplace_back(std::move(entry.first),convertL1PS<T>(entry.second));
+    }
+    retval.second = prescaleValue<T>(iEvent,iSetup,trigger);
+    return retval;
+  }
   // Event rejected by HLTPrescaler on ith HLT path?
   bool rejectedByHLTPrescaler(const edm::TriggerResults& triggerResults, unsigned int i) const;
 
 private:
   void checkL1GtUtils() const;
   void checkL1TGlobalUtil() const;
+  template<typename T> 
+  T convertL1PS(double val)const{
+    return T(val);
+  }
 
+  double getL1PrescaleValue(const edm::Event& iEvent,const edm::EventSetup& iSetup,
+			    const std::string& trigger);
+  std::vector<std::pair<std::string,double> > 
+  getL1PrescaleValueInDetail(const edm::Event& iEvent,const edm::EventSetup& iSetup,
+			     const std::string& trigger);
+  static constexpr int kL1PrescaleDenominator=100;
   HLTConfigProvider hltConfigProvider_;
   std::unique_ptr<L1GtUtils> l1GtUtils_;
   std::unique_ptr<l1t::L1TGlobalUtil> l1tGlobalUtil_;
@@ -97,4 +126,9 @@ HLTPrescaleProvider::HLTPrescaleProvider(edm::ParameterSet const& pset, edm::Con
     l1tGlobalUtil_ = std::make_unique<l1t::L1TGlobalUtil>(pset, iC, module, l1t::UseEventSetupIn::Run);
   }
 }
+
+template<>
+FractionalPrescale 
+HLTPrescaleProvider::convertL1PS<FractionalPrescale>(double val)const;
+
 #endif
