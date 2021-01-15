@@ -529,6 +529,8 @@ void L1EGCrystalClusterEmulatorProducer::produce(edm::Event& iEvent, const edm::
           float n2x2_3 = 0;
           float e2x2_4 = 0;
           float n2x2_4 = 0;
+	  
+	  bool saturated = false;
           for (auto& hit : ecalhits) {
             if (getCrystal_phiID(hit.position().phi()) <= getPhiMax_card(cc) &&
                 getCrystal_phiID(hit.position().phi()) >= getPhiMin_card(cc) &&
@@ -545,6 +547,7 @@ void L1EGCrystalClusterEmulatorProducer::produce(edm::Event& iEvent, const edm::
               if (abs(hit.dieta(centerhit)) <= 2 && abs(hit.diphi(centerhit)) <= 2) {
                 e5x5 += hit.energy();
                 n5x5++;
+		if(hit.pt()>=127.875) saturated = true;
               }
               if ((hit.dieta(centerhit) == 1 or hit.dieta(centerhit) == 0) &&
                   (hit.diphi(centerhit) == 1 or hit.diphi(centerhit) == 0)) {
@@ -569,6 +572,7 @@ void L1EGCrystalClusterEmulatorProducer::produce(edm::Event& iEvent, const edm::
               if ((hit.dieta(centerhit) == 0 or hit.dieta(centerhit) == 1) && abs(hit.diphi(centerhit)) <= 2) {
                 e2x5_1 += hit.energy();
                 n2x5_1++;
+		
               }
               if ((hit.dieta(centerhit) == 0 or hit.dieta(centerhit) == -1) && abs(hit.diphi(centerhit)) <= 2) {
                 e2x5_2 += hit.energy();
@@ -615,6 +619,7 @@ void L1EGCrystalClusterEmulatorProducer::produce(edm::Event& iEvent, const edm::
           }
           mc1.c5x5_ = e5x5;
           mc1.c2x5_ = max(e2x5_1, e2x5_2);
+	  if(saturated) mc1.c2x5_ = mc1.c5x5_;
           mc1.c2x2_ = e2x2_1;
           if (e2x2_2 > mc1.c2x2_)
             mc1.c2x2_ = e2x2_2;
