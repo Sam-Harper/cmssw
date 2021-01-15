@@ -102,21 +102,22 @@ int HLTPrescaleProvider::prescaleSet(const edm::Event& iEvent, const edm::EventS
   }
 }
 
-template<>
-FractionalPrescale 
-HLTPrescaleProvider::convertL1PS<FractionalPrescale>(double val)const{
-  int numer = static_cast<int>(val*kL1PrescaleDenominator+0.5);
+template <>
+FractionalPrescale HLTPrescaleProvider::convertL1PS<FractionalPrescale>(double val) const {
+  int numer = static_cast<int>(val * kL1PrescaleDenominator_ + 0.5);
   static constexpr double kL1RoundingEpsilon = 0.001;
-  if (std::abs(numer - val*kL1PrescaleDenominator) > kL1RoundingEpsilon){
-    edm::LogWarning("ValueError")  <<" Error, L1 prescale val "<<val<<"does not appear to precisely expressable as int / "<<kL1PrescaleDenominator<<", using a FractionalPrescale is a loss of precision";
+  if (std::abs(numer - val * kL1PrescaleDenominator_) > kL1RoundingEpsilon) {
+    edm::LogWarning("ValueError") << " Error, L1 prescale val " << val
+                                  << "does not appear to precisely expressable as int / " << kL1PrescaleDenominator_
+                                  << ", using a FractionalPrescale is a loss of precision";
   }
 
-  return {numer,kL1PrescaleDenominator};
+  return {numer, kL1PrescaleDenominator_};
 }
 
 double HLTPrescaleProvider::getL1PrescaleValue(const edm::Event& iEvent,
-					       const edm::EventSetup& iSetup,
-					       const std::string& trigger){
+                                               const edm::EventSetup& iSetup,
+                                               const std::string& trigger) {
   // get L1T prescale - works only for those hlt trigger paths with
   // exactly one L1GT seed module which has exactly one L1T name as seed
 
@@ -213,14 +214,9 @@ double HLTPrescaleProvider::getL1PrescaleValue(const edm::Event& iEvent,
   return result;
 }
 
-
-
-std::vector<std::pair<std::string,double> > 
-HLTPrescaleProvider::getL1PrescaleValueInDetail(const edm::Event& iEvent,
-						const edm::EventSetup& iSetup,
-						const std::string& trigger)
-{
-  std::vector<std::pair<std::string,double> > result;
+std::vector<std::pair<std::string, double> > HLTPrescaleProvider::getL1PrescaleValueInDetail(
+    const edm::Event& iEvent, const edm::EventSetup& iSetup, const std::string& trigger) {
+  std::vector<std::pair<std::string, double> > result;
 
   const unsigned int l1tType(hltConfigProvider_.l1tType());
   if (l1tType == 1) {
@@ -238,10 +234,10 @@ HLTPrescaleProvider::getL1PrescaleValueInDetail(const edm::Event& iEvent,
       const std::vector<std::pair<std::string, int> >& errorCodes(l1Logical.errorCodes(iEvent));
       auto resultInt = l1Logical.prescaleFactors();
       result.clear();
-      for(const auto& entry : resultInt){
-	result.push_back(entry);
+      for (const auto& entry : resultInt) {
+        result.push_back(entry);
       }
-	
+
       int l1error(l1Logical.isValid() ? 0 : 1);
       for (auto const& errorCode : errorCodes) {
         l1error += std::abs(errorCode.second);
@@ -254,8 +250,7 @@ HLTPrescaleProvider::getL1PrescaleValueInDetail(const edm::Event& iEvent,
                   << l1tname << "' using L1GtUtils: " << std::endl
                   << " isValid=" << l1Logical.isValid() << " l1tname/error/prescale " << errorCodes.size() << std::endl;
           for (unsigned int i = 0; i < errorCodes.size(); ++i) {
-            message << " " << i << ":" << errorCodes[i].first << "/" << errorCodes[i].second << "/"
-                    << result[i].second;
+            message << " " << i << ":" << errorCodes[i].first << "/" << errorCodes[i].second << "/" << result[i].second;
           }
           message << ".";
           edm::LogError("HLTPrescaleProvider") << message.str();
@@ -366,10 +361,10 @@ void HLTPrescaleProvider::checkL1TGlobalUtil() const {
   }
 }
 
-
-template<>
-unsigned int HLTPrescaleProvider::prescaleValue<unsigned int>(const edm::Event& iEvent, const edm::EventSetup& iSetup, const std::string& trigger){
+template <>
+unsigned int HLTPrescaleProvider::prescaleValue<unsigned int>(const edm::Event& iEvent,
+                                                              const edm::EventSetup& iSetup,
+                                                              const std::string& trigger) {
   const int set(prescaleSet(iEvent, iSetup));
-  return set < 0 ? 1 : 
-    hltConfigProvider_.prescaleValue<unsigned int>(static_cast<unsigned int>(set), trigger);
+  return set < 0 ? 1 : hltConfigProvider_.prescaleValue<unsigned int>(static_cast<unsigned int>(set), trigger);
 }

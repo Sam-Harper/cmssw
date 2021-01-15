@@ -4,5 +4,4 @@
 #include <boost/rational.hpp>
 using FractionalPrescale = boost::rational<int>;
 
-
 #endif

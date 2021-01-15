@@ -184,10 +184,13 @@ public:
   /// Number of HLT prescale sets
   unsigned int prescaleSize() const { return hltConfigData_->prescaleSize(); }
   /// HLT prescale value in specific prescale set for a specific trigger path
-  template<typename T = unsigned int>
+  template <typename T = unsigned int>
   T prescaleValue(unsigned int set, const std::string& trigger) const {
     //limit to only 4 allowed types
-    static_assert(std::is_same_v<T, unsigned int> or std::is_same_v<T,FractionalPrescale> or std::is_same_v<T,int> or std::is_same_v<T,double>, "Please use prescaleValue<unsigned int>, prescaleValue<int>, prescaleValue<double>, or prescaleValue<FractionalPrescale>,\n note int and unsigned int will be depreated soon");
+    static_assert(std::is_same_v<T, unsigned int> or std::is_same_v<T, FractionalPrescale> or std::is_same_v<T, int> or
+                      std::is_same_v<T, double>,
+                  "Please use prescaleValue<unsigned int>, prescaleValue<int>, prescaleValue<double>, or "
+                  "prescaleValue<FractionalPrescale>,\n note int and unsigned int will be depreated soon");
     return hltConfigData_->prescaleValue(set, trigger);
   }
 
