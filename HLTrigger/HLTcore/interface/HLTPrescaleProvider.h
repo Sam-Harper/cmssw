@@ -62,31 +62,33 @@ public:
   template<typename T = unsigned int>
   T prescaleValue(const edm::Event& iEvent, const edm::EventSetup& iSetup, const std::string& trigger){
     const int set(prescaleSet(iEvent, iSetup));
+    //there is a template specialisation for unsigned in which returns +1 which
+    //emulates old behaviour
     return set < 0 ? -1 : 
       hltConfigProvider_.prescaleValue<T>(static_cast<unsigned int>(set), trigger);
   }
   
   /// Combined L1T (pair.first) and HLT (pair.second) prescales per HLT path
-  template<typename T = int>
-  std::pair<T, T> prescaleValues(const edm::Event& iEvent,
-				 const edm::EventSetup& iSetup,
-				 const std::string& trigger){
-    return {convertL1PS<T>(getL1PrescaleValue(iEvent,iSetup,trigger)),
-	prescaleValue<T>(iEvent,iSetup,trigger)};
+  template<typename TL1 = int,typename THLT = TL1>
+  std::pair<TL1, THLT> prescaleValues(const edm::Event& iEvent,
+				      const edm::EventSetup& iSetup,
+				      const std::string& trigger){
+    return {convertL1PS<TL1>(getL1PrescaleValue(iEvent,iSetup,trigger)),
+	prescaleValue<THLT>(iEvent,iSetup,trigger)};
   }
   // any one negative => error in retrieving this (L1T or HLT) prescale
 
   // In case of a complex Boolean expression as L1 seed
-  template<typename T = int>
-  std::pair<std::vector<std::pair<std::string, T> >, T> 
+  template<typename TL1 = int,typename THLT = TL1>
+  std::pair<std::vector<std::pair<std::string, TL1> >, THLT> 
     prescaleValuesInDetail(const edm::Event& iEvent,
 			   const edm::EventSetup& iSetup,
 			   const std::string& trigger){
-    std::pair<std::vector<std::pair<std::string, T> >,T> retval;
+    std::pair<std::vector<std::pair<std::string, TL1> >,THLT> retval;
     for(auto& entry : getL1PrescaleValueInDetail(iEvent,iSetup,trigger)){
-      retval.first.emplace_back(std::move(entry.first),convertL1PS<T>(entry.second));
+      retval.first.emplace_back(std::move(entry.first),convertL1PS<TL1>(entry.second));
     }
-    retval.second = prescaleValue<T>(iEvent,iSetup,trigger);
+    retval.second = prescaleValue<THLT>(iEvent,iSetup,trigger);
     return retval;
   }
   // Event rejected by HLTPrescaler on ith HLT path?
@@ -130,5 +132,8 @@ HLTPrescaleProvider::HLTPrescaleProvider(edm::ParameterSet const& pset, edm::Con
 template<>
 FractionalPrescale 
 HLTPrescaleProvider::convertL1PS<FractionalPrescale>(double val)const;
+
+template<>
+unsigned int HLTPrescaleProvider::prescaleValue<unsigned int>(const edm::Event& iEvent, const edm::EventSetup& iSetup, const std::string& trigger);
 
 #endif

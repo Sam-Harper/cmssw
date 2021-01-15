@@ -106,6 +106,11 @@ template<>
 FractionalPrescale 
 HLTPrescaleProvider::convertL1PS<FractionalPrescale>(double val)const{
   int numer = static_cast<int>(val*kL1PrescaleDenominator+0.5);
+  static constexpr double kL1RoundingEpsilon = 0.001;
+  if (std::abs(numer - val*kL1PrescaleDenominator) > kL1RoundingEpsilon){
+    edm::LogWarning("ValueError")  <<" Error, L1 prescale val "<<val<<"does not appear to precisely expressable as int / "<<kL1PrescaleDenominator<<", using a FractionalPrescale is a loss of precision";
+  }
+
   return {numer,kL1PrescaleDenominator};
 }
 
@@ -359,4 +364,12 @@ void HLTPrescaleProvider::checkL1TGlobalUtil() const {
                                              "the module configuration does not use the era properly\n"
                                              "or input is from mixed eras";
   }
+}
+
+
+template<>
+unsigned int HLTPrescaleProvider::prescaleValue<unsigned int>(const edm::Event& iEvent, const edm::EventSetup& iSetup, const std::string& trigger){
+  const int set(prescaleSet(iEvent, iSetup));
+  return set < 0 ? 1 : 
+    hltConfigProvider_.prescaleValue<unsigned int>(static_cast<unsigned int>(set), trigger);
 }
