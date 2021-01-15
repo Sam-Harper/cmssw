@@ -1020,6 +1020,9 @@ void L1EGCrystalClusterEmulatorProducer::produce(edm::Event& iEvent, const edm::
         }
       }
       cluster_list_L2[ii][jj].ciso_ = ((isolation) * (25.0 / ntowers)) / cluster_list_L2[ii][jj].cpt;
+      if (cluster_list_L2[ii][jj].cpt > 200) {
+        cluster_list_L2[ii][jj].ciso_ = 0; // disabling caloiso cut beyond 200 GeV
+      }
       cluster_list_L2[ii][jj].chovere_ = hcal_nrj / cluster_list_L2[ii][jj].cpt;
     }
   }
