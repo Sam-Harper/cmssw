@@ -28,7 +28,45 @@
 
 #include <vector>
 #include <unordered_map>
+namespace {
+  //changes double to string for product name
+  //ie "." is replaced with "p" and for -ve vals, string is M instead so -28 is M28
+  //has a fixed precision of precision although it removes trailing zeros and the .
+  std::string convertToProdNameStr(double val,int precision=3){
+  
+    std::ostringstream valOStr;
+    valOStr<<std::fixed<<std::setprecision(precision)<<val;
+    std::string valStr = valOStr.str();
+    while(valStr.size()>1 && valStr.back()=='0'){
+      valStr.pop_back();
+    }
+    if(valStr.size()>1 && valStr.back()=='.'){
+      valStr.pop_back();
+    }
+    auto decPoint = valStr.find(".");
+    if(decPoint!=std::string::npos){
+      valStr.replace(decPoint,1,"p");
+    }
+    if(val<0) valStr.replace(0,1,"M");
+    return valStr;
+  }
 
+  template<typename T>
+  std::vector<std::unique_ptr<int> > countRecHits(const T& recHitHandle,const std::vector<double>& thresholds){
+    std::vector<std::unique_ptr<int> > counts(thresholds.size());
+    for(auto& count : counts) count = std::make_unique<int>(0);
+    if(recHitHandle.isValid()){
+      for(const auto& recHit : *recHitHandle){
+	for(size_t thresNr=0;thresNr<thresholds.size();thresNr++){
+	  if(recHit.energy()>=thresholds[thresNr]){
+	    (*counts[thresNr])++;
+	  }
+	}
+      }
+    }
+    return counts;
+  }
+}
 class EgammaHLTPhase2ExtraProducer : public edm::global::EDProducer<> {
 public:
   
@@ -105,7 +143,7 @@ private:
   float minPtToSaveHits_;
   bool saveHitsPlusPi_;
   bool saveHitsPlusHalfPi_;
-  
+  std::vector<double> recHitCountThresholds_;
 };
 
 EgammaHLTPhase2ExtraProducer::Tokens::Tokens(const edm::ParameterSet& pset,edm::ConsumesCollector&& cc)
@@ -125,7 +163,8 @@ EgammaHLTPhase2ExtraProducer::EgammaHLTPhase2ExtraProducer(const edm::ParameterS
   tokens_(pset,consumesCollector()),
   minPtToSaveHits_(pset.getParameter<double>("minPtToSaveHits")),
   saveHitsPlusPi_(pset.getParameter<bool>("saveHitsPlusPi")),
-  saveHitsPlusHalfPi_(pset.getParameter<bool>("saveHitsPlusHalfPi"))
+  saveHitsPlusHalfPi_(pset.getParameter<bool>("saveHitsPlusHalfPi")),
+  recHitCountThresholds_(pset.getParameter<std::vector<double>>("recHitCountThresholds"))
 {
   produces<L1TrackCollection>();
   produces<L1TrackExtraCollection>();
@@ -134,6 +173,9 @@ EgammaHLTPhase2ExtraProducer::EgammaHLTPhase2ExtraProducer(const edm::ParameterS
   produces<edm::ValueMap<std::pair<float,float> > >("hgcalLayerClustersTime");
   for(auto& tokenLabel : tokens_.hgcal){
     produces<HGCRecHitCollection>(tokenLabel.second);
+    for (const auto& thres : recHitCountThresholds_){
+      produces<int>("countHgcalRecHits"+tokenLabel.second+"Thres"+convertToProdNameStr(thres)+"GeV");
+    }
   }
 }
 
@@ -147,7 +189,9 @@ void EgammaHLTPhase2ExtraProducer::fillDescriptions(edm::ConfigurationDescriptio
   desc.add<edm::InputTag>("hgcalLayerClustersTime", edm::InputTag("hgcalLayerClusters","timeLayerCluster"));
   desc.add<double>("minPtToSaveHits",0.);
   desc.add<bool>("saveHitsPlusPi",true);
-  desc.add<bool>("saveHitsPlusHalfPi",true); std::vector<edm::ParameterSet> ecalDefaults(2);  
+  desc.add<bool>("saveHitsPlusHalfPi",true); 
+  desc.add<std::vector<double> >("recHitCountThresholds",std::vector{0.,0.5,1.0,1.5,2.0});
+  std::vector<edm::ParameterSet> ecalDefaults(2);  
   edm::ParameterSetDescription tokenLabelDesc;
   tokenLabelDesc.add<edm::InputTag>("src",edm::InputTag(""));
   tokenLabelDesc.add<std::string>("label","");
@@ -178,6 +222,19 @@ void EgammaHLTPhase2ExtraProducer::produce(edm::StreamID streamID,
     auto recHits = filterRecHits(*egTrigObjs,handle,*caloGeomHandle);
     event.put(std::move(recHits),tokenLabel.second);
   }
+  auto storeCountRecHits = [&event](const auto& tokenLabels,const auto& thresholds,
+				    const std::string& prefixLabel) {
+    for (const auto& tokenLabel : tokenLabels) {
+      auto handle = event.getHandle(tokenLabel.first);
+      auto count = countRecHits(handle,thresholds);
+      for(size_t thresNr=0;thresNr<thresholds.size();thresNr++){
+	const auto& thres = thresholds[thresNr];
+	event.put(std::move(count[thresNr]),prefixLabel+tokenLabel.second+"Thres"+convertToProdNameStr(thres)+"GeV");
+      }
+    }
+  };
+  storeCountRecHits(tokens_.hgcal,recHitCountThresholds_,"countHgcalRecHits");
+
 
   auto hgcalLayerClusters = event.getHandle(tokens_.hgcalLayerClusters);
   auto hgcalLayerClustersTime = event.getHandle(tokens_.hgcalLayerClustersTime);
