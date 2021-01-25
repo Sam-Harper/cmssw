@@ -59,6 +59,36 @@ public:
 
   void setLayerWiseInfo();
 
+  class ShowerShapeCalc {
+
+    ShowerShapeCalc(std::shared_ptr<hgcal::RecHitTools>  recHitTools,
+		    std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap,
+		    const std::vector<std::pair<DetId, float> > &hitsAndFracs,
+		    double minHitE = 0,
+		    double minHitET = 0,
+		    int minLayer = 1,
+		    int maxLayer = -1,
+		    DetId::Detector subDet = DetId::HGCalEE);
+    double minHitE_;
+    double minHitET_;
+    double minHitET2_;
+    int minLayer_;
+    int maxLayer_;
+    int nLayer_;
+    DetId::Detector subDet_;
+
+    std::vector<std::pair<DetId, float> > hitsAndFracs_;
+    std::vector<double> hitEnergies_;
+    std::vector<double> hitEnergiesWithFracs_;
+    
+    ROOT::Math::XYZVector centroid_;
+    std::vector<double> layerEnergies_;
+    std::vector<ROOT::Math::XYZVector> layerCentroids_;
+    
+    std::shared_ptr<hgcal::RecHitTools>  recHitTools_;
+    std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap_;
+  };
+
   struct ShowerWidths {
     double sigma2xx;
     double sigma2yy;
@@ -107,25 +137,11 @@ private:
   void setPFRecHitPtrMap(const std::vector<reco::PFRecHit> &recHits);
   void setFilteredHitsAndFractions(const std::vector<std::pair<DetId, float> > &hitsAndFracs);
 
-  double minHitE_;
-  double minHitET_;
-  double minHitET2_;
-  int minLayer_;
-  int maxLayer_;
-  int nLayer_;
-  DetId::Detector subDet_;
 
   edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometryToken_;
-  hgcal::RecHitTools recHitTools_;
+  std::shared_ptr<hgcal::RecHitTools> recHitTools_;
 
-  std::unordered_map<uint32_t, const reco::PFRecHit *> pfRecHitPtrMap_;
-  std::vector<std::pair<DetId, float> > hitsAndFracs_;
-  std::vector<double> hitEnergies_;
-  std::vector<double> hitEnergiesWithFracs_;
-
-  ROOT::Math::XYZVector centroid_;
-  std::vector<double> layerEnergies_;
-  std::vector<ROOT::Math::XYZVector> layerCentroids_;
+  std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap_;
 };
 
 #endif
