@@ -342,8 +342,9 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegDataECALHLTV1(const reco::Su
 
 std::vector<float> SCEnergyCorrectorSemiParm::getRegDataHGCALV1(const reco::SuperCluster& sc)const {
   std::vector<float> eval(17,0.);
-
-  auto pcaWidths = hgcalShowerShapes_.getPCAWidths(hgcalCylinderR_);
+  auto ssCalc = hgcalShowerShapes_.createCalc(sc.hitsAndFractions());
+ 
+  auto pcaWidths = ssCalc.getPCAWidths(hgcalCylinderR_);
 
   eval[0] = sc.rawEnergy();
   eval[1] = sc.eta();
@@ -358,7 +359,7 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegDataHGCALV1(const reco::Supe
   eval[10] = std::sqrt(pcaWidths.sigma2uu);
   eval[11] = std::sqrt(pcaWidths.sigma2vv);
   eval[12] = std::sqrt(pcaWidths.sigma2ww);
-  eval[13] = hgcalShowerShapes_.getRvar(hgcalCylinderR_, sc.energy());
+  eval[13] = ssCalc.getRvar(hgcalCylinderR_, sc.energy());
   eval[14] = sc.seed()->energy()/sc.rawEnergy();
   eval[15] = nHitsAboveThresholdEB_ + nHitsAboveThresholdHG_;
   
@@ -371,12 +372,12 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegDataHGCALHLTV1(const reco::S
   const float clusterMaxDR = getMaxDRNonSeedCluster(sc).second;
   
 
-  //hgcalShowerShapes_.initPerObject(sc.hitsAndFractions());
+  auto ssCalc = hgcalShowerShapes_.createCalc(sc.hitsAndFractions());
  
   eval[0] = nHitsAboveThresholdEB_ + nHitsAboveThresholdHG_;
   eval[1] = sc.eta();
   eval[2] = sc.phiWidth();
-  eval[3] = hgcalShowerShapes_.getRvar(hgcalCylinderR_, sc.energy());
+  eval[3] = ssCalc.getRvar(hgcalCylinderR_, sc.energy());
   eval[4] = std::max(0, static_cast<int>(sc.clusters().size()) - 1);
   eval[5] = clusterMaxDR;
   eval[6] = sc.rawEnergy();

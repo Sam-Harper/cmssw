@@ -3,47 +3,84 @@
 const double HGCalShowerShapeHelper::kLDWaferCellSize_ = 0.698;
 const double HGCalShowerShapeHelper::kHDWaferCellSize_ = 0.465;
 
-HGCalShowerShapeHelper::HGCalShowerShapeHelper(edm::ConsumesCollector &&sumes)
-    : caloGeometryToken_{sumes.esConsumes<CaloGeometry, CaloGeometryRecord>()} {}
+HGCalShowerShapeHelper::HGCalShowerShapeHelper():
+  recHitTools_(std::make_shared<hgcal::RecHitTools>()),
+  pfRecHitPtrMap_(std::make_shared<std::unordered_map<uint32_t, const reco::PFRecHit *>>())
+ {
 
-void HGCalShowerShapeHelper::initPerEvent(const edm::EventSetup &iSetup, const std::vector<reco::PFRecHit> &pfRecHits) {
-  recHitTools_.setGeometry(iSetup.getData(caloGeometryToken_));
+}
+
+HGCalShowerShapeHelper::HGCalShowerShapeHelper(edm::ConsumesCollector &&sumes):
+  recHitTools_(std::make_shared<hgcal::RecHitTools>()),
+  pfRecHitPtrMap_(std::make_shared<std::unordered_map<uint32_t, const reco::PFRecHit *>>())
+ {
+   setTokens(sumes);
+}
+
+void HGCalShowerShapeHelper::setTokens(edm::ConsumesCollector &sumes){
+  caloGeometryToken_ = sumes.esConsumes<CaloGeometry, CaloGeometryRecord>();
+}
+void HGCalShowerShapeHelper::setTokens(edm::ConsumesCollector &&sumes){
+  caloGeometryToken_ = sumes.esConsumes<CaloGeometry, CaloGeometryRecord>();
+}
+
+void HGCalShowerShapeHelper::initPerSetup(const edm::EventSetup &iSetup){
+  recHitTools_->setGeometry(iSetup.getData(caloGeometryToken_));
+}
+
+void HGCalShowerShapeHelper::initPerEvent(const std::vector<reco::PFRecHit> &pfRecHits) {
   setPFRecHitPtrMap(pfRecHits);
 }
 
-void HGCalShowerShapeHelper::initPerObject(const std::vector<std::pair<DetId, float> > &hitsAndFracs,
-                                           double minHitE,
-                                           double minHitET,
-                                           int minLayer,
-                                           int maxLayer,
-                                           DetId::Detector subDet) {
-  maxLayer = maxLayer <= 0 ? recHitTools_.lastLayerEE() : maxLayer;
+void HGCalShowerShapeHelper::initPerEvent(const edm::EventSetup &iSetup, const std::vector<reco::PFRecHit> &pfRecHits) {
+  initPerSetup(iSetup);
+  initPerEvent(pfRecHits);
+}
 
-  // Safety checks
-  nLayer_ = maxLayer - minLayer + 1;
+HGCalShowerShapeHelper::ShowerShapeCalc
+HGCalShowerShapeHelper::createCalc(const std::vector<std::pair<DetId, float> > &hitsAndFracs,
+				   double minHitE, 
+				   double minHitET,
+				   int minLayer, 
+				   int maxLayer,
+				   DetId::Detector subDet)const{
+  return ShowerShapeCalc(recHitTools_,pfRecHitPtrMap_,hitsAndFracs,
+			 minHitE,minHitET,minLayer,maxLayer,subDet);
+			 
+}
+
+
+HGCalShowerShapeHelper::ShowerShapeCalc::ShowerShapeCalc(std::shared_ptr<hgcal::RecHitTools>  recHitTools,
+				 std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap,
+				 const std::vector<std::pair<DetId, float> > &hitsAndFracs,
+				 const double minHitE,
+				 const double minHitET,
+				 const int minLayer,
+				 const int maxLayer,
+				 const DetId::Detector subDet):
+  recHitTools_(recHitTools),
+  pfRecHitPtrMap_(pfRecHitPtrMap),
+  minHitE_(minHitE),
+  minHitET_(minHitET),
+  minLayer_(minLayer),
+  maxLayer_(maxLayer <= 0 ? recHitTools_->lastLayerEE() : maxLayer),
+  nLayer_(maxLayer_ - minLayer_),
+  subDet_(subDet)
+{
   assert(nLayer_ > 0);
-
-  minHitE_ = minHitE;
-  minHitET_ = minHitET;
-  minHitET2_ = minHitET * minHitET;
-  minLayer_ = minLayer;
-  maxLayer_ = maxLayer;
-  subDet_ = subDet;
-
   setFilteredHitsAndFractions(hitsAndFracs);
-
   setLayerWiseInfo();
 }
 
 void HGCalShowerShapeHelper::setPFRecHitPtrMap(const std::vector<reco::PFRecHit> &recHits) {
-  pfRecHitPtrMap_.clear();
+  pfRecHitPtrMap_->clear();
 
   for (const auto &recHit : recHits) {
-    pfRecHitPtrMap_[recHit.detId()] = &recHit;
+    (*pfRecHitPtrMap_)[recHit.detId()] = &recHit;
   }
 }
 
-void HGCalShowerShapeHelper::setFilteredHitsAndFractions(const std::vector<std::pair<DetId, float> > &hitsAndFracs) {
+void HGCalShowerShapeHelper::ShowerShapeCalc::setFilteredHitsAndFractions(const std::vector<std::pair<DetId, float> > &hitsAndFracs) {
   hitsAndFracs_.clear();
   hitEnergies_.clear();
   hitEnergiesWithFracs_.clear();
@@ -52,7 +89,7 @@ void HGCalShowerShapeHelper::setFilteredHitsAndFractions(const std::vector<std::
     DetId hitId = hnf.first;
     float hitEfrac = hnf.second;
 
-    int hitLayer = recHitTools_.getLayer(hitId);
+    int hitLayer = recHitTools_->getLayer(hitId);
 
     if (hitLayer > nLayer_) {
       continue;
@@ -62,11 +99,11 @@ void HGCalShowerShapeHelper::setFilteredHitsAndFractions(const std::vector<std::
       continue;
     }
 
-    if (pfRecHitPtrMap_.find(hitId.rawId()) == pfRecHitPtrMap_.end()) {
+    if (pfRecHitPtrMap_->find(hitId.rawId()) == pfRecHitPtrMap_->end()) {
       continue;
     }
 
-    const reco::PFRecHit &recHit = *pfRecHitPtrMap_[hitId.rawId()];
+    const reco::PFRecHit &recHit = *(*pfRecHitPtrMap_)[hitId.rawId()];
 
     if (recHit.energy() < minHitE_) {
       continue;
@@ -83,7 +120,7 @@ void HGCalShowerShapeHelper::setFilteredHitsAndFractions(const std::vector<std::
   }
 }
 
-void HGCalShowerShapeHelper::setLayerWiseInfo() {
+void HGCalShowerShapeHelper::ShowerShapeCalc::setLayerWiseInfo() {
   layerEnergies_.clear();
   layerEnergies_.resize(nLayer_);
 
@@ -104,12 +141,12 @@ void HGCalShowerShapeHelper::setLayerWiseInfo() {
     double weight = hitEnergies_[iHit];
     totalW += weight;
 
-    const auto &hitPos = recHitTools_.getPosition(hitId);
+    const auto &hitPos = recHitTools_->getPosition(hitId);
     ROOT::Math::XYZVector hitXYZ(hitPos.x(), hitPos.y(), hitPos.z());
 
     centroid_ += weight * hitXYZ;
 
-    int hitLayer = recHitTools_.getLayer(hitId) - 1;
+    int hitLayer = recHitTools_->getLayer(hitId) - 1;
 
     layerEnergies_[hitLayer] += weight;
     layerCentroids_[hitLayer] += weight * hitXYZ;
@@ -130,11 +167,11 @@ void HGCalShowerShapeHelper::setLayerWiseInfo() {
   }
 }
 
-const double HGCalShowerShapeHelper::getCellSize(DetId detId) {
-  return recHitTools_.getSiThickIndex(detId) == 0 ? kHDWaferCellSize_ : kLDWaferCellSize_;
+double HGCalShowerShapeHelper::ShowerShapeCalc::getCellSize(DetId detId)const {
+  return recHitTools_->getSiThickIndex(detId) == 0 ? kHDWaferCellSize_ : kLDWaferCellSize_;
 }
 
-const double HGCalShowerShapeHelper::getRvar(double cylinderR, double energyNorm, bool useFractions, bool useCellSize) {
+double HGCalShowerShapeHelper::ShowerShapeCalc::getRvar(double cylinderR, double energyNorm, bool useFractions, bool useCellSize)const {
   if (hitsAndFracs_.empty()) {
     return 0.0;
   }
@@ -157,9 +194,9 @@ const double HGCalShowerShapeHelper::getRvar(double cylinderR, double energyNorm
 
     DetId hitId = hnf.first;
 
-    int hitLayer = recHitTools_.getLayer(hitId) - 1;
+    int hitLayer = recHitTools_->getLayer(hitId) - 1;
 
-    const auto &hitPos = recHitTools_.getPosition(hitId);
+    const auto &hitPos = recHitTools_->getPosition(hitId);
     ROOT::Math::XYZVector hitXYZ(hitPos.x(), hitPos.y(), hitPos.z());
 
     auto distXYZ = hitXYZ - layerCentroids_[hitLayer];
@@ -185,7 +222,7 @@ const double HGCalShowerShapeHelper::getRvar(double cylinderR, double energyNorm
   return rVar;
 }
 
-const HGCalShowerShapeHelper::ShowerWidths HGCalShowerShapeHelper::getPCAWidths(double cylinderR, bool useFractions) {
+HGCalShowerShapeHelper::ShowerWidths HGCalShowerShapeHelper::ShowerShapeCalc::getPCAWidths(double cylinderR, bool useFractions)const {
   if (hitsAndFracs_.empty()) {
     return ShowerWidths();
   }
@@ -214,10 +251,10 @@ const HGCalShowerShapeHelper::ShowerWidths HGCalShowerShapeHelper::getPCAWidths(
 
     DetId hitId = hnf.first;
 
-    const auto &hitPos = recHitTools_.getPosition(hitId);
+    const auto &hitPos = recHitTools_->getPosition(hitId);
     ROOT::Math::XYZVector hitXYZ(hitPos.x(), hitPos.y(), hitPos.z());
 
-    int hitLayer = recHitTools_.getLayer(hitId) - 1;
+    int hitLayer = recHitTools_->getLayer(hitId) - 1;
 
     ROOT::Math::XYZVector radXYZ = hitXYZ - layerCentroids_[hitLayer];
 
