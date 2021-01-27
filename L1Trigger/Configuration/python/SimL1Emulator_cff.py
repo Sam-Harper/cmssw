@@ -90,6 +90,28 @@ _phase2_siml1emulator.add(L1EGammaClusterEmuProducer)
 from L1Trigger.L1CaloTrigger.l1EGammaEEProducer_cfi import *
 _phase2_siml1emulator.add(l1EGammaEEProducer)
 
+# Barrel and EndCap CaloJet/HT
+# ########################################################################
+# ----    Produce the calibrated tower collection combining Barrel, HGCal, HF
+from L1Trigger.L1CaloTrigger.L1TowerCalibrationProducer_cfi import *
+L1TowerCalibration = L1TowerCalibrationProducer.clone(
+  L1HgcalTowersInputTag = cms.InputTag("hgcalTowerProducer","HGCalTowerProcessor",""),
+  l1CaloTowers = cms.InputTag("L1EGammaClusterEmuProducer","","")
+)
+# ----    Produce the L1CaloJets
+from L1Trigger.L1CaloTrigger.L1CaloJetProducer_cfi import *
+L1CaloJet = L1CaloJetProducer.clone (
+    l1CaloTowers = cms.InputTag("L1TowerCalibrationProducer","L1CaloTowerCalibratedCollection",""),
+    L1CrystalClustersInputTag = cms.InputTag("L1EGammaClusterEmuProducer", "","")
+)
+# ----    Produce the CaloJet HTT Sums
+from L1Trigger.L1CaloTrigger.L1CaloJetHTTProducer_cfi import *
+L1CaloJetHTT = L1CaloJetHTTProducer.clone()
+
+_phase2_siml1emulator.add(L1TowerCalibration)
+_phase2_siml1emulator.add(L1CaloJet)
+_phase2_siml1emulator.add(L1CaloJetHTT)
+
 # ########################################################################
 # Phase-2 L1T - TrackTrigger dependent modules
 # ########################################################################
@@ -113,6 +135,17 @@ _phase2_siml1emulator.add(L1TkPhotonsHGC)
 
 _phase2_siml1emulator.add( L1TkMuons )
 
+# Tracker Objects
+# ########################################################################
+from L1Trigger.L1TTrackMatch.L1TrackJetProducer_cfi import *
+from L1Trigger.L1TTrackMatch.L1TrackFastJetProducer_cfi import *
+from L1Trigger.L1TTrackMatch.L1TrackerEtMissProducer_cfi import *
+from L1Trigger.L1TTrackMatch.L1TkHTMissProducer_cfi import *
+_phase2_siml1emulator.add(L1TrackJets)
+_phase2_siml1emulator.add(L1TrackFastJets)
+_phase2_siml1emulator.add(L1TrackerEtMiss)
+_phase2_siml1emulator.add(L1TrackerHTMiss)
+
 # PF Candidates
 # ########################################################################
 from L1Trigger.Phase2L1ParticleFlow.l1ParticleFlow_cff import *
@@ -129,9 +162,9 @@ _phase2_siml1emulator.add(l1PFJetsPhase1Task)
 # PF MET
 # ########################################################################
 from L1Trigger.Phase2L1ParticleFlow.l1pfJetMet_cff import *
+_phase2_siml1emulator.add(l1PFJetsTask)
 # Describe here l1PFMets Task
 # ###############################
-l1PFMetsTask = cms.Task(l1PFMetCalo , l1PFMetPF , l1PFMetPuppi)
 _phase2_siml1emulator.add(l1PFMetsTask)
 
 # NNTaus
