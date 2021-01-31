@@ -7,6 +7,7 @@
 #include "RecoEcal/EgammaCoreTools/interface/EcalTools.h"
 
 #include "FWCore/Utilities/interface/isFinite.h"
+#include "FWCore/Utilities/interface/Transition.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 
 #include <vdt/vdtMath.h>
@@ -51,45 +52,48 @@ SCEnergyCorrectorSemiParm::SCEnergyCorrectorSemiParm()
     isHLT_(false),isPhaseII_(false),applySigmaIetaIphiBug_(false),
     nHitsAboveThresholdEB_(0),nHitsAboveThresholdEE_(0),nHitsAboveThresholdHG_(0),
     hitsEnergyThreshold_(-1.),hgcalCylinderR_(0.) {}
-      
 
-void SCEnergyCorrectorSemiParm::setTokens(const edm::ParameterSet &iConfig, edm::ConsumesCollector &cc) {
-  isHLT_ = iConfig.getParameter<bool>("isHLT");
-  isPhaseII_ = iConfig.getParameter<bool>("isPhaseII");
-  applySigmaIetaIphiBug_ = iConfig.getParameter<bool>("applySigmaIetaIphiBug");
-  tokenEBRecHits_ = cc.consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("ecalRecHitsEB"));
-  if(not isPhaseII_){
-    tokenEERecHits_ = cc.consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("ecalRecHitsEE"));
-  }else{
-    tokenHgcalEERecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsEE"));
-    tokenHgcalHEBRecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsHEB"));
-    tokenHgcalHEFRecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsHEF"));
-    hgcalCylinderR_ = iConfig.getParameter<double>("hgcalCylinderR");
-  }
+SCEnergyCorrectorSemiParm::SCEnergyCorrectorSemiParm(const edm::ParameterSet& iConfig,edm::ConsumesCollector cc) : SCEnergyCorrectorSemiParm(){
+  setTokens(iConfig,cc);
+}      
 
-  regParamBarrel_ = RegParam(iConfig.getParameter<std::string>("regressionKeyEB"),
-			     iConfig.getParameter<double>("regressionMinEB"),
-			     iConfig.getParameter<double>("regressionMaxEB"),
-			     iConfig.getParameter<std::string>("uncertaintyKeyEB"),
-			     iConfig.getParameter<double>("uncertaintyMinEB"),
-			     iConfig.getParameter<double>("uncertaintyMaxEB"));
-  regParamEndcap_ = RegParam(iConfig.getParameter<std::string>("regressionKeyEE"),
-			     iConfig.getParameter<double>("regressionMinEE"),
-			     iConfig.getParameter<double>("regressionMaxEE"),
-			     iConfig.getParameter<std::string>("uncertaintyKeyEE"),
-			     iConfig.getParameter<double>("uncertaintyMinEE"),
-			     iConfig.getParameter<double>("uncertaintyMaxEE"));
-
-  if (not isHLT_) {
-    tokenVertices_ = cc.consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexCollection"));
-  } else {
-    hitsEnergyThreshold_ = iConfig.getParameter<double>("eThreshold");
-  }
+void SCEnergyCorrectorSemiParm::fillPSetDescription(edm::ParameterSetDescription& desc)
+{
+  desc.add<bool>("isHLT", false);
+  desc.add<bool>("isPhaseII",false);
+  desc.add<bool>("applySigmaIetaIphiBug", false);
+  desc.add<edm::InputTag>("ecalRecHitsEE", edm::InputTag("ecalRecHit", "EcalRecHitsEE"));
+  desc.add<edm::InputTag>("ecalRecHitsEB", edm::InputTag("ecalRecHit", "EcalRecHitsEB"));
+  desc.add<std::string>("regressionKeyEB", "pfscecal_EBCorrection_offline_v2");
+  desc.add<std::string>("regressionKeyEE", "pfscecal_EECorrection_offline_v2");
+  desc.add<std::string>("uncertaintyKeyEB", "pfscecal_EBUncertainty_offline_v2");
+  desc.add<std::string>("uncertaintyKeyEE", "pfscecal_EEUncertainty_offline_v2");
+  desc.add<double>("regressionMinEB",0.2);
+  desc.add<double>("regressionMaxEB",2.0);
+  desc.add<double>("regressionMinEE",0.2);
+  desc.add<double>("regressionMaxEE",2.0);
+  desc.add<double>("uncertaintyMinEB",0.0002);
+  desc.add<double>("uncertaintyMaxEB",0.5);
+  desc.add<double>("uncertaintyMinEE",0.0002);
+  desc.add<double>("uncertaintyMaxEE",0.5);
+  desc.add<edm::InputTag>("vertexCollection", edm::InputTag("offlinePrimaryVertices"));
+  desc.add<double>("eRecHitThreshold", 1.);
+  desc.add<edm::InputTag>("hgcalRecHitsEE",edm::InputTag());
+  //  desc.add<edm::InputTag>("hgcalRecHitsHEB",edm::InputTag());
+  // desc.add<edm::InputTag>("hgcalRecHitsHEF",edm::InputTag());
+  desc.add<double>("hgcalCylinderR",2.8);
 }
 
+edm::ParameterSetDescription SCEnergyCorrectorSemiParm::makePSetDescription(){
+  edm::ParameterSetDescription desc;
+  fillPSetDescription(desc);
+  return desc;
+}
+
+
 void SCEnergyCorrectorSemiParm::setEventSetup(const edm::EventSetup &es) {
-  es.get<CaloTopologyRecord>().get(caloTopo_);
-  es.get<CaloGeometryRecord>().get(caloGeom_);
+  caloTopo_ = es.getHandle(caloTopoToken_);
+  caloGeom_ = es.getHandle(caloGeomToken_);
 
   regParamBarrel_.setForests(es);
   regParamEndcap_.setForests(es);
@@ -105,16 +109,18 @@ void SCEnergyCorrectorSemiParm::setEvent(const edm::Event &event) {
     event.getByToken(tokenEERecHits_, recHitsEE_);
   }else{
     event.getByToken(tokenHgcalEERecHits_, recHitsHgcalEE_);
-    event.getByToken(tokenHgcalHEBRecHits_, recHitsHgcalHEB_);
-    event.getByToken(tokenHgcalHEFRecHits_, recHitsHgcalHEF_);
+    //    event.getByToken(tokenHgcalHEBRecHits_, recHitsHgcalHEB_);
+    // event.getByToken(tokenHgcalHEFRecHits_, recHitsHgcalHEF_);
     hgcalShowerShapes_.initPerEvent(*recHitsHgcalEE_);
   }
   if(isHLT_ || isPhaseII_){
+    //note countRecHits checks the validity of the handle and returns 0
+    //if invalid so its okay to call on all rec-hit collections here
     nHitsAboveThresholdEB_ = countRecHits(recHitsEB_,hitsEnergyThreshold_);
     nHitsAboveThresholdEE_ = countRecHits(recHitsEE_,hitsEnergyThreshold_);
-    nHitsAboveThresholdHG_ = countRecHits(recHitsHgcalEE_,hitsEnergyThreshold_)+
-      countRecHits(recHitsHgcalHEB_,hitsEnergyThreshold_)+
-      countRecHits(recHitsHgcalHEF_,hitsEnergyThreshold_);
+    nHitsAboveThresholdHG_ = countRecHits(recHitsHgcalEE_,hitsEnergyThreshold_);
+    //      countRecHits(recHitsHgcalHEB_,hitsEnergyThreshold_)+
+    //      countRecHits(recHitsHgcalHEF_,hitsEnergyThreshold_);
   }
   if (!isHLT_){
     event.getByToken(tokenVertices_, vertices_);
@@ -158,8 +164,16 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegData(const reco::SuperCluste
 {
   switch(sc.seed()->seed().det()){
   case DetId::Ecal:
+    if(isPhaseII_ && sc.seed()->seed().subdetId()==EcalEndcap){
+      throw cms::Exception("ConfigError") <<" Error in SCEnergyCorrectorSemiParm: "
+					  <<" running over events with EcalEndcap clusters while enabling isPhaseII, please set isPhaseII = False in regression config";
+    } 
     return isHLT_ ? getRegDataECALHLTV1(sc) : getRegDataECALV1(sc);
   case DetId::HGCalEE:
+    if(!isPhaseII_){
+      throw cms::Exception("ConfigError") <<" Error in SCEnergyCorrectorSemiParm: "
+					  <<" running over PhaseII events without enabling isPhaseII, please set isPhaseII = True in regression config";
+    }
     return isHLT_ ? getRegDataHGCALHLTV1(sc) : getRegDataHGCALV1(sc);
   default:
     return std::vector<float>();

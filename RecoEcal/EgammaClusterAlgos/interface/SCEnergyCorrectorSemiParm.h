@@ -36,8 +36,16 @@
 class SCEnergyCorrectorSemiParm {
 public:
   SCEnergyCorrectorSemiParm();
-  
-  void setTokens(const edm::ParameterSet &iConfig, edm::ConsumesCollector &cc);
+  //if you want override the default on where conditions are consumed, you need to use
+  //the other constructor and then call setTokens approprately 
+  SCEnergyCorrectorSemiParm(const edm::ParameterSet& iConfig,edm::ConsumesCollector cc);
+
+  static void fillPSetDescription(edm::ParameterSetDescription& desc);
+  static edm::ParameterSetDescription makePSetDescription();
+   
+  template<edm::Transition tr=edm::Transition::BeginLuminosityBlock>
+  void setTokens(const edm::ParameterSet &iConfig, edm::ConsumesCollector cc);
+
   void setEventSetup(const edm::EventSetup &es);
   void setEvent(const edm::Event &e);
 
@@ -75,12 +83,14 @@ protected:
 
   edm::ESHandle<CaloTopology> caloTopo_;
   edm::ESHandle<CaloGeometry> caloGeom_;
+  edm::ESGetToken<CaloTopology,CaloTopologyRecord> caloTopoToken_;
+  edm::ESGetToken<CaloGeometry,CaloGeometryRecord> caloGeomToken_;
 
   edm::EDGetTokenT<EcalRecHitCollection> tokenEBRecHits_;
   edm::EDGetTokenT<EcalRecHitCollection> tokenEERecHits_;
   edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalEERecHits_;
-  edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalHEBRecHits_;
-  edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalHEFRecHits_;
+  //edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalHEBRecHits_;
+  // edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalHEFRecHits_;
   edm::EDGetTokenT<reco::VertexCollection> tokenVertices_;
 
   edm::Handle<EcalRecHitCollection> recHitsEB_;
@@ -121,4 +131,42 @@ private:
   float hgcalCylinderR_;
   HGCalShowerShapeHelper hgcalShowerShapes_;
 };
+
+template<edm::Transition esTransition>
+void SCEnergyCorrectorSemiParm::setTokens(const edm::ParameterSet &iConfig, edm::ConsumesCollector cc){
+  isHLT_ = iConfig.getParameter<bool>("isHLT");
+  isPhaseII_ = iConfig.getParameter<bool>("isPhaseII");
+  applySigmaIetaIphiBug_ = iConfig.getParameter<bool>("applySigmaIetaIphiBug");
+  tokenEBRecHits_ = cc.consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("ecalRecHitsEB"));
+  if(not isPhaseII_){
+    tokenEERecHits_ = cc.consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("ecalRecHitsEE"));
+  }else{
+    tokenHgcalEERecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsEE"));
+    // tokenHgcalHEBRecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsHEB"));
+    //tokenHgcalHEFRecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsHEF"));
+    hgcalCylinderR_ = iConfig.getParameter<double>("hgcalCylinderR");
+    hgcalShowerShapes_.setTokens<esTransition>(cc);
+  }
+  caloGeomToken_ = cc.esConsumes<CaloGeometry, CaloGeometryRecord,esTransition>();
+  caloTopoToken_ = cc.esConsumes<CaloTopology, CaloTopologyRecord,esTransition>();
+ 
+  regParamBarrel_ = RegParam(iConfig.getParameter<std::string>("regressionKeyEB"),
+			     iConfig.getParameter<double>("regressionMinEB"),
+			     iConfig.getParameter<double>("regressionMaxEB"),
+			     iConfig.getParameter<std::string>("uncertaintyKeyEB"),
+			     iConfig.getParameter<double>("uncertaintyMinEB"),
+			     iConfig.getParameter<double>("uncertaintyMaxEB"));
+  regParamEndcap_ = RegParam(iConfig.getParameter<std::string>("regressionKeyEE"),
+			     iConfig.getParameter<double>("regressionMinEE"),
+			     iConfig.getParameter<double>("regressionMaxEE"),
+			     iConfig.getParameter<std::string>("uncertaintyKeyEE"),
+			     iConfig.getParameter<double>("uncertaintyMinEE"),
+			     iConfig.getParameter<double>("uncertaintyMaxEE"));
+
+  if (not isHLT_) {
+    tokenVertices_ = cc.consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexCollection"));
+  } else {
+    hitsEnergyThreshold_ = iConfig.getParameter<double>("eRecHitThreshold");
+  }
+}
 #endif
