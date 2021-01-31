@@ -17,13 +17,6 @@ HGCalShowerShapeHelper::HGCalShowerShapeHelper(edm::ConsumesCollector &&sumes):
    setTokens(sumes);
 }
 
-void HGCalShowerShapeHelper::setTokens(edm::ConsumesCollector &sumes){
-  caloGeometryToken_ = sumes.esConsumes<CaloGeometry, CaloGeometryRecord>();
-}
-void HGCalShowerShapeHelper::setTokens(edm::ConsumesCollector &&sumes){
-  caloGeometryToken_ = sumes.esConsumes<CaloGeometry, CaloGeometryRecord>();
-}
-
 void HGCalShowerShapeHelper::initPerSetup(const edm::EventSetup &iSetup){
   recHitTools_->setGeometry(iSetup.getData(caloGeometryToken_));
 }

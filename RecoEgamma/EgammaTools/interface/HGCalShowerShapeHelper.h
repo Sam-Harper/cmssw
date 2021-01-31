@@ -38,6 +38,7 @@
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/StreamID.h"
+#include "FWCore/Utilities/interface/Transition.h"
 #include "Geometry/CaloTopology/interface/HGCalTopology.h"
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
@@ -135,8 +136,11 @@ public:
   HGCalShowerShapeHelper& operator=(const HGCalShowerShapeHelper& rhs)=delete;
   HGCalShowerShapeHelper& operator=(const HGCalShowerShapeHelper&& rhs)=delete;
 
-  void setTokens(edm::ConsumesCollector &sumes);
-  void setTokens(edm::ConsumesCollector &&sumes);
+  template<edm::Transition tr=edm::Transition::Event>
+  void setTokens(edm::ConsumesCollector consumesCollector){
+    caloGeometryToken_ = consumesCollector.esConsumes<CaloGeometry, CaloGeometryRecord, tr>();
+  }
+    
   void initPerSetup(const edm::EventSetup &iSetup);
   void initPerEvent(const std::vector<reco::PFRecHit> &recHits);
   void initPerEvent(const edm::EventSetup &iSetup,const std::vector<reco::PFRecHit> &recHits);
