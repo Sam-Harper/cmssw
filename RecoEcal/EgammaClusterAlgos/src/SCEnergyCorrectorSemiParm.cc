@@ -31,7 +31,7 @@ namespace{
         maxDR2 = dr2;
       }
     }
-    return {maxDRClus,std::sqrt(maxDR2)};
+    return {maxDRClus,maxDR2!=0. ? std::sqrt(maxDR2) : 999.};
   }
   template<typename T>
   int countRecHits(const T& recHitHandle,float threshold){
@@ -388,13 +388,13 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegDataHGCALHLTV1(const reco::S
 
   auto ssCalc = hgcalShowerShapes_.createCalc(sc.hitsAndFractions());
  
-  eval[0] = nHitsAboveThresholdEB_ + nHitsAboveThresholdHG_;
+  eval[0] = sc.rawEnergy();
   eval[1] = sc.eta();
   eval[2] = sc.phiWidth();
-  eval[3] = ssCalc.getRvar(hgcalCylinderR_, sc.energy());
-  eval[4] = std::max(0, static_cast<int>(sc.clusters().size()) - 1);
+  eval[3] = std::max(0, static_cast<int>(sc.clusters().size()) - 1);
+  eval[4] = ssCalc.getRvar(hgcalCylinderR_, sc.rawEnergy());
   eval[5] = clusterMaxDR;
-  eval[6] = sc.rawEnergy();
+  eval[6] = nHitsAboveThresholdEB_ + nHitsAboveThresholdHG_;  
   
   return eval;
 }

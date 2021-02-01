@@ -110,7 +110,7 @@ void EgammaHLTHGCalIDVarProducer::produce(edm::Event& iEvent, const edm::EventSe
   for (size_t candNr = 0; candNr < recoEcalCandHandle->size(); candNr++) {
     reco::RecoEcalCandidateRef candRef(recoEcalCandHandle, candNr);
     auto ssCalc = ssHelper_.createCalc(candRef->superCluster()->hitsAndFractions());
-    rVarMap->insert(candRef, ssCalc.getRvar(rCylinder_, candRef->superCluster()->energy()));
+    rVarMap->insert(candRef, ssCalc.getRvar(rCylinder_, candRef->superCluster()->rawEnergy()));
 
     float hForHoverE = HGCalClusterTools::hadEnergyInCone(
         candRef->superCluster()->eta(), candRef->superCluster()->phi(), layerClusters, 0., hOverECone_, 0., 0.);
