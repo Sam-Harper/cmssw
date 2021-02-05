@@ -8,13 +8,17 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
-#include "DataFormats/EgammaReco/interface/EgHLTSummaryObject.h"
-#include "DataFormats/EgammaReco/interface/EgHLTSummaryObjectFwd.h"
+#include "DataFormats/HLTReco/interface/EgammaObject.h"
+#include "DataFormats/HLTReco/interface/EgammaObjectFwd.h"
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
+#include "DataFormats/EgammaReco/interface/ElectronSeed.h"
+#include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
+#include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
+#include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
@@ -38,32 +42,32 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
-  static void setVars(reco::EgHLTSummaryObject& egTrigObj,
+  static void setVars(trigger::EgammaObject& egTrigObj,
                       const reco::RecoEcalCandidateRef& ecalCandRef,
                       const std::vector<edm::Handle<reco::RecoEcalCandidateIsolationMap>>& valueMapHandles);
   static reco::GsfTrackRefVector matchingGsfTrks(const reco::SuperClusterRef& scRef,
                                                  const edm::Handle<reco::GsfTrackCollection>& gsfTrksHandle);
-  static void setGsfTracks(reco::EgHLTSummaryObject& egTrigObj,
+  static void setGsfTracks(trigger::EgammaObject& egTrigObj,
                            const edm::Handle<reco::GsfTrackCollection>& gsfTrksHandle);
-  static void setSeeds(reco::EgHLTSummaryObject& egTrigObj, edm::Handle<reco::ElectronSeedCollection>& eleSeedsHandle);
+  static void setSeeds(trigger::EgammaObject& egTrigObj, edm::Handle<reco::ElectronSeedCollection>& eleSeedsHandle);
 
   //these three filter functions are overly similar but with annoying differences
   //eg rechits needs to access geometry, trk dr is also w.r.t the track eta/phi
   //still could collapse into a single function
   template <typename RecHitCollection>
   std::unique_ptr<RecHitCollection> filterRecHits(
-      const std::vector<std::unique_ptr<reco::EgHLTSummaryObjectCollection>>& egTrigObjs,
+      const std::vector<std::unique_ptr<trigger::EgammaObjectCollection>>& egTrigObjs,
       const edm::Handle<RecHitCollection>& recHits,
       const CaloGeometry& geom,
       float maxDR2 = 0.4 * 0.4) const;
 
   std::unique_ptr<reco::TrackCollection> filterTrks(
-      const std::vector<std::unique_ptr<reco::EgHLTSummaryObjectCollection>>& egTrigObjs,
+      const std::vector<std::unique_ptr<trigger::EgammaObjectCollection>>& egTrigObjs,
       const edm::Handle<reco::TrackCollection>& trks,
       float maxDR2 = 0.4 * 0.4) const;
 
   std::unique_ptr<reco::PFClusterCollection> filterPFClusIso(
-      const std::vector<std::unique_ptr<reco::EgHLTSummaryObjectCollection>>& egTrigObjs,
+      const std::vector<std::unique_ptr<trigger::EgammaObjectCollection>>& egTrigObjs,
       const edm::Handle<reco::PFClusterCollection>& pfClus,
       float maxDR2 = 0.4 * 0.4) const;
 
@@ -152,7 +156,7 @@ EgammaHLTExtraProducer::EgammaHLTExtraProducer(const edm::ParameterSet& pset)
   consumesMany<reco::RecoEcalCandidateIsolationMap>();
 
   for (auto& tokenLabel : tokens_.egCands) {
-    produces<reco::EgHLTSummaryObjectCollection>(tokenLabel.second);
+    produces<trigger::EgammaObjectCollection>(tokenLabel.second);
   }
   for (auto& tokenLabel : tokens_.ecal) {
     produces<EcalRecHitCollection>(tokenLabel.second);
@@ -222,13 +226,13 @@ void EgammaHLTExtraProducer::produce(edm::StreamID streamID,
   std::vector<edm::Handle<reco::RecoEcalCandidateIsolationMap>> valueMapHandles;
   event.getManyByType(valueMapHandles);
 
-  std::vector<std::unique_ptr<reco::EgHLTSummaryObjectCollection>> egTrigObjColls;
+  std::vector<std::unique_ptr<trigger::EgammaObjectCollection>> egTrigObjColls;
   for (const auto& egCandsToken : tokens_.egCands) {
     auto ecalCandsHandle = event.getHandle(egCandsToken.first.ecalCands);
     auto gsfTrksHandle = event.getHandle(egCandsToken.first.gsfTracks);
     auto pixelSeedsHandle = event.getHandle(egCandsToken.first.pixelSeeds);
 
-    auto egTrigObjs = std::make_unique<reco::EgHLTSummaryObjectCollection>();
+    auto egTrigObjs = std::make_unique<trigger::EgammaObjectCollection>();
     for (size_t candNr = 0; ecalCandsHandle.isValid() && candNr < ecalCandsHandle->size(); candNr++) {
       reco::RecoEcalCandidateRef candRef(ecalCandsHandle, candNr);
       egTrigObjs->push_back(*candRef);
@@ -269,7 +273,7 @@ void EgammaHLTExtraProducer::produce(edm::StreamID streamID,
 }
 
 void EgammaHLTExtraProducer::setVars(
-    reco::EgHLTSummaryObject& egTrigObj,
+    trigger::EgammaObject& egTrigObj,
     const reco::RecoEcalCandidateRef& ecalCandRef,
     const std::vector<edm::Handle<reco::RecoEcalCandidateIsolationMap>>& valueMapHandles) {
   std::vector<std::pair<std::string, float>> vars;
@@ -306,12 +310,12 @@ reco::GsfTrackRefVector EgammaHLTExtraProducer::matchingGsfTrks(
   return gsfTrkRefs;
 }
 
-void EgammaHLTExtraProducer::setGsfTracks(reco::EgHLTSummaryObject& egTrigObj,
+void EgammaHLTExtraProducer::setGsfTracks(trigger::EgammaObject& egTrigObj,
                                           const edm::Handle<reco::GsfTrackCollection>& gsfTrksHandle) {
   egTrigObj.setGsfTracks(matchingGsfTrks(egTrigObj.superCluster(), gsfTrksHandle));
 }
 
-void EgammaHLTExtraProducer::setSeeds(reco::EgHLTSummaryObject& egTrigObj,
+void EgammaHLTExtraProducer::setSeeds(trigger::EgammaObject& egTrigObj,
                                       edm::Handle<reco::ElectronSeedCollection>& eleSeedsHandle) {
   if (!eleSeedsHandle.isValid()) {
     egTrigObj.setSeeds(reco::ElectronSeedRefVector());
@@ -333,7 +337,7 @@ void EgammaHLTExtraProducer::setSeeds(reco::EgHLTSummaryObject& egTrigObj,
 
 template <typename RecHitCollection>
 std::unique_ptr<RecHitCollection> EgammaHLTExtraProducer::filterRecHits(
-    const std::vector<std::unique_ptr<reco::EgHLTSummaryObjectCollection>>& egTrigObjColls,
+    const std::vector<std::unique_ptr<trigger::EgammaObjectCollection>>& egTrigObjColls,
     const edm::Handle<RecHitCollection>& recHits,
     const CaloGeometry& geom,
     float maxDR2) const {
@@ -377,7 +381,7 @@ std::unique_ptr<RecHitCollection> EgammaHLTExtraProducer::filterRecHits(
 }
 
 std::unique_ptr<reco::TrackCollection> EgammaHLTExtraProducer::filterTrks(
-    const std::vector<std::unique_ptr<reco::EgHLTSummaryObjectCollection>>& egTrigObjColls,
+    const std::vector<std::unique_ptr<trigger::EgammaObjectCollection>>& egTrigObjColls,
     const edm::Handle<reco::TrackCollection>& trks,
     float maxDR2) const {
   auto filteredTrks = std::make_unique<reco::TrackCollection>();
@@ -423,7 +427,7 @@ std::unique_ptr<reco::TrackCollection> EgammaHLTExtraProducer::filterTrks(
 }
 
 std::unique_ptr<reco::PFClusterCollection> EgammaHLTExtraProducer::filterPFClusIso(
-    const std::vector<std::unique_ptr<reco::EgHLTSummaryObjectCollection>>& egTrigObjColls,
+    const std::vector<std::unique_ptr<trigger::EgammaObjectCollection>>& egTrigObjColls,
     const edm::Handle<reco::PFClusterCollection>& pfClus,
     float maxDR2) const {
   auto filteredPFClus = std::make_unique<reco::PFClusterCollection>();

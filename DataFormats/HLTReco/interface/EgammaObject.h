@@ -1,10 +1,7 @@
-#ifndef DataFormats_EgammaReco_EgHLTSummaryObject_h
-#define DataFormats_EgammaReco_EgHLTSummaryObject_h
+#ifndef DataFormats_HLTReco_EgammaObject_h
+#define DataFormats_HLTReco_EgammaObject_h
 
-#include "DataFormats/EgammaReco/interface/SuperCluster.h"
-#include "DataFormats/EgammaReco/interface/ElectronSeed.h"
-#include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
-
+#include "DataFormats/HLTReco/interface/TriggerObject.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
@@ -16,20 +13,14 @@ namespace reco {
   class RecoEcalCandidate;
 }
 
-namespace reco {
-  class EgHLTSummaryObject {
+namespace trigger {
+  class EgammaObject: public TriggerObject{
   public:
-    EgHLTSummaryObject() : energy_(0.), pt_(0.), eta_(0.), phi_(0.), hasPixelMatch_(false) {}
+    EgammaObject() : hasPixelMatch_(false) {}
 
-    EgHLTSummaryObject(float energy, float pt, float eta, float phi);
-    EgHLTSummaryObject(const reco::RecoEcalCandidate& ecalCand);
-
-    float energy() const { return energy_; }
-    float et() const { return pt(); }
-    float pt() const { return pt_; }
-    float mass() const { return 0.; }
-    float eta() const { return eta_; }
-    float phi() const { return phi_; }
+    EgammaObject(int id, float pt, float eta, float phi, float mass):
+      TriggerObject(id,pt,eta,phi,mass),hasPixelMatch_(false) {}
+    EgammaObject(const reco::RecoEcalCandidate& ecalCand);
 
     const reco::SuperClusterRef& superCluster() const { return superCluster_; }
     const reco::GsfTrackRefVector& gsfTracks() const { return gsfTracks_; }
@@ -59,10 +50,6 @@ namespace reco {
       }
     };
 
-    float energy_;
-    float pt_;
-    float eta_;
-    float phi_;
     bool hasPixelMatch_;
     std::vector<std::pair<std::string, float>> vars_;
 
@@ -72,6 +59,6 @@ namespace reco {
     reco::ElectronSeedRefVector seeds_;
   };
 
-}  // namespace reco
+} 
 
 #endif

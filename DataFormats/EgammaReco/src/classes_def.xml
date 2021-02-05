@@ -160,17 +160,5 @@
   <class name="edm::ValueMap<reco::SuperClusterRef>" />
   <class name="edm::Wrapper<edm::ValueMap<reco::SuperClusterRef> >" />
   
-  <class name="reco::EgHLTSummaryObject" ClassVersion="3">
-   <version ClassVersion="3" checksum="2072910071"/>
-  </class>
-  <class name="std::vector<reco::EgHLTSummaryObject>"/>
-  <class name="edm::Wrapper<std::vector<reco::EgHLTSummaryObject> >"/>
-  <class name="edm::Ref<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject,edm::refhelper::FindUsingAdvance<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject> >"/>
-  <class name="edm::RefProd<std::vector<reco::EgHLTSummaryObject> >"/>
-  <class name="edm::RefVector<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject,edm::refhelper::FindUsingAdvance<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject> >"/>
-  <class name="edm::Wrapper<edm::RefVector<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject,edm::refhelper::FindUsingAdvance<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject> > >"/>
-  <class name="std::vector<edm::Ref<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject,edm::refhelper::FindUsingAdvance<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject> > >"/>
-  <class name="edm::Wrapper<std::vector<edm::Ref<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject,edm::refhelper::FindUsingAdvance<std::vector<reco::EgHLTSummaryObject>,reco::EgHLTSummaryObject> > > >"/>
-
 </lcgdict>
 
