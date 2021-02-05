@@ -355,11 +355,14 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegDataECALHLTV1(const reco::Su
 }
 
 std::vector<float> SCEnergyCorrectorSemiParm::getRegDataHGCALV1(const reco::SuperCluster& sc)const {
-  std::vector<float> eval(17,0.);
-  auto ssCalc = hgcalShowerShapes_.createCalc(sc.hitsAndFractions());
- 
+  std::vector<float> eval(16,0.);
+  std::cout <<"HGCALTest for SC  "<<sc.energy()<<"  "<<sc.eta()<<" "<<sc.phi()<<std::endl;
+  auto ssCalc = hgcalShowerShapes_.createCalc(sc.hitsAndFractions(),0.0,
+					      0.0,
+					      1,
+					      28);
   auto pcaWidths = ssCalc.getPCAWidths(hgcalCylinderR_);
-
+  auto energyHighestHits = ssCalc.getEnergyHighestHits(2);
   eval[0] = sc.rawEnergy();
   eval[1] = sc.eta();
   eval[2] = sc.etaWidth();
@@ -368,12 +371,12 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegDataHGCALV1(const reco::Supe
   eval[5] = sc.hitsAndFractions().size();
   eval[6] = sc.eta()-sc.seed()->eta();
   eval[7] = reco::deltaPhi(sc.phi(),sc.seed()->phi());
-  // eval[8] = eMax/sc.rawEnergy();
-  // eval[9] = e2nd/sc.rawEnergy();
+  eval[8] = energyHighestHits[0]/sc.rawEnergy();
+  eval[9] = energyHighestHits[1]/sc.rawEnergy();
   eval[10] = std::sqrt(pcaWidths.sigma2uu);
   eval[11] = std::sqrt(pcaWidths.sigma2vv);
   eval[12] = std::sqrt(pcaWidths.sigma2ww);
-  eval[13] = ssCalc.getRvar(hgcalCylinderR_, sc.energy());
+  eval[13] = ssCalc.getRvar(hgcalCylinderR_, sc.rawEnergy());
   eval[14] = sc.seed()->energy()/sc.rawEnergy();
   eval[15] = nHitsAboveThresholdEB_ + nHitsAboveThresholdHG_;
   

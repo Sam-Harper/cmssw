@@ -57,7 +57,7 @@ HGCalShowerShapeHelper::ShowerShapeCalc::ShowerShapeCalc(std::shared_ptr<hgcal::
   minHitET_(minHitET),
   minLayer_(minLayer),
   maxLayer_(maxLayer <= 0 ? recHitTools_->lastLayerEE() : maxLayer),
-  nLayer_(maxLayer_ - minLayer_),
+  nLayer_(maxLayer_ - minLayer_ + 1),
   subDet_(subDet)
 {
   assert(nLayer_ > 0);
@@ -318,4 +318,11 @@ HGCalShowerShapeHelper::ShowerWidths HGCalShowerShapeHelper::ShowerShapeCalc::ge
   returnWidths.sigma2ww = eigVals(0);
 
   return returnWidths;
+}
+
+std::vector<double> HGCalShowerShapeHelper::ShowerShapeCalc::getEnergyHighestHits(unsigned int nrHits,bool useFractions)const {
+  std::vector<double> sortedEnergies(nrHits,0.);
+  const auto& hits = useFractions ? hitEnergiesWithFracs_ : hitEnergies_;
+  std::partial_sort_copy(hits.begin(),hits.end(),sortedEnergies.begin(),sortedEnergies.end(),std::greater<double>());
+  return sortedEnergies;
 }
