@@ -162,11 +162,10 @@ void SCEnergyCorrectorSemiParm::setTokens(const edm::ParameterSet &iConfig, edm:
 			     iConfig.getParameter<std::string>("uncertaintyKeyEE"),
 			     iConfig.getParameter<double>("uncertaintyMinEE"),
 			     iConfig.getParameter<double>("uncertaintyMaxEE"));
-
-  if (not isHLT_) {
+  hitsEnergyThreshold_ = iConfig.getParameter<double>("eRecHitThreshold");
+  if (not isHLT_){
     tokenVertices_ = cc.consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertexCollection"));
-  } else {
-    hitsEnergyThreshold_ = iConfig.getParameter<double>("eRecHitThreshold");
   }
+   
 }
 #endif
