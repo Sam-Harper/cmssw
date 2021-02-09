@@ -88,16 +88,17 @@ public:
     ShowerShapeCalc(std::shared_ptr<hgcal::RecHitTools>  recHitTools,
 		    std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap,
 		    const std::vector<std::pair<DetId, float> > &hitsAndFracs,
+		    const double rawEnergy,
 		    const double minHitE = 0,
 		    const double minHitET = 0,
 		    const int minLayer = 1,
 		    const int maxLayer = -1,
 		    DetId::Detector subDet = DetId::HGCalEE);
-    
+      
     double getCellSize(DetId detId)const;
     
     // Compute Rvar in a cylinder around the layer centroids
-    double getRvar(double cylinderR, double energyNorm, bool useFractions = true, bool useCellSize = true)const;
+    double getRvar(double cylinderR, bool useFractions = true, bool useCellSize = true)const;
     
     // Compute PCA widths around the layer centroids
     ShowerWidths getPCAWidths(double cylinderR, bool useFractions = false)const;
@@ -110,6 +111,7 @@ public:
 
     std::shared_ptr<hgcal::RecHitTools>  recHitTools_;
     std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap_;
+    double rawEnergy_;
 
     double minHitE_;
     double minHitET_;
@@ -149,11 +151,21 @@ public:
  
   HGCalShowerShapeHelper::ShowerShapeCalc
   createCalc(const std::vector<std::pair<DetId, float> > &hitsAndFracs,
+	     double rawEnergy,
 		  double minHitE = 0,
 		  double minHitET = 0,
 		  int minLayer = 1,
 		  int maxLayer = -1,
 		  DetId::Detector subDet = DetId::HGCalEE)const;
+  HGCalShowerShapeHelper::ShowerShapeCalc
+  createCalc(const reco::SuperCluster& sc,
+		  double minHitE = 0,
+		  double minHitET = 0,
+		  int minLayer = 1,
+		  int maxLayer = -1,
+	     DetId::Detector subDet = DetId::HGCalEE)const{
+    return createCalc(sc.hitsAndFractions(),sc.rawEnergy(),minHitE,minHitET,minLayer,maxLayer,subDet);
+  }
 
 private:
   void setPFRecHitPtrMap(const std::vector<reco::PFRecHit> &recHits);
