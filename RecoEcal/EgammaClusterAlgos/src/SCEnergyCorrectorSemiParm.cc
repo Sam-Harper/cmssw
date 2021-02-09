@@ -336,7 +336,6 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegDataECALHLTV1(const reco::Su
 {
   std::vector<float> eval(7,0.);
   auto maxDRNonSeedClus = getMaxDRNonSeedCluster(sc);
-  //ECAL regressions train with maxDR being 999 if there is no cluster other than seed clus
   const float clusterMaxDR =  maxDRNonSeedClus.first.isNonnull() ? maxDRNonSeedClus.second : 999.;
   
   const reco::CaloCluster &seedCluster = *(sc.seed());
@@ -355,30 +354,35 @@ std::vector<float> SCEnergyCorrectorSemiParm::getRegDataECALHLTV1(const reco::Su
 }
 
 std::vector<float> SCEnergyCorrectorSemiParm::getRegDataHGCALV1(const reco::SuperCluster& sc)const {
-  std::vector<float> eval(16,0.);
-  std::cout <<"HGCALTest for SC  "<<sc.energy()<<"  "<<sc.eta()<<" "<<sc.phi()<<std::endl;
+  std::vector<float> eval(17,0.);
+  
   auto ssCalc = hgcalShowerShapes_.createCalc(sc.hitsAndFractions(),0.0,
 					      0.0,
 					      1,
 					      28);
   auto pcaWidths = ssCalc.getPCAWidths(hgcalCylinderR_);
   auto energyHighestHits = ssCalc.getEnergyHighestHits(2);
+
+  auto maxDRNonSeedClus = getMaxDRNonSeedCluster(sc);
+  const float clusterMaxDR =  maxDRNonSeedClus.first.isNonnull() ? maxDRNonSeedClus.second : 999.;
+
   eval[0] = sc.rawEnergy();
   eval[1] = sc.eta();
   eval[2] = sc.etaWidth();
   eval[3] = sc.phiWidth();
   eval[4] = sc.clusters().size();
   eval[5] = sc.hitsAndFractions().size();
-  eval[6] = sc.eta()-sc.seed()->eta();
-  eval[7] = reco::deltaPhi(sc.phi(),sc.seed()->phi());
-  eval[8] = energyHighestHits[0]/sc.rawEnergy();
-  eval[9] = energyHighestHits[1]/sc.rawEnergy();
-  eval[10] = std::sqrt(pcaWidths.sigma2uu);
-  eval[11] = std::sqrt(pcaWidths.sigma2vv);
-  eval[12] = std::sqrt(pcaWidths.sigma2ww);
-  eval[13] = ssCalc.getRvar(hgcalCylinderR_, sc.rawEnergy());
-  eval[14] = sc.seed()->energy()/sc.rawEnergy();
-  eval[15] = nHitsAboveThresholdEB_ + nHitsAboveThresholdHG_;
+  eval[6] = clusterMaxDR;
+  eval[7] = sc.eta()-sc.seed()->eta();
+  eval[8] = reco::deltaPhi(sc.phi(),sc.seed()->phi());
+  eval[9] = energyHighestHits[0]/sc.rawEnergy();
+  eval[10] = energyHighestHits[1]/sc.rawEnergy();
+  eval[11] = std::sqrt(pcaWidths.sigma2uu);
+  eval[12] = std::sqrt(pcaWidths.sigma2vv);
+  eval[13] = std::sqrt(pcaWidths.sigma2ww);
+  eval[14] = ssCalc.getRvar(hgcalCylinderR_, sc.rawEnergy());
+  eval[15] = sc.seed()->energy()/sc.rawEnergy();
+  eval[16] = nHitsAboveThresholdEB_ + nHitsAboveThresholdHG_;
   
   return eval;
 }
