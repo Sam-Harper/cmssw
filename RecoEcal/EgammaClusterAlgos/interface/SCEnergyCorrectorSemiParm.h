@@ -88,23 +88,17 @@ protected:
 
   edm::EDGetTokenT<EcalRecHitCollection> tokenEBRecHits_;
   edm::EDGetTokenT<EcalRecHitCollection> tokenEERecHits_;
-  edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalEERecHits_;
-  //edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalHEBRecHits_;
-  // edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalHEFRecHits_;
+  edm::EDGetTokenT<reco::PFRecHitCollection> tokenHgcalRecHits_;
   edm::EDGetTokenT<reco::VertexCollection> tokenVertices_;
 
   edm::Handle<EcalRecHitCollection> recHitsEB_;
   edm::Handle<EcalRecHitCollection> recHitsEE_;
-  edm::Handle<reco::PFRecHitCollection> recHitsHgcalEE_;
-  edm::Handle<reco::PFRecHitCollection> recHitsHgcalHEB_;
-  edm::Handle<reco::PFRecHitCollection> recHitsHgcalHEF_;
+  edm::Handle<reco::PFRecHitCollection> recHitsHgcal_;
   edm::Handle<reco::VertexCollection> vertices_;
 
   edm::InputTag ecalHitsEBInputTag_;
   edm::InputTag ecalHitsEEInputTag_;
-  edm::InputTag hgcalHitsEEInputTag_;
-  edm::InputTag hgcalHitsHEBInputTag_;
-  edm::InputTag hgcalHitsHEFInputTag_;
+  edm::InputTag hgcalHitsInputTag_;
   
   edm::InputTag vertexInputTag_;
 
@@ -141,9 +135,7 @@ void SCEnergyCorrectorSemiParm::setTokens(const edm::ParameterSet &iConfig, edm:
   if(not isPhaseII_){
     tokenEERecHits_ = cc.consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("ecalRecHitsEE"));
   }else{
-    tokenHgcalEERecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsEE"));
-    // tokenHgcalHEBRecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsHEB"));
-    //tokenHgcalHEFRecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHitsHEF"));
+    tokenHgcalRecHits_ = cc.consumes<reco::PFRecHitCollection>(iConfig.getParameter<edm::InputTag>("hgcalRecHits"));
     hgcalCylinderR_ = iConfig.getParameter<double>("hgcalCylinderR");
     hgcalShowerShapes_.setTokens<esTransition>(cc);
   }

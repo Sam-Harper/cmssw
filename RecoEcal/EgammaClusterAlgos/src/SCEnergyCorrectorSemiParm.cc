@@ -78,9 +78,7 @@ void SCEnergyCorrectorSemiParm::fillPSetDescription(edm::ParameterSetDescription
   desc.add<double>("uncertaintyMaxEE",0.5);
   desc.add<edm::InputTag>("vertexCollection", edm::InputTag("offlinePrimaryVertices"));
   desc.add<double>("eRecHitThreshold", 1.);
-  desc.add<edm::InputTag>("hgcalRecHitsEE",edm::InputTag());
-  //  desc.add<edm::InputTag>("hgcalRecHitsHEB",edm::InputTag());
-  // desc.add<edm::InputTag>("hgcalRecHitsHEF",edm::InputTag());
+  desc.add<edm::InputTag>("hgcalRecHits",edm::InputTag());
   desc.add<double>("hgcalCylinderR",2.8);
 }
 
@@ -108,19 +106,15 @@ void SCEnergyCorrectorSemiParm::setEvent(const edm::Event &event) {
   if(!isPhaseII_){
     event.getByToken(tokenEERecHits_, recHitsEE_);
   }else{
-    event.getByToken(tokenHgcalEERecHits_, recHitsHgcalEE_);
-    //    event.getByToken(tokenHgcalHEBRecHits_, recHitsHgcalHEB_);
-    // event.getByToken(tokenHgcalHEFRecHits_, recHitsHgcalHEF_);
-    hgcalShowerShapes_.initPerEvent(*recHitsHgcalEE_);
+    event.getByToken(tokenHgcalRecHits_, recHitsHgcal_);
+    hgcalShowerShapes_.initPerEvent(*recHitsHgcal_);
   }
   if(isHLT_ || isPhaseII_){
     //note countRecHits checks the validity of the handle and returns 0
     //if invalid so its okay to call on all rec-hit collections here
     nHitsAboveThresholdEB_ = countRecHits(recHitsEB_,hitsEnergyThreshold_);
     nHitsAboveThresholdEE_ = countRecHits(recHitsEE_,hitsEnergyThreshold_);
-    nHitsAboveThresholdHG_ = countRecHits(recHitsHgcalEE_,hitsEnergyThreshold_);
-    //      countRecHits(recHitsHgcalHEB_,hitsEnergyThreshold_)+
-    //      countRecHits(recHitsHgcalHEF_,hitsEnergyThreshold_);
+    nHitsAboveThresholdHG_ = countRecHits(recHitsHgcal_,hitsEnergyThreshold_);
   }
   if (!isHLT_){
     event.getByToken(tokenVertices_, vertices_);

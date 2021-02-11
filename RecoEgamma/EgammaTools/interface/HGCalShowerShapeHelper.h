@@ -48,7 +48,9 @@ class HGCalShowerShapeHelper {
   // Good to filter/compute/store this stuff beforehand as they are common to the shower shape variables.
   // No point in filtering, computing layer-wise centroids, etc. for each variable again and again.
   // Once intitialized, one can the calculate different variables one after another for a given object.
-  // If a different set of preselections (E, ET, etc.) is required for a given object, then reinitialize using initPerObject(...).
+  // This is all handled by ShowerShapeCalc class which caches the layer-wise centroids and other 
+  // heavy variables for an object + set of cuts
+  // It was changed to this approach so that we could use this in constant functions
 
   // In principle should consider the HGCalHSi and HGCalHSc hits (leakage) also.
   // Can have subdetector dependent thresholds and layer selection.
@@ -85,8 +87,8 @@ public:
 
   class ShowerShapeCalc {
   public:
-    ShowerShapeCalc(std::shared_ptr<hgcal::RecHitTools>  recHitTools,
-		    std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap,
+    ShowerShapeCalc(std::shared_ptr<const hgcal::RecHitTools>  recHitTools,
+		    std::shared_ptr<const std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap,
 		    const std::vector<std::pair<DetId, float> > &hitsAndFracs,
 		    const double rawEnergy,
 		    const double minHitE = 0,
@@ -109,8 +111,8 @@ public:
     void setFilteredHitsAndFractions(const std::vector<std::pair<DetId, float> > &hitsAndFracs);
     void setLayerWiseInfo();
 
-    std::shared_ptr<hgcal::RecHitTools>  recHitTools_;
-    std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap_;
+    std::shared_ptr<const hgcal::RecHitTools>  recHitTools_;
+    std::shared_ptr<const std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap_;
     double rawEnergy_;
 
     double minHitE_;

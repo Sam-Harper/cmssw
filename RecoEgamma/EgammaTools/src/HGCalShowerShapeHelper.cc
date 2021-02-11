@@ -4,8 +4,8 @@ const double HGCalShowerShapeHelper::kLDWaferCellSize_ = 0.698;
 const double HGCalShowerShapeHelper::kHDWaferCellSize_ = 0.465;
 
 
-HGCalShowerShapeHelper::ShowerShapeCalc::ShowerShapeCalc(std::shared_ptr<hgcal::RecHitTools>  recHitTools,
-				 std::shared_ptr<std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap,
+HGCalShowerShapeHelper::ShowerShapeCalc::ShowerShapeCalc(std::shared_ptr<const hgcal::RecHitTools>  recHitTools,
+				 std::shared_ptr<const std::unordered_map<uint32_t, const reco::PFRecHit *> > pfRecHitPtrMap,
 				 const std::vector<std::pair<DetId, float> > &hitsAndFracs,
 				 const double rawEnergy,
 				 const double minHitE,
@@ -214,12 +214,12 @@ void HGCalShowerShapeHelper::ShowerShapeCalc::setFilteredHitsAndFractions(const 
     if (hitId.det() != subDet_) {
       continue;
     }
-
-    if (pfRecHitPtrMap_->find(hitId.rawId()) == pfRecHitPtrMap_->end()) {
+    auto hitIt = pfRecHitPtrMap_->find(hitId.rawId());
+    if ( hitIt == pfRecHitPtrMap_->end()) {
       continue;
     }
 
-    const reco::PFRecHit &recHit = *(*pfRecHitPtrMap_)[hitId.rawId()];
+    const reco::PFRecHit &recHit = *hitIt->second;
 
     if (recHit.energy() < minHitE_) {
       continue;
