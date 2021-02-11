@@ -18,6 +18,7 @@ HGCalShowerShapeHelper::ShowerShapeCalc::ShowerShapeCalc(std::shared_ptr<hgcal::
   rawEnergy_(rawEnergy),
   minHitE_(minHitE),
   minHitET_(minHitET),
+  minHitET2_(minHitET*minHitET),
   minLayer_(minLayer),
   maxLayer_(maxLayer <= 0 ? recHitTools_->lastLayerEE() : maxLayer),
   nLayer_(maxLayer_ - minLayer_ + 1),
