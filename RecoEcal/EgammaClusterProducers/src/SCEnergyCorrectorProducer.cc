@@ -5,6 +5,7 @@
 
 
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
+#include "DataFormats/Common/interface/ValueMap.h"
 #include "RecoEcal/EgammaClusterAlgos/interface/SCEnergyCorrectorSemiParm.h"
 
 #include <vector>
@@ -26,9 +27,9 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
-  SCEnergyCorrectorSemiParm  energyCorrector_;
-  edm::EDGetTokenT<reco::SuperClusterCollection> inputSCToken_;
-  bool writeFeatures_;
+  SCEnergyCorrectorSemiParm energyCorrector_;
+  const edm::EDGetTokenT<reco::SuperClusterCollection> inputSCToken_;
+  const bool writeFeatures_;
 };
 
 SCEnergyCorrectorProducer::SCEnergyCorrectorProducer(const edm::ParameterSet& iConfig):
@@ -36,8 +37,8 @@ SCEnergyCorrectorProducer::SCEnergyCorrectorProducer(const edm::ParameterSet& iC
   inputSCToken_(consumes<reco::SuperClusterCollection>(iConfig.getParameter<edm::InputTag>("inputSCs"))),
   writeFeatures_(iConfig.getParameter<bool>("writeFeatures")){
   produces<reco::SuperClusterCollection>();
-  if(writeFeatures_){
-    produces<std::vector<std::vector<float>>>("features");
+  if (writeFeatures_) {
+    produces<edm::ValueMap<std::vector<float>>>("features");
   }
 
 }
@@ -49,20 +50,29 @@ void SCEnergyCorrectorProducer::beginLuminosityBlock(const edm::LuminosityBlock&
 void SCEnergyCorrectorProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup){
   energyCorrector_.setEvent(iEvent);
 
-  auto inputSCHandle = iEvent.getHandle(inputSCToken_);
-  auto corrSCs = std::make_unique<reco::SuperClusterCollection>(); 
-  auto scFeatures = std::make_unique<std::vector<std::vector<float> > >();
-  for(const auto& inputSC : *inputSCHandle){
+  auto inputSCs = iEvent.get(inputSCToken_);
+  auto corrSCs = std::make_unique<reco::SuperClusterCollection>();
+  std::vector<std::vector<float>> scFeatures;
+  for (const auto& inputSC : inputSCs) {
     corrSCs->push_back(inputSC);
     energyCorrector_.modifyObject(corrSCs->back());
-    if(writeFeatures_){
-      scFeatures->emplace_back(energyCorrector_.getRegData(corrSCs->back()));
+    if (writeFeatures_) {
+      scFeatures.emplace_back(energyCorrector_.getRegData(corrSCs->back()));
     }
   }
-  iEvent.put(std::move(corrSCs));
-  iEvent.put(std::move(scFeatures),"features");
+
+  auto scHandle = iEvent.put(std::move(corrSCs));
+
+  if (writeFeatures_) {
+    auto valMap = std::make_unique<edm::ValueMap<std::vector<float>>>();
+    edm::ValueMap<std::vector<float>>::Filler filler(*valMap);
+    filler.insert(scHandle, scFeatures.begin(), scFeatures.end());
+    filler.fill();
+    iEvent.put(std::move(valMap), "features");
+  }
 
 }
+
 void SCEnergyCorrectorProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::ParameterSetDescription>("correctorCfg", SCEnergyCorrectorSemiParm::makePSetDescription());
