@@ -98,10 +98,11 @@ bool L1THPSPFTauFilter::hltFilter(edm::Event& iEvent,
   auto opftaus(HPSPFTaus->end());
   l1t::HPSPFTauCollection::const_iterator iHPSPFTau;
   for (iHPSPFTau = apftaus; iHPSPFTau != opftaus; iHPSPFTau++) {
-    double offlinePt = this->HPSPFTauOfflineEt(iHPSPFTau->pt(), iHPSPFTau->eta());
+    const double offlinePt = this->HPSPFTauOfflineEt(iHPSPFTau->pt(), iHPSPFTau->eta());
+    const double leadTrkPt = iHPSPFTau->leadChargedPFCand().isNonnull() ? iHPSPFTau->leadChargedPFCand()->pfTrack()->pt() : 0;
     if (offlinePt >= min_Pt_ && iHPSPFTau->eta() <= max_Eta_ && iHPSPFTau->eta() >= min_Eta_ &&
         (iHPSPFTau->sumChargedIso() / iHPSPFTau->pt()) < max_RelChargedIso_ &&
-        (iHPSPFTau->leadChargedPFCand()->pfTrack()->pt()) > min_LeadTrackPt_) {
+        leadTrkPt > min_LeadTrackPt_) {
       npftau++;
       l1t::HPSPFTauRef ref(l1t::HPSPFTauRef(HPSPFTaus, distance(apftaus, iHPSPFTau)));
       filterproduct.addObject(trigger::TriggerObjectType::TriggerL1PFTau, ref);
