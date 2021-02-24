@@ -8,6 +8,7 @@
 #include "DataFormats/L1TCorrelator/interface/TkPrimaryVertex.h"
 
 #include <ostream>
+class L1HPSPFTauBuilder;
 
 namespace l1t {
 
@@ -79,6 +80,7 @@ namespace l1t {
     bool passLooseRelIso() const { return passLooseRelIso_; }
     bool passVLooseRelIso() const { return passVLooseRelIso_; }
 
+    friend class ::L1HPSPFTauBuilder;
   private:
     l1t::PFCandidateRef seedChargedPFCand_;
     l1t::PFJetRef seedPFJet_;
