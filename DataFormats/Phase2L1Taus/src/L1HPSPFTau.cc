@@ -1,5 +1,5 @@
 #include "DataFormats/Phase2L1Taus/interface/L1HPSPFTau.h"
-
+/*
 // default constructor
 l1t::L1HPSPFTau::L1HPSPFTau() 
   : tauType_(kUndefined)
@@ -93,3 +93,4 @@ void printPFCand(ostream& os, const l1t::PFCandidate& l1PFCand, float primaryVer
   }
   os << std::endl;
 }
+*/

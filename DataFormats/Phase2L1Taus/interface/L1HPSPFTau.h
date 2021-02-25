@@ -1,6 +1,6 @@
 #ifndef DataFormats_Phase2L1Taus_L1HPSPFTau_H
 #define DataFormats_Phase2L1Taus_L1HPSPFTau_H
-
+/*
 #include "DataFormats/L1TParticleFlow/interface/PFCandidate.h"    // l1t::PFCandidate, l1t::PFCandidateRef, l1t::PFCandidateRefVector
 #include "DataFormats/L1TParticleFlow/interface/PFJet.h"          // l1t::PFJet, l1t::PFJetCollection, l1t::PFJetRef 
 #include "DataFormats/Candidate/interface/LeafCandidate.h"             // reco::LeafCandidate 
@@ -152,5 +152,10 @@ std::ostream& operator<<(std::ostream& os, const l1t::L1HPSPFTau& l1PFTau);
 //void printPFCand(ostream& os, const l1t::PFCandidate& l1PFCand, const l1t::VertexRef& primaryVertex);
 void printPFCand(ostream& os, const l1t::PFCandidate& l1PFCand, const l1t::TkPrimaryVertexRef& primaryVertex);
 void printPFCand(ostream& os, const l1t::PFCandidate& l1PFCand, float primaryVertex_z);
-
+*/
+#include "DataFormats/L1TParticleFlow/interface/HPSPFTau.h"
+#include "DataFormats/L1TParticleFlow/interface/HPSPFTauFwd.h"
+namespace l1t{
+  using L1HPSPFTau = HPSPFTau;
+}
 #endif 
