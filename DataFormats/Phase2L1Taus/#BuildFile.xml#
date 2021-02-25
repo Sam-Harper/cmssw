@@ -1,0 +1,7 @@
+1;95;0c
+<use   name="DataFormats/Candidate"/>
+<use   name="DataFormats/L1TCorrelator"/>
+<use   name="DataFormats/L1TParticleFlow"/>
+<export>
+  <lib   name="1"/>
+</export>
