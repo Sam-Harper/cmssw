@@ -76,7 +76,7 @@ namespace deep_tau {
 
       std::unique_ptr<TauDiscriminator> get_value(const edm::Handle<TauCollection>& taus,
                                                   const tensorflow::Tensor& pred,
-                                                  const WPList& working_points) const;
+                                                  const WPList* working_points) const;
     };
 
     using OutputCollection = std::map<std::string, Output>;

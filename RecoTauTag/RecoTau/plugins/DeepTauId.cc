@@ -4,10 +4,17 @@
  * Tau identification using Deep NN.
  *
  * \author Konstantin Androsov, INFN Pisa
+ *         Christian Veelken, Tallinn 
  */
 
 #include "RecoTauTag/RecoTau/interface/DeepTauBase.h"
 #include "FWCore/Utilities/interface/isFinite.h"
+
+#include <TString.h> // Form
+
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 
 namespace deep_tau {
   constexpr int NumberOfOutputs = 4;
@@ -174,9 +181,9 @@ namespace {
         neutralIsoPtSumdR03_over_dR05,
         photonPtSumOutsideSignalCone,
         puCorrPtSum,
-        tau_dxy_pca_x,
-        tau_dxy_pca_y,
-        tau_dxy_pca_z,
+        //tau_dxy_pca_x,
+        //tau_dxy_pca_y,
+        //tau_dxy_pca_z,
         tau_dxy_valid,
         tau_dxy,
         tau_dxy_sig,
@@ -778,7 +785,8 @@ namespace {
         const double absX = std::abs(x);
         if (absX > maxX)
           return false;
-        const double absIndex = std::floor(std::abs(absX / size - 0.5));
+        //const double absIndex = std::floor(std::abs(absX / size - 0.5));
+        const double absIndex = std::floor(absX / size + 0.5);
         index = static_cast<int>(std::copysign(absIndex, x));
         return true;
       };
@@ -803,6 +811,25 @@ namespace {
     std::map<CellIndex, Cell> cells;
   };
 
+  float getTauID(const pat::Tau& tau, const std::string& tauID, float default_value = -999.)
+  {
+    static std::set<std::string> isFirstWarning;
+    float retVal = default_value;
+    if ( tau.isTauIDAvailable(tauID) )
+    {
+      retVal = tau.tauID(tauID);
+    }
+    else
+    {
+      if ( isFirstWarning.find(tauID) == isFirstWarning.end() )
+      {
+        std::cout << "Warning in <getTauID>: No tauID '" << tauID << "' available in pat::Tau given as function argument."
+                  << " Using default_value = " << default_value << " instead." << std::endl;
+        isFirstWarning.insert(tauID);
+      }
+    }
+    return retVal;
+  }
 }  // anonymous namespace
 
 class DeepTauId : public deep_tau::DeepTauBase {
@@ -833,6 +860,8 @@ public:
     desc.add<unsigned>("version", 2);
     desc.add<int>("debug_level", 0);
     desc.add<bool>("disable_dxy_pca", false);
+    desc.add<bool>("disable_hcalFraction_workaround", false);
+    desc.add<bool>("save_inputs", false);
 
     desc.add<std::vector<std::string>>("VSeWP");
     desc.add<std::vector<std::string>>("VSmuWP");
@@ -843,12 +872,19 @@ public:
 public:
   explicit DeepTauId(const edm::ParameterSet& cfg, const deep_tau::DeepTauCache* cache)
       : DeepTauBase(cfg, GetOutputs(), cache),
+        moduleLabel_(cfg.getParameter<std::string>("@module_label")),
         electrons_token_(consumes<ElectronCollection>(cfg.getParameter<edm::InputTag>("electrons"))),
         muons_token_(consumes<MuonCollection>(cfg.getParameter<edm::InputTag>("muons"))),
         rho_token_(consumes<double>(cfg.getParameter<edm::InputTag>("rho"))),
         version(cfg.getParameter<unsigned>("version")),
-        debug_level(cfg.getParameter<int>("debug_level")),
-        disable_dxy_pca_(cfg.getParameter<bool>("disable_dxy_pca")) {
+        debug_level(cfg.getParameter<int>("debug_level")),        
+        disable_dxy_pca_(cfg.getParameter<bool>("disable_dxy_pca")),
+        disable_hcalFraction_workaround_(cfg.getParameter<bool>("disable_hcalFraction_workaround")),
+        inner_grid(nullptr),
+        outer_grid(nullptr),
+        save_inputs(cfg.getParameter<bool>("save_inputs")),
+        json_file(nullptr),
+        file_counter(0) {
     if (version == 1) {
       input_layer_ = cache_->getGraph().node(0).name();
       output_layer_ = cache_->getGraph().node(cache_->getGraph().node_size() - 1).name();
@@ -889,6 +925,11 @@ public:
     }
   }
 
+  ~DeepTauId() {
+    delete inner_grid;
+    delete outer_grid;  
+  }
+
   static std::unique_ptr<deep_tau::DeepTauCache> initializeGlobalCache(const edm::ParameterSet& cfg) {
     return DeepTauBase::initializeGlobalCache(cfg);
   }
@@ -897,6 +938,8 @@ public:
 
 private:
   static constexpr float pi = M_PI;
+
+  std::string moduleLabel_; 
 
   template <typename T>
   static float getValue(T value) {
@@ -943,27 +986,106 @@ private:
       return false;
   }
 
-  inline void checkInputs(
-      const tensorflow::Tensor& inputs, const char* block_name, int n_inputs, int n_eta = 1, int n_phi = 1) const {
+  inline void checkInputs(const tensorflow::Tensor& inputs, const std::string& block_name, int n_inputs, const CellGrid* grid = nullptr) const {
     if (debug_level >= 1) {
-      for (int eta = 0; eta < n_eta; ++eta) {
-        for (int phi = 0; phi < n_phi; phi++) {
-          for (int k = 0; k < n_inputs; ++k) {
-            const float input =
-                n_eta == 1 && n_phi == 1 ? inputs.matrix<float>()(0, k) : inputs.tensor<float, 4>()(0, eta, phi, k);
-            if (edm::isNotFinite(input))
-              throw cms::Exception("DeepTauId")
-                  << "in the " << block_name << ", input is not finite, i.e. infinite or NaN, for eta_index = " << n_eta
-                  << ", phi_index = " << n_phi << ", input_index = " << k;
-            if (debug_level >= 2)
-              std::cout << block_name << "," << eta << "," << phi << "," << k << "," << std::setprecision(5)
-                        << std::fixed << input << '\n';
+      std::cout << "<checkInputs>: block_name = " << block_name << std::endl;
+      if ( block_name == "input_tau" ) {
+        for (int input_index = 0; input_index < n_inputs; ++input_index) {
+          float input = inputs.matrix<float>()(0, input_index);
+          if (edm::isNotFinite(input)) {
+            throw cms::Exception("DeepTauId")
+              << "in the " << block_name << ", input is not finite, i.e. infinite or NaN, for input_index = " << input_index;
+          }
+          if (debug_level >= 2) {
+            std::cout << block_name << "[var = " << input_index << "] = " << std::setprecision(5) << std::fixed << input << std::endl;
+          }
+        }
+      } else {
+        assert(grid);
+        int n_eta, n_phi;
+        if ( block_name.find("input_inner") != std::string::npos ) {
+          n_eta =  5;
+          n_phi =  5;
+        } else if ( block_name.find("input_outer") != std::string::npos ) {  
+          n_eta = 10;
+          n_phi = 10;
+        } else assert(0);
+        int eta_phi_index = 0;
+        for (int eta = -n_eta; eta <= n_eta; ++eta) {
+          for (int phi = -n_phi; phi <= n_phi; ++phi) {
+            const CellIndex cell_index{eta, phi};
+            const auto cell_iter = grid->find(cell_index);
+            if (cell_iter != grid->end()) {
+              for (int input_index = 0; input_index < n_inputs; ++input_index) {
+                float input = inputs.tensor<float, 4>()(eta_phi_index, 0, 0, input_index);
+                if (edm::isNotFinite(input)) {
+                  throw cms::Exception("DeepTauId")
+                    << "in the " << block_name << ", input is not finite, i.e. infinite or NaN, for eta = " << eta
+                    << ", phi = " << phi << ", input_index = " << input_index;
+                }
+                if (debug_level >= 2) {
+                  std::cout << block_name << "[eta = " << eta << "][phi = " << phi << "][var = " << input_index << "] = " << std::setprecision(5) << std::fixed << input << std::endl;
+                }
+              }
+              eta_phi_index += 1;
+            }
           }
         }
       }
     }
   }
 
+  inline void saveInputs(const tensorflow::Tensor& inputs, const std::string& block_name, int n_inputs, const CellGrid* grid = nullptr) const {
+    if (debug_level >= 1) {
+      std::cout << "<saveInputs>: block_name = " << block_name << std::endl;
+    }
+    if ( !is_first_block ) (*json_file) << ", ";
+    (*json_file) << "\"" << block_name << "\": [";
+    if ( block_name == "input_tau" ) {
+      for (int input_index = 0; input_index < n_inputs; ++input_index) {
+        float input = inputs.matrix<float>()(0, input_index);
+        if ( input_index != 0 ) (*json_file) << ", ";
+        (*json_file) << input;
+      }
+    } else {
+      assert(grid);
+      int n_eta, n_phi;
+      if ( block_name.find("input_inner") != std::string::npos ) {
+        n_eta =  5;
+        n_phi =  5;
+      } else if ( block_name.find("input_outer") != std::string::npos ) {  
+        n_eta = 10;
+        n_phi = 10;
+      } else assert(0);
+      int eta_phi_index = 0;
+      for (int eta = -n_eta; eta <= n_eta; ++eta) {
+        if ( eta != -n_eta ) (*json_file) << ", ";
+        (*json_file) << "[";
+        for (int phi = -n_phi; phi <= n_phi; ++phi) {
+          if ( phi != -n_phi ) (*json_file) << ", ";
+          (*json_file) << "[";
+          const CellIndex cell_index{eta, phi};
+          const auto cell_iter = grid->find(cell_index);
+          for (int input_index = 0; input_index < n_inputs; ++input_index) {
+            float input = 0.;
+            if (cell_iter != grid->end()) {
+              input = inputs.tensor<float, 4>()(eta_phi_index, 0, 0, input_index);
+            }
+            if ( input_index != 0 ) (*json_file) << ", ";
+            (*json_file) << input;
+          }
+          if (cell_iter != grid->end()) {
+            eta_phi_index += 1;
+          } 
+          (*json_file) << "]";
+        }
+        (*json_file) << "]";
+      }
+    }
+    (*json_file) << "]";
+    is_first_block = false;
+  }
+ 
 private:
   tensorflow::Tensor getPredictions(edm::Event& event,
                                     const edm::EventSetup& es,
@@ -1018,15 +1140,51 @@ private:
                         const reco::Vertex& pv,
                         double rho,
                         std::vector<tensorflow::Tensor>& pred_vector) {
-    CellGrid inner_grid(dnn_inputs_2017_v2::number_of_inner_cell, dnn_inputs_2017_v2::number_of_inner_cell, 0.02, 0.02);
-    CellGrid outer_grid(dnn_inputs_2017_v2::number_of_outer_cell, dnn_inputs_2017_v2::number_of_outer_cell, 0.05, 0.05);
-    fillGrids(tau, electrons, inner_grid, outer_grid);
-    fillGrids(tau, muons, inner_grid, outer_grid);
-    fillGrids(tau, pfCands, inner_grid, outer_grid);
+    if (debug_level >= 2) {
+      std::cout << "<DeepTauId::getPredictionsV2 (moduleLabel = " << moduleLabel_ << ")>:" << std::endl;
+      std::cout << " tau: pT = " << tau.pt() << ", eta = " << tau.eta() << ", phi = " << tau.phi() << std::endl;
+    }
+    delete inner_grid;
+    inner_grid = new CellGrid(dnn_inputs_2017_v2::number_of_inner_cell, dnn_inputs_2017_v2::number_of_inner_cell, 0.02, 0.02);
+    delete outer_grid;
+    outer_grid = new CellGrid(dnn_inputs_2017_v2::number_of_outer_cell, dnn_inputs_2017_v2::number_of_outer_cell, 0.05, 0.05);
+    fillGrids(tau, electrons, *inner_grid, *outer_grid);
+    fillGrids(tau, muons, *inner_grid, *outer_grid);
+    fillGrids(tau, pfCands, *inner_grid, *outer_grid);
+
+    if ( save_inputs ) {
+      std::string json_file_name = Form("DeepTauId_%i.json", file_counter);
+      json_file = new std::ofstream(json_file_name.data());
+      is_first_block = true;
+    }
 
     createTauBlockInputs(tau, pv, rho);
-    createConvFeatures(tau, pv, rho, electrons, muons, pfCands, inner_grid, true);
-    createConvFeatures(tau, pv, rho, electrons, muons, pfCands, outer_grid, false);
+    checkInputs(*tauBlockTensor_, "input_tau", dnn_inputs_2017_v2::TauBlockInputs::NumberOfInputs);
+    createConvFeatures(tau, pv, rho, electrons, muons, pfCands, *inner_grid, true);
+    checkInputs(*eGammaTensor_[true], "input_inner_egamma", dnn_inputs_2017_v2::EgammaBlockInputs::NumberOfInputs, inner_grid);
+    checkInputs(*muonTensor_[true], "input_inner_muon", dnn_inputs_2017_v2::MuonBlockInputs::NumberOfInputs, inner_grid);
+    checkInputs(*hadronsTensor_[true], "input_inner_hadrons", dnn_inputs_2017_v2::HadronBlockInputs::NumberOfInputs, inner_grid);
+    createConvFeatures(tau, pv, rho, electrons, muons, pfCands, *outer_grid, false);
+    checkInputs(*eGammaTensor_[false], "input_outer_egamma", dnn_inputs_2017_v2::EgammaBlockInputs::NumberOfInputs, outer_grid);
+    checkInputs(*muonTensor_[false], "input_outer_muon", dnn_inputs_2017_v2::MuonBlockInputs::NumberOfInputs, outer_grid);
+    checkInputs(*hadronsTensor_[false], "input_outer_hadrons", dnn_inputs_2017_v2::HadronBlockInputs::NumberOfInputs, outer_grid);
+
+    if ( save_inputs ) {
+      std::string json_file_name = Form("DeepTauId_%i.json", file_counter);
+      json_file = new std::ofstream(json_file_name.data());
+      is_first_block = true;
+      (*json_file) << "{";
+      saveInputs(*tauBlockTensor_, "input_tau", dnn_inputs_2017_v2::TauBlockInputs::NumberOfInputs);
+      saveInputs(*eGammaTensor_[true], "input_inner_egamma", dnn_inputs_2017_v2::EgammaBlockInputs::NumberOfInputs, inner_grid);
+      saveInputs(*muonTensor_[true], "input_inner_muon", dnn_inputs_2017_v2::MuonBlockInputs::NumberOfInputs, inner_grid);
+      saveInputs(*hadronsTensor_[true], "input_inner_hadrons", dnn_inputs_2017_v2::HadronBlockInputs::NumberOfInputs, inner_grid);
+      saveInputs(*eGammaTensor_[false], "input_outer_egamma", dnn_inputs_2017_v2::EgammaBlockInputs::NumberOfInputs, outer_grid);
+      saveInputs(*muonTensor_[false], "input_outer_muon", dnn_inputs_2017_v2::MuonBlockInputs::NumberOfInputs, outer_grid);
+      saveInputs(*hadronsTensor_[false], "input_outer_hadrons", dnn_inputs_2017_v2::HadronBlockInputs::NumberOfInputs, outer_grid);
+      (*json_file) << "}";
+      delete json_file;
+      ++file_counter;
+    }
 
     tensorflow::run(&(cache_->getSession("core")),
                     {{"input_tau", *tauBlockTensor_},
@@ -1034,6 +1192,20 @@ private:
                      {"input_outer", *convTensor_.at(false)}},
                     {"main_output/Softmax"},
                     &pred_vector);
+    if ( debug_level >= 1 ) {
+      std::cout << "output = { ";
+      for ( int idx = 0; idx < deep_tau::NumberOfOutputs; ++idx ) { 
+        if ( idx > 0 ) std::cout << ", ";
+        std::string label;
+        if      ( idx == 0 ) label = "e";
+        else if ( idx == 1 ) label = "mu";
+        else if ( idx == 2 ) label = "tau";
+        else if ( idx == 3 ) label = "jet";
+        else assert(0);
+        std::cout << label << " = " << pred_vector[0].flat<float>()(idx);
+      }
+      std::cout << " }" << std::endl;
+    } 
   }
 
   template <typename Collection>
@@ -1105,6 +1277,9 @@ private:
                           const pat::PackedCandidateCollection& pfCands,
                           const CellGrid& grid,
                           bool is_inner) {
+    if (debug_level >= 2) {
+      std::cout << "<DeepTauId::createConvFeatures (is_inner = " << is_inner << ")>:" << std::endl;
+    }
     tensorflow::Tensor& convTensor = *convTensor_.at(is_inner);
 
     eGammaTensor_[is_inner] = std::make_unique<tensorflow::Tensor>(
@@ -1127,14 +1302,24 @@ private:
     unsigned idx = 0;
     for (int eta = -grid.maxEtaIndex(); eta <= grid.maxEtaIndex(); ++eta) {
       for (int phi = -grid.maxPhiIndex(); phi <= grid.maxPhiIndex(); ++phi) {
+        if (debug_level >= 2) {
+          std::cout << "processing ( eta = " << eta << ", phi = " << phi << " )" << std::endl;
+        }
         const CellIndex cell_index{eta, phi};
         const auto cell_iter = grid.find(cell_index);
         if (cell_iter != grid.end()) {
+          if (debug_level >= 2) {
+            std::cout << " creating inputs for ( eta = " << eta << ", phi = " << phi << " ): idx = " << idx << std::endl;
+          }
           const Cell& cell = cell_iter->second;
           createEgammaBlockInputs(idx, tau, pv, rho, electrons, pfCands, cell, is_inner);
           createMuonBlockInputs(idx, tau, pv, rho, muons, pfCands, cell, is_inner);
           createHadronsBlockInputs(idx, tau, pv, rho, pfCands, cell, is_inner);
           idx += 1;
+        } else {
+          if (debug_level >= 2) {
+            std::cout << " skipping creation of inputs, because ( eta = " << eta << ", phi = " << phi << " ) is not in the grid !!" << std::endl;
+          }
         }
       }
     }
@@ -1149,6 +1334,7 @@ private:
         const int phi_index = grid.getPhiTensorIndex(cell_index);
 
         const auto cell_iter = grid.find(cell_index);
+
         if (cell_iter != grid.end()) {
           setCellConvFeatures(convTensor, predTensor, idx, eta_index, phi_index);
           idx += 1;
@@ -1164,8 +1350,9 @@ private:
                            unsigned batch_idx,
                            int eta_index,
                            int phi_index) {
-    for (int n = 0; n < dnn_inputs_2017_v2::number_of_conv_features; ++n)
+    for (int n = 0; n < dnn_inputs_2017_v2::number_of_conv_features; ++n) {
       convTensor.tensor<float, 4>()(0, eta_index, phi_index, n) = features.tensor<float, 4>()(batch_idx, 0, 0, n);
+    }
   }
 
   void createTauBlockInputs(const TauType& tau, const reco::Vertex& pv, double rho) {
@@ -1187,31 +1374,31 @@ private:
     get(dnn::tau_charge) = getValue(tau.charge());
     get(dnn::tau_n_charged_prongs) = getValueLinear(tau.decayMode() / 5 + 1, 1, 3, true);
     get(dnn::tau_n_neutral_prongs) = getValueLinear(tau.decayMode() % 5, 0, 2, true);
-    get(dnn::chargedIsoPtSum) = getValueNorm(tau.tauID("chargedIsoPtSum"), 47.78f, 123.5f);
-    get(dnn::chargedIsoPtSumdR03_over_dR05) = getValue(tau.tauID("chargedIsoPtSumdR03") / tau.tauID("chargedIsoPtSum"));
-    get(dnn::footprintCorrection) = getValueNorm(tau.tauID("footprintCorrectiondR03"), 9.029f, 26.42f);
-    get(dnn::neutralIsoPtSum) = getValueNorm(tau.tauID("neutralIsoPtSum"), 57.59f, 155.3f);
+    get(dnn::chargedIsoPtSum) = getValueNorm(getTauID(tau, "chargedIsoPtSumHGCalFix"), 47.78f, 123.5f);
+    get(dnn::chargedIsoPtSumdR03_over_dR05) = getValue(getTauID(tau, "chargedIsoPtSumdR03HGCalFix") / getTauID(tau, "chargedIsoPtSumHGCalFix"));
+    get(dnn::footprintCorrection) = getValueNorm(getTauID(tau, "footprintCorrection"), 9.029f, 26.42f);
+    get(dnn::neutralIsoPtSum) = getValueNorm(getTauID(tau, "neutralIsoPtSumHGCalFix"), 57.59f, 155.3f);
     get(dnn::neutralIsoPtSumWeight_over_neutralIsoPtSum) =
-        getValue(tau.tauID("neutralIsoPtSumWeight") / tau.tauID("neutralIsoPtSum"));
+        getValue(getTauID(tau, "neutralIsoPtSumWeight") / getTauID(tau, "neutralIsoPtSum"));
     get(dnn::neutralIsoPtSumWeightdR03_over_neutralIsoPtSum) =
-        getValue(tau.tauID("neutralIsoPtSumWeightdR03") / tau.tauID("neutralIsoPtSum"));
-    get(dnn::neutralIsoPtSumdR03_over_dR05) = getValue(tau.tauID("neutralIsoPtSumdR03") / tau.tauID("neutralIsoPtSum"));
+        getValue(getTauID(tau, "neutralIsoPtSumWeightdR03") / getTauID(tau, "neutralIsoPtSum"));
+    get(dnn::neutralIsoPtSumdR03_over_dR05) = getValue(getTauID(tau, "neutralIsoPtSumdR03HGCalFix") / getTauID(tau, "neutralIsoPtSumHGCalFix"));
     get(dnn::photonPtSumOutsideSignalCone) =
-        getValueNorm(tau.tauID("photonPtSumOutsideSignalConedR03"), 1.731f, 6.846f);
-    get(dnn::puCorrPtSum) = getValueNorm(tau.tauID("puCorrPtSum"), 22.38f, 16.34f);
+        getValueNorm(getTauID(tau, "photonPtSumOutsideSignalCone"), 1.731f, 6.846f);
+    get(dnn::puCorrPtSum) = getValueNorm(getTauID(tau, "puCorrPtSum"), 22.38f, 16.34f);
     // The global PCA coordinates were used as inputs during the NN training, but it was decided to disable
     // them for the inference, because modeling of dxy_PCA in MC poorly describes the data, and x and y coordinates
     // in data results outside of the expected 5 std. dev. input validity range. On the other hand,
     // these coordinates are strongly era-dependent. Kept as comment to document what NN expects.
-    if (!disable_dxy_pca_) {
-      get(dnn::tau_dxy_pca_x) = getValueNorm(tau.dxy_PCA().x(), -0.0241f, 0.0074f);
-      get(dnn::tau_dxy_pca_y) = getValueNorm(tau.dxy_PCA().y(), 0.0675f, 0.0128f);
-      get(dnn::tau_dxy_pca_z) = getValueNorm(tau.dxy_PCA().z(), 0.7973f, 3.456f);
-    } else {
-      get(dnn::tau_dxy_pca_x) = 0;
-      get(dnn::tau_dxy_pca_y) = 0;
-      get(dnn::tau_dxy_pca_z) = 0;
-    }
+    //if (!disable_dxy_pca_) {
+    //  get(dnn::tau_dxy_pca_x) = getValueNorm(tau.dxy_PCA().x(), -0.0241f, 0.0074f);
+    //  get(dnn::tau_dxy_pca_y) = getValueNorm(tau.dxy_PCA().y(), 0.0675f, 0.0128f);
+    //  get(dnn::tau_dxy_pca_z) = getValueNorm(tau.dxy_PCA().z(), 0.7973f, 3.456f);
+    //} else {
+    //  get(dnn::tau_dxy_pca_x) = 0;
+    //  get(dnn::tau_dxy_pca_y) = 0;
+    //  get(dnn::tau_dxy_pca_z) = 0;
+    //}
 
     const bool tau_dxy_valid =
         std::isnormal(tau.dxy()) && tau.dxy() > -10 && std::isnormal(tau.dxy_error()) && tau.dxy_error() > 0;
@@ -1239,8 +1426,8 @@ private:
     get(dnn::tau_flightLength_x) = getValueNorm(tau.flightLength().x(), -0.0003f, 0.7362f);
     get(dnn::tau_flightLength_y) = getValueNorm(tau.flightLength().y(), -0.0009f, 0.7354f);
     get(dnn::tau_flightLength_z) = getValueNorm(tau.flightLength().z(), -0.0022f, 1.993f);
-    // get(dnn::tau_flightLength_sig) = getValueNorm(tau.flightLengthSig(), -4.78f, 9.573f);
-    get(dnn::tau_flightLength_sig) = 0.55756444;  //This value is set due to a bug in the training
+    get(dnn::tau_flightLength_sig) = getValueNorm(tau.flightLengthSig(), -4.78f, 9.573f);
+    //get(dnn::tau_flightLength_sig) = 0.55756444;  // KA: This value is set due to a bug in the training
     get(dnn::tau_pt_weighted_deta_strip) =
         getValueLinear(reco::tau::pt_weighted_deta_strip(tau, tau.decayMode()), 0, 1, true);
 
@@ -1263,8 +1450,6 @@ private:
     get(dnn::tau_inside_ecal_crack) = getValue(isInEcalCrack(tau.p4().eta()));
     get(dnn::leadChargedCand_etaAtEcalEntrance_minus_tau_eta) =
         getValueNorm(tau.etaAtEcalEntranceLeadChargedCand() - tau.p4().eta(), 0.0042f, 0.0323f);
-
-    checkInputs(inputs, "tau_block", dnn::NumberOfInputs);
   }
 
   void createEgammaBlockInputs(unsigned idx,
@@ -1483,7 +1668,6 @@ private:
             getValueNorm(closestCtfTrack->numberOfValidHits(), 15.16f, 5.26f);
       }
     }
-    checkInputs(inputs, is_inner ? "egamma_inner_block" : "egamma_outer_block", dnn::NumberOfInputs);
   }
 
   void createMuonBlockInputs(unsigned idx,
@@ -1623,7 +1807,6 @@ private:
         }
       }
     }
-    checkInputs(inputs, is_inner ? "muon_inner_block" : "muon_outer_block", dnn::NumberOfInputs);
   }
 
   void createHadronsBlockInputs(unsigned idx,
@@ -1707,13 +1890,20 @@ private:
                 : 0;
       }
       float hcal_fraction = 0.;
-      if (pfCands.at(index_chH).pdgId() == 1 || pfCands.at(index_chH).pdgId() == 130) {
+      if ( disable_hcalFraction_workaround_ ) {
+        // CV: use consistent definition for pfCand_chHad_hcalFraction 
+        //     in DeepTauId.cc code and in TauMLTools/Production/plugins/TauTupleProducer.cc
         hcal_fraction = pfCands.at(index_chH).hcalFraction();
-      } else if (pfCands.at(index_chH).isIsolatedChargedHadron()) {
-        hcal_fraction = pfCands.at(index_chH).rawHcalFraction();
+      } else {
+        // CV: backwards compatibility with DeepTau training v2p1 used during Run 2
+        if (pfCands.at(index_chH).pdgId() == 1 || pfCands.at(index_chH).pdgId() == 130) {
+          hcal_fraction = pfCands.at(index_chH).hcalFraction();
+        } else if (pfCands.at(index_chH).isIsolatedChargedHadron()) {
+          hcal_fraction = pfCands.at(index_chH).rawHcalFraction();
+        }
       }
       get(dnn::pfCand_chHad_hcalFraction) = getValue(hcal_fraction);
-      get(dnn::pfCand_chHad_rawCaloFraction) = getValueLinear(pfCands.at(index_chH).rawCaloFraction(), 0.f, 2.6f, true);
+      get(dnn::pfCand_chHad_rawCaloFraction) = getValueLinear(pfCands.at(index_chH).rawCaloFraction(), 0.f, 2.6f, true);    
     }
     if (valid_nH) {
       size_t index_nH = cell_map.at(CellObjectType::PfCand_neutralHadron);
@@ -1731,14 +1921,20 @@ private:
       get(dnn::pfCand_nHad_puppiWeight) = getValue(pfCands.at(index_nH).puppiWeight());
       get(dnn::pfCand_nHad_puppiWeightNoLep) = getValue(pfCands.at(index_nH).puppiWeightNoLep());
       float hcal_fraction = 0.;
-      if (pfCands.at(index_nH).pdgId() == 1 || pfCands.at(index_nH).pdgId() == 130) {
+      if ( disable_hcalFraction_workaround_ ) {
+        // CV: use consistent definition for pfCand_chHad_hcalFraction 
+        //     in DeepTauId.cc code and in TauMLTools/Production/plugins/TauTupleProducer.cc
         hcal_fraction = pfCands.at(index_nH).hcalFraction();
-      } else if (pfCands.at(index_nH).isIsolatedChargedHadron()) {
-        hcal_fraction = pfCands.at(index_nH).rawHcalFraction();
+      } else {
+        // CV: backwards compatibility with DeepTau training v2p1 used during Run 2
+        if (pfCands.at(index_nH).pdgId() == 1 || pfCands.at(index_nH).pdgId() == 130) {
+          hcal_fraction = pfCands.at(index_nH).hcalFraction();
+        } else if (pfCands.at(index_nH).isIsolatedChargedHadron()) {
+          hcal_fraction = pfCands.at(index_nH).rawHcalFraction();
+        }
       }
       get(dnn::pfCand_nHad_hcalFraction) = getValue(hcal_fraction);
     }
-    checkInputs(inputs, is_inner ? "hadron_inner_block" : "hadron_outer_block", dnn::NumberOfInputs);
   }
 
   template <typename dnn>
@@ -1762,11 +1958,11 @@ private:
     get(dnn::eta) = tau.p4().eta();
     get(dnn::mass) = tau.p4().mass();
     get(dnn::decayMode) = tau.decayMode();
-    get(dnn::chargedIsoPtSum) = tau.tauID("chargedIsoPtSum");
-    get(dnn::neutralIsoPtSum) = tau.tauID("neutralIsoPtSum");
-    get(dnn::neutralIsoPtSumWeight) = tau.tauID("neutralIsoPtSumWeight");
-    get(dnn::photonPtSumOutsideSignalCone) = tau.tauID("photonPtSumOutsideSignalCone");
-    get(dnn::puCorrPtSum) = tau.tauID("puCorrPtSum");
+    get(dnn::chargedIsoPtSum) = getTauID(tau, "chargedIsoPtSumHGCalFix");
+    get(dnn::neutralIsoPtSum) = getTauID(tau, "neutralIsoPtSumHGCalFix");
+    get(dnn::neutralIsoPtSumWeight) = getTauID(tau, "neutralIsoPtSumWeight");
+    get(dnn::photonPtSumOutsideSignalCone) = getTauID(tau, "photonPtSumOutsideSignalCone");
+    get(dnn::puCorrPtSum) = getTauID(tau, "puCorrPtSum");
     get(dnn::dxy) = tau.dxy();
     get(dnn::dxy_sig) = tau.dxy_Sig();
     get(dnn::dz) = leadChargedHadrCand ? leadChargedHadrCand->dz() : default_value;
@@ -2087,9 +2283,16 @@ private:
   const unsigned version;
   const int debug_level;
   const bool disable_dxy_pca_;
+  const bool disable_hcalFraction_workaround_;
   std::unique_ptr<tensorflow::Tensor> tauBlockTensor_;
   std::array<std::unique_ptr<tensorflow::Tensor>, 2> eGammaTensor_, muonTensor_, hadronsTensor_, convTensor_,
       zeroOutputTensor_;
+  CellGrid* inner_grid;
+  CellGrid* outer_grid;
+  const bool save_inputs;
+  std::ofstream* json_file;
+  mutable bool is_first_block;
+  int file_counter;
 };
 
 #include "FWCore/Framework/interface/MakerMacros.h"
