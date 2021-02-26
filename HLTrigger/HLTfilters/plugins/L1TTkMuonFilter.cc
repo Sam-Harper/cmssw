@@ -17,7 +17,7 @@
 #include "DataFormats/Common/interface/Ref.h"
 #include "DataFormats/HLTReco/interface/TriggerFilterObjectWithRefs.h"
 #include "DataFormats/HLTReco/interface/TriggerTypeDefs.h"
-
+#include "DataFormats/Math/interface/deltaR.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/EventSetupRecord.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
@@ -25,6 +25,29 @@
 //
 // constructors and destructor
 //
+
+namespace{
+  bool passMuQual(const l1t::TkMuon& muon){
+    if(muon.muonDetector()==3){
+      int quality = muon.quality();
+      if(quality==11 || quality==13 || quality==14 || quality==15){
+	return true;
+      }else{
+	return false;
+      }
+    }else{
+      return true;
+    }
+  }    
+  bool notDup(const l1t::TkMuon& muon,const std::vector<const l1t::TkMuon*> existing){
+    for(const auto& existMuon : existing){
+      if(reco::deltaR2(muon.eta(),muon.phi(),existMuon->eta(),existMuon->phi())<=0){
+	return false;
+      }
+    }
+    return true;
+  }
+}
 
 L1TTkMuonFilter::L1TTkMuonFilter(const edm::ParameterSet& iConfig)
     : HLTFilter(iConfig),
@@ -93,12 +116,19 @@ bool L1TTkMuonFilter::hltFilter(edm::Event& iEvent,
   auto atrkmuons(tkMuons->begin());
   auto otrkmuons(tkMuons->end());
   TkMuonCollection::const_iterator itkMuon;
+  std::vector<const l1t::TkMuon*> existingMuons;
   for (itkMuon = atrkmuons; itkMuon != otrkmuons; itkMuon++) {
+    
     double offlinePt = this->TkMuonOfflineEt(itkMuon->pt(), itkMuon->eta());
-    if (offlinePt >= min_Pt_ && itkMuon->eta() <= max_Eta_ && itkMuon->eta() >= min_Eta_) {
-      ntrkmuon++;
-      l1t::TkMuonRef ref(l1t::TkMuonRef(tkMuons, distance(atrkmuons, itkMuon)));
-      filterproduct.addObject(trigger::TriggerObjectType::TriggerL1TkMu, ref);
+    bool passQual = passMuQual(*itkMuon);
+    if (offlinePt >= min_Pt_ && itkMuon->eta() <= max_Eta_ && itkMuon->eta() >= min_Eta_ && passQual){
+      if(notDup(*itkMuon,existingMuons)){
+	existingMuons.push_back(&*itkMuon);
+		 
+	ntrkmuon++;
+	l1t::TkMuonRef ref(l1t::TkMuonRef(tkMuons, distance(atrkmuons, itkMuon)));
+	filterproduct.addObject(trigger::TriggerObjectType::TriggerL1TkMu, ref);
+      }
     }
   }
 
