@@ -41,6 +41,18 @@ static constexpr float min_mu_propagator_barrel_pT = 3.5;
 static constexpr float max_mu_propagator_eta = 2.5;
 
 using namespace l1t;
+namespace{
+ bool isDupMuon(const l1t::TkMuon& muon, const std::vector<l1t::TkMuon>& existing) {
+    for (const auto& exist : existing) {
+      //it is our understanding that there is an exact eta phi match
+      //and we should not be concerned with numerical precision
+      if (reco::deltaR2(muon, exist) <= 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
 
 class L1TkMuonProducer : public edm::stream::EDProducer<> {
 public:
@@ -116,6 +128,7 @@ private:
   bool use5ParameterFit_;
   bool useTPMatchWindows_;
   bool applyQuality_;
+  bool cleanDuplicates_;
 
   AlgoType bmtfMatchAlgoVersion_;
   AlgoType omtfMatchAlgoVersion_;
@@ -208,6 +221,7 @@ L1TkMuonProducer::L1TkMuonProducer(const edm::ParameterSet& iConfig)
   use5ParameterFit_ = iConfig.getParameter<bool>("use5ParameterFit");
   useTPMatchWindows_ = iConfig.getParameter<bool>("useTPMatchWindows");
   applyQuality_ = iConfig.exists("applyQualityCuts") ? iConfig.getParameter<bool>("applyQualityCuts") : false;
+  cleanDuplicates_ = iConfig.exists("cleanDuplicates") ? iConfig.getParameter<bool>("cleanDuplicates") : false;
 
   produces<TkMuonCollection>();
 
@@ -382,7 +396,18 @@ void L1TkMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup
     oc_tkmuon->insert(oc_tkmuon->end(), p.begin(), p.end());
   }
 
-  // put the new track+muon objects in the event!
+ 
+  if(cleanDuplicates_){
+    std::vector<l1t::TkMuon> cleaned;
+    for(const auto& muon : *oc_tkmuon){      
+      if(!isDupMuon(muon,cleaned)){
+	cleaned.push_back(muon);
+      }
+    }
+    oc_tkmuon->swap(cleaned);
+  }
+
+    // put the new track+muon objects in the event!
   iEvent.put(std::move(oc_tkmuon));
 };
 
