@@ -466,11 +466,18 @@ from HLTrigger.Configuration.CustomConfigs import L1REPACK
 
   def overrideOutput(self):
     # if not runnign on Hilton, override the "online" ShmStreamConsumer output modules with "offline" PoolOutputModule's
+    # note for Run3 ShmStreamConsumer has been replaced with EvFOutputModule
+    # so we also do a replace there
     if not self.config.hilton:
       self.data = re.sub(
-        r'\b(process\.)?hltOutput(\w+) *= *cms\.OutputModule\( *"ShmStreamConsumer" *,',
+        r'\b(process\.)?hltOutput(\w+) *= *cms\.OutputModule\( *"(ShmStreamConsumer)" *,',
         r'%(process)s.hltOutput\2 = cms.OutputModule( "PoolOutputModule",\n    fileName = cms.untracked.string( "output\2.root" ),\n    fastCloning = cms.untracked.bool( False ),\n    dataset = cms.untracked.PSet(\n        filterName = cms.untracked.string( "" ),\n        dataTier = cms.untracked.string( "RAW" )\n    ),',
         self.data
+      )
+      self.data = re.sub(
+        r'\b(process\.)?hltOutput(\w+) *= *cms\.OutputModule\( *"EvFOutputModule" *,\n    use_compression = cms.untracked.bool\( True \),\n    compression_algorithm = cms.untracked.string\( "ZLIB" \),\n    compression_level = cms.untracked.int32\( 1 \),\n    lumiSection_interval = cms.untracked.int32\( 0 \),\n(.+?),\n    psetMap = cms.untracked.InputTag\( "hltPSetMap" \)\n',
+        r'\1hltOutput\2 = cms.OutputModule( "PoolOutputModule",\n    fileName = cms.untracked.string( "output\2.root" ),\n    fastCloning = cms.untracked.bool( False ),\n    dataset = cms.untracked.PSet(\n        filterName = cms.untracked.string( "" ),\n        dataTier = cms.untracked.string( "RAW" )\n    ),\n\3\n',
+        self.data,0,re.DOTALL
       )
 
     if not self.config.fragment and self.config.output == 'minimal':
@@ -636,11 +643,16 @@ if 'GlobalTag' in %%(dict)s:
 
   def instrumentDQM(self):
     if not self.config.hilton:
-      # remove any reference to the hltDQMFileSaver
+      # remove any reference to the hltDQMFileSaver and hltDQMFileSaverPB
+      if 'hltDQMFileSaverPB' in self.data:
+        self.data = re.sub(r'\b(process\.)?hltDQMFileSaverPB \+ ', '', self.data)
+        self.data = re.sub(r' \+ \b(process\.)?hltDQMFileSaverPB', '', self.data)
+        self.data = re.sub(r'\b(process\.)?(hltDQMFileSaverPB) = (.+?)^\)', '',self.data, 0, re.M | re.DOTALL)
+
       if 'hltDQMFileSaver' in self.data:
         self.data = re.sub(r'\b(process\.)?hltDQMFileSaver \+ ', '', self.data)
         self.data = re.sub(r' \+ \b(process\.)?hltDQMFileSaver', '', self.data)
-        self.data = re.sub(r'\b(process\.)?hltDQMFileSaver',     '', self.data)
+        self.data = re.sub(r'\b(process\.)?(hltDQMFileSaver) = (.+?)(^\))', '',self.data, 0, re.M | re.DOTALL)
 
       # instrument the HLT menu with DQMStore and DQMRootOutputModule suitable for running offline
       dqmstore  = "\n# load the DQMStore and DQMRootOutputModule\n"
