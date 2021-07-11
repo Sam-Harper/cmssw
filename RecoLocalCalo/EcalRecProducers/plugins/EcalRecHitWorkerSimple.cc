@@ -16,6 +16,9 @@ EcalRecHitWorkerSimple::EcalRecHitWorkerSimple(const edm::ParameterSet& ps, edm:
   EELaserMIN_ = ps.getParameter<double>("EELaserMIN");
   EBLaserMAX_ = ps.getParameter<double>("EBLaserMAX");
   EELaserMAX_ = ps.getParameter<double>("EELaserMAX");
+  
+  ecalLaserDbLabel_ = ps.exists("ecalLaserDbLabel") ? ps.getParameter<std::string>("ecalLaserDbLabel") : "";
+
 
   skipTimeCalib_ = ps.getParameter<bool>("skipTimeCalib");
 
@@ -27,7 +30,7 @@ EcalRecHitWorkerSimple::EcalRecHitWorkerSimple(const edm::ParameterSet& ps, edm:
   agcToken_ = c.esConsumes<EcalADCToGeVConstant, EcalADCToGeVConstantRcd>();
   chStatusToken_ = c.esConsumes<EcalChannelStatus, EcalChannelStatusRcd>();
   if (laserCorrection_)
-    laserToken_ = c.esConsumes<EcalLaserDbService, EcalLaserDbRecord>();
+    laserToken_ = c.esConsumes<EcalLaserDbService, EcalLaserDbRecord>(edm::ESInputTag{"", ecalLaserDbLabel_});
 
   // Traslate string representation of flagsMapDBReco into enum values
   const edm::ParameterSet& p = ps.getParameter<edm::ParameterSet>("flagsMapDBReco");

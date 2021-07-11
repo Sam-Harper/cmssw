@@ -60,10 +60,14 @@ EcalLaserCorrectionService::EcalLaserCorrectionService(const edm::ParameterSet& 
   // data is being produced
   //  setWhatProduced (this, (dependsOn (&EcalLaserCorrectionService::apdpnCallback)));
 
-  auto cc = setWhatProduced(this);
+  auto serviceLabel = fConfig.exists("serviceLabel") ? fConfig.getParameter<std::string>("serviceLabel") : "";
+  auto apdpnLabel = fConfig.exists("apdpnLabel") ? fConfig.getParameter<std::string>("apdpnLabel") : "";
+  
+
+  auto cc = setWhatProduced(this,serviceLabel);
   alphaToken_ = cc.consumes();
   apdpnRefToken_ = cc.consumes();
-  apdpnToken_ = cc.consumes();
+  apdpnToken_ = cc.consumes(edm::ESInputTag{"",apdpnLabel});
   linearToken_ = cc.consumes();
 
   maxExtrapolationTimeInSec_ = fConfig.getParameter<unsigned int>("maxExtrapolationTimeInSec");
@@ -111,6 +115,8 @@ std::shared_ptr<EcalLaserDbService> EcalLaserCorrectionService::produce(const Ec
 void EcalLaserCorrectionService::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<unsigned int>("maxExtrapolationTimeInSec", 0);
+  desc.add<std::string>("serviceLabel", "");
+  desc.add<std::string>("apdpnLabel", "");
   descriptions.add("EcalLaserCorrectionService", desc);
 }
 

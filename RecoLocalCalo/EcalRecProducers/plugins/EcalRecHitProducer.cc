@@ -260,6 +260,7 @@ void EcalRecHitProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<bool>("laserCorrection", true);
   desc.add<double>("EBLaserMIN", 0.5);
   desc.add<bool>("killDeadChannels", true);
+  desc.add<std::string>("ecalLaserDbLabel","");
   {
     std::vector<int> temp1;
     temp1.reserve(3);

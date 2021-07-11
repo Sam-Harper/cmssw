@@ -66,6 +66,8 @@ protected:
   bool laserCorrection_;
   bool skipTimeCalib_;
 
+  std::string ecalLaserDbLabel_;
+
   EcalRecHitSimpleAlgo* rechitMaker_;
 };
 
