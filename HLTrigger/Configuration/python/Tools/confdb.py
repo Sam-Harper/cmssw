@@ -468,7 +468,7 @@ from HLTrigger.Configuration.CustomConfigs import L1REPACK
     # if not runnign on Hilton, override the "online" ShmStreamConsumer output modules with "offline" PoolOutputModule's
     if not self.config.hilton:
       self.data = re.sub(
-        r'\b(process\.)?hltOutput(\w+) *= *cms\.OutputModule\( *"ShmStreamConsumer" *,',
+        r'\b(process\.)?hltOutput(\w+) *= *cms\.OutputModule\( *("ShmStreamConsumer"|"EvFOutputModule") *,',
         r'%(process)s.hltOutput\2 = cms.OutputModule( "PoolOutputModule",\n    fileName = cms.untracked.string( "output\2.root" ),\n    fastCloning = cms.untracked.bool( False ),\n    dataset = cms.untracked.PSet(\n        filterName = cms.untracked.string( "" ),\n        dataTier = cms.untracked.string( "RAW" )\n    ),',
         self.data
       )
