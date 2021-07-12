@@ -9,7 +9,11 @@ def customiseHLTforRateStudies(process):
     process.hltOutputMinimal.outputCommands = cms.untracked.vstring( 
         'drop *',
         'keep edmTriggerResults_*_*_*',
-        'keep *_hltGtStage2Digis_*_*',
+        'keep GlobalAlgBlkBXVector_*_*_*',
     )
-    return process
 
+    if 'MessageLogger' in process.__dict__:
+        process.MessageLogger.suppressWarning.extend(["hltL3MuonsIterL3OIScoutingNoVtx","hltEcalRecHit","hltDoubletRecoveryPFlowCtfWithMaterialTracks","hltL3NoFiltersTkTracksFromL2IOHitNoVtx","hltL3NoFiltersNoVtxMuonsOIHit","hltEgammaGsfTracks","hltL3NoFiltersNoVtxMuonsOIState" ] )
+        process.MessageLogger.suppressError.extend(["hltL3MuonsIterL3OIScoutingNoVtx","hltEcalRecHit","hltDoubletRecoveryPFlowCtfWithMaterialTracks","hltL3NoFiltersTkTracksFromL2IOHitNoVtx","hltL3NoFiltersNoVtxMuonsOIHit","hltEgammaGsfTracks","hltL3NoFiltersNoVtxMuonsOIState" ] )
+    process.options.wantSummary = False
+    return process
