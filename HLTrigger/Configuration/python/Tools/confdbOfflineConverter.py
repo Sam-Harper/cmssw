@@ -33,9 +33,17 @@ class OfflineConverter:
     databases['v1']['adg']     = ( '-t', 'oracle', '-h', 'cmsr1-s.cern.ch',        '-d', 'cms_cond.cern.ch',      '-u', 'cms_hlt_gui_r',     '-s', 'ConvertMe!' )
     databases['v1']['orcoff']  = databases['v1']['adg']         # for backwards compatibility
     databases['v2'] = {}
-    databases['v2']['offline'] = ( '-t', 'oracle', '-h', 'cmsr1-s.cern.ch',        '-d', 'cms_cond.cern.ch',      '-u', 'cms_hlt_gdr_r',     '-s', 'convertMe!' )
+    databases['v2']['run2'] = ( '-t', 'oracle', '-h', 'cmsr1-s.cern.ch',        '-d', 'cms_cond.cern.ch',      '-u', 'cms_hlt_gdr_r',     '-s', 'convertMe!' )
+    databases['v2']['run3'] = ( '-t', 'oracle', '-h', 'cmsr1-s.cern.ch',        '-d', 'cms_cond.cern.ch',      '-u', 'cms_hlt_v3_r',     '-s', 'ConvertMe!' )
+    databases['v2']['dev'] = ( '-t', 'oracle', '-h', 'cmsr1-s.cern.ch',        '-d', 'cms_cond.cern.ch',      '-u', 'cms_hlt_gdrdev_r',     '-s', 'convertMe1!' )
     databases['v2']['online']  = ( '-t', 'oracle', '-h', 'cmsonr1-s.cms',          '-d', 'cms_rcms.cern.ch',      '-u', 'cms_hlt_gdr_r',     '-s', 'convertMe!' )
     databases['v2']['adg']     = ( '-t', 'oracle', '-h', 'cmsonr1-adg1-s.cern.ch', '-d', 'cms_orcon_adg.cern.ch', '-u', 'cms_hlt_gdr_r',     '-s', 'convertMe!' )
+    databases['v2-dev'] = {}
+    databases['v2-dev']['run2'] = ( '-t', 'oracle', '-h', 'cmsr1-s.cern.ch',        '-d', 'cms_cond.cern.ch',      '-u', 'cms_hlt_gdr_r',     '-s', 'convertMe!' )
+    databases['v2-dev']['run3'] = ( '-t', 'oracle', '-h', 'cmsr1-s.cern.ch',        '-d', 'cms_cond.cern.ch',      '-u', 'cms_hlt_v3_r',     '-s', 'ConvertMe!' )
+    databases['v2-dev']['dev'] = ( '-t', 'oracle', '-h', 'cmsr1-s.cern.ch',        '-d', 'cms_cond.cern.ch',      '-u', 'cms_hlt_gdrdev_r',     '-s', 'convertMe1!' )
+    databases['v2-dev']['online']  = ( '-t', 'oracle', '-h', 'cmsonr1-s.cms',          '-d', 'cms_rcms.cern.ch',      '-u', 'cms_hlt_gdr_r',     '-s', 'convertMe!' )
+    databases['v2-dev']['adg']     = ( '-t', 'oracle', '-h', 'cmsonr1-adg1-s.cern.ch', '-d', 'cms_orcon_adg.cern.ch', '-u', 'cms_hlt_gdr_r',     '-s', 'convertMe!' )
 
 
     @staticmethod
