@@ -193,7 +193,7 @@ def help():
 
 def main():
     args = sys.argv[1:]
-    version = 'v2'
+    version = 'v2-beta'
     db      = 'run3'
     verbose = False
 

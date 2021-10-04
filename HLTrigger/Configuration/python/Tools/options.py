@@ -61,7 +61,7 @@ class ConnectionHLTMenu(object):
 
     if not ':' in value:
       # default to 'v2/offline'
-      self.version    = 'v2'
+      self.version    = 'v2-beta'
       self.database   = 'run3'
       self.name       = value
       return
