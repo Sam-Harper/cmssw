@@ -1,3 +1,5 @@
+<use name="CommonTools/TriggerUtils"/>
+<use name="DQMOffline/Trigger"/>
 <use name="FWCore/Framework"/>
 <use name="FWCore/ParameterSet"/>
 <use name="FWCore/ServiceRegistry"/>
