@@ -16,7 +16,6 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "Validation/HLTrigger/interface/HLTValidationHist.h"
-#include "Validation/HLTrigger/interface/FIXTHISFUNCTION.h"
 #include "DQMOffline/Trigger/interface/UtilFuncs.h"
 
 #include <string>
@@ -24,7 +23,7 @@
 template <typename ObjType>
 class HLTGenLevelHists {
 public:
-
+  typedef dqm::legacy::MonitorElement MonitorElement;
   typedef dqm::legacy::DQMStore DQMStore;
 
   explicit HLTGenLevelHists(const edm::ParameterSet& config, std::string baseHistName, std::string hltProcess);

@@ -1,7 +1,3 @@
-#include "DQMServices/Core/interface/DQMStore.h"
-
-#include "DQMServices/Core/interface/DQMEDAnalyzer.h"
-
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
@@ -18,12 +14,18 @@
 
 #include "Validation/HLTrigger/interface/HLTGenLevelEff.h"
 
+#include "DQMServices/Core/interface/DQMStore.h"
+#include "DQMServices/Core/interface/DQMEDAnalyzer.h"
+
 #include <vector>
 #include <string>
 
 template <typename ObjType, typename ObjCollType>
 class HLTGenLevelValSource : public DQMEDAnalyzer {
 public:
+  typedef dqm::legacy::MonitorElement MonitorElement;
+  typedef dqm::legacy::DQMStore DQMStore;
+
   explicit HLTGenLevelValSource(const edm::ParameterSet&);
   ~HLTGenLevelValSource() override = default;
   HLTGenLevelValSource(const HLTGenLevelValSource&) = delete;

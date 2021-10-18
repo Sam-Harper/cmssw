@@ -13,14 +13,18 @@ ecalBarrelAndEndcapEtaCut = cms.PSet(
     allowedRanges=cms.vstring("-1.4442:1.4442","-2.5:-1.556","1.556:2.5"),
 )
 
+etBinsStd=cms.vdouble(5,10,12.5,15,17.5,20,22.5,25,30,35,40,45,50,60,80,100,150,200,250,300,350,400)
+etRangeCut= cms.PSet(
+    rangeVar=cms.string("et"),
+    allowedRanges=cms.vstring("0:10000"),
+    )
 
-# defining TnP ele27
-tagAndProbeConfigEle27WPTight = cms.PSet(
+
+# definint a test config
+testconfig_Ele27WPTight = cms.PSet(
     trigEvent = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
-    tagColl = cms.InputTag("gedGsfElectrons"),
-    probeColl = cms.InputTag("gedGsfElectrons"),
-    tagVIDCuts = cms.InputTag("egmGsfElectronIDsForDQM:cutBasedElectronID-Summer16-80X-V1-tight"),
-    probeVIDCuts = cms.InputTag("egmGsfElectronIDsForDQM:cutBasedElectronID-Summer16-80X-V1-tight"),
+    coll = cms.InputTag("gedGsfElectrons"),
+    VIDCuts = cms.InputTag("egmGsfElectronIDsForDQM:cutBasedElectronID-Summer16-80X-V1-tight"),
     sampleTrigRequirements = cms.PSet(
         hltInputTag = cms.InputTag("TriggerResults","","HLT"),
         hltPaths = cms.vstring("HLT_Ele27_WPTight_Gsf_v*","HLT_Ele32_WPTight_Gsf_v*","HLT_Ele35_WPTight_Gsf_v*"
@@ -29,22 +33,13 @@ tagAndProbeConfigEle27WPTight = cms.PSet(
                                )
         ),
     #it is intended that these are the filters of the triggers listed for sampleTrigRequirements
-    tagFilters = cms.vstring("hltEle27WPTightGsfTrackIsoFilter",
+    filters = cms.vstring("hltEle27WPTightGsfTrackIsoFilter",
                              "hltEle32WPTightGsfTrackIsoFilter"
                              "hltEle35noerWPTightGsfTrackIsoFilter"
                              "hltEle38noerWPTightGsfTrackIsoFilter"
                              "hltEle27L1DoubleEGWPTightGsfTrackIsoFilter",
-                             "hltEle32L1DoubleEGWPTightGsfTrackIsoFilter" ),
-    tagFiltersORed = cms.bool(True),
-    tagRangeCuts = cms.VPSet(ecalBarrelEtaCut),
-    probeFilters = cms.vstring(),
-    probeFiltersORed = cms.bool(False),
-    probeRangeCuts = cms.VPSet(ecalBarrelAndEndcapEtaCut),
-    minTagProbeDR = cms.double(0),
-    minMass = cms.double(70.0),
-    maxMass = cms.double(110.0),
-    requireOpSign = cms.bool(False),
-)
+                             "hltEle32L1DoubleEGWPTightGsfTrackIsoFilter" )
+                             )
 
 
 # hists to create
@@ -53,7 +48,6 @@ testHistConfigs = cms.VPSet(
         histType=cms.string("1D"),
         vsVar=cms.string("et"),
         nameSuffex=cms.string("_EBvsEt"),
-        rangeCuts=cms.VPSet(ecalBarrelEtaCut),
         binLowEdges=etBinsStd,
     ),
 )
@@ -63,19 +57,17 @@ testFiltersToMonitor= cms.VPSet(
     # starting with single ele as simple test filter
     cms.PSet(
         folderName = cms.string("HLT/EGM/TagAndProbeEffs/HLT_Ele27_WPTight_Gsf"),
-        rangeCuts = cms.VPSet(etRangeCut.clone(allowedRanges=cms.vstring("30:99999")),),
         filterName = cms.string("hltEle27WPTightGsfTrackIsoFilter"),
         histTitle = cms.string(""),
-        tagExtraFilter = cms.string(""),
     ),
 )
 
 # set up producers
 from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
-HLTGenLevelValSource = DQMEDAnalyzer("HLTGenLevelValSource",
-    tagAndProbeCollections = cms.VPSet(
+HLTEleGenLevelValSource = DQMEDAnalyzer("HLTEleGenLevelValSource",
+    collections = cms.VPSet(
         cms.PSet(
-            tagAndProbeConfigEle27WPTight,
+            testconfig_Ele27WPTight,
             histConfigs = testHistConfigs,
             baseHistName = cms.string("eleWPTightTag_"),
             filterConfigs = testFiltersToMonitor,

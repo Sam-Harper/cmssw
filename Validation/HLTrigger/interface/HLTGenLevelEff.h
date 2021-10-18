@@ -51,6 +51,7 @@ namespace {
 template <typename ObjType, typename ObjCollType>
 class HLTGenLevelEff {
 public:
+  typedef dqm::legacy::MonitorElement MonitorElement;
   typedef dqm::legacy::DQMStore DQMStore;
 
   explicit HLTGenLevelEff(const edm::ParameterSet& pset, edm::ConsumesCollector&& cc);
