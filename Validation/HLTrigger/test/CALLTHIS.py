@@ -25,14 +25,18 @@ process.load("DQMServices.Components.DQMStoreStats_cfi")
 process.load("Validation.HLTrigger.HLTGenLevelValSource_cfi")
 process.load("Validation.HLTrigger.HLTGenLevelValClient_cfi")
 
+process.content = cms.EDAnalyzer("EventContentAnalyzer")
+
 process.allPath = cms.Path(
-    process.HLTEleGenLevelValSource *
+    process.OLD_HLTEleGenLevelValSource *
+    process.content *
     process.HLTGenLevelValClient *
     process.dqmStoreStats
 )
 
 process.p = cms.EndPath(process.dqmSaver)
-process.DQMStore.verbose = 0
 process.dqmSaver.convention = 'Offline'
-workflowName = '/TEST/TEST2/TEST3'
+process.dqmSaver.saveByRun = -1
+process.dqmSaver.saveAtJobEnd = True
+workflowName = '/Global/CMSSW_12_0_0/TEST'
 process.dqmSaver.workflow = workflowName

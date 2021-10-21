@@ -10,7 +10,7 @@ testFiltersToMonitor= cms.PSet(
 from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
 HLTGenLevelValClient = DQMEDHarvester("HLTGenLevelValClient",
                         testFiltersToMonitor,
-                        DQMDirName=cms.string("HLT/EGM"),
+                        DQMDirName=cms.string("HLT/TEST/"),
                         hltTag = cms.string("HLT"),
                         runClientEndLumiBlock=cms.bool(False),
                         runClientEndRun=cms.bool(True),

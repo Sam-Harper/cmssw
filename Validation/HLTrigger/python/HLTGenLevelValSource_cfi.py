@@ -20,16 +20,14 @@ etRangeCut= cms.PSet(
     )
 
 
-# definint a test config
+# defining a test config
 testconfig_Ele27WPTight = cms.PSet(
     trigEvent = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     coll = cms.InputTag("gedGsfElectrons"),
-    VIDCuts = cms.InputTag("egmGsfElectronIDsForDQM:cutBasedElectronID-Summer16-80X-V1-tight"),
     sampleTrigRequirements = cms.PSet(
         hltInputTag = cms.InputTag("TriggerResults","","HLT"),
         hltPaths = cms.vstring("HLT_Ele27_WPTight_Gsf_v*","HLT_Ele32_WPTight_Gsf_v*","HLT_Ele35_WPTight_Gsf_v*"
-                               "HLT_Ele38_WPTight_Gsf_v*",
-                               "HLT_Ele27_WPTight_Gsf_L1DoubleEG_v*","HLT_Ele32_WPTight_Gsf_L1DoubleEG_v*",
+                               "HLT_Ele38_WPTight_Gsf_v*","HLT_Ele27_WPTight_Gsf_L1DoubleEG_v*","HLT_Ele32_WPTight_Gsf_L1DoubleEG_v*",
                                )
         ),
     #it is intended that these are the filters of the triggers listed for sampleTrigRequirements
@@ -56,7 +54,7 @@ testHistConfigs = cms.VPSet(
 testFiltersToMonitor= cms.VPSet(
     # starting with single ele as simple test filter
     cms.PSet(
-        folderName = cms.string("HLT/EGM/TagAndProbeEffs/HLT_Ele27_WPTight_Gsf"),
+        folderName = cms.string("HLT/TEST/"),
         filterName = cms.string("hltEle27WPTightGsfTrackIsoFilter"),
         histTitle = cms.string(""),
     ),

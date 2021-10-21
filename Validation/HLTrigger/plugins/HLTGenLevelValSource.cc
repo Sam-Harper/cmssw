@@ -1,93 +1,84 @@
-#include "FWCore/Common/interface/TriggerNames.h"
-#include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
-#include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/MakerMacros.h"
-#include "FWCore/ServiceRegistry/interface/Service.h"
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "Validation/HLTrigger/interface/HLTGenLevelValSource.h"
+#include "DQMOffline/Trigger/interface/HLTGenLevelValMon.h"
 
-#include "DataFormats/Common/interface/TriggerResults.h"
-#include "DataFormats/HLTReco/interface/TriggerEvent.h"
-#include "DataFormats/HLTReco/interface/TriggerObject.h"
-#include "DataFormats/HLTReco/interface/TriggerTypeDefs.h"
-
-#include "Validation/HLTrigger/interface/HLTGenLevelEff.h"
+// todo most likely replace these!
+#include "DQMOffline/Trigger/interface/EgHLTDebugFuncs.h"
+#include "DQMOffline/Trigger/interface/EgHLTDQMCut.h"
+#include "DQMOffline/Trigger/interface/EgHLTTrigTools.h"
 
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "DQMServices/Core/interface/DQMEDAnalyzer.h"
 
-#include <vector>
-#include <string>
+#include "FWCore/Framework/interface/Run.h"
+#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 
-template <typename ObjType, typename ObjCollType>
-class HLTGenLevelValSource : public DQMEDAnalyzer {
-public:
-  typedef dqm::legacy::MonitorElement MonitorElement;
-  typedef dqm::legacy::DQMStore DQMStore;
+#include <boost/algorithm/string.hpp>
 
-  explicit HLTGenLevelValSource(const edm::ParameterSet&);
-  ~HLTGenLevelValSource() override = default;
-  HLTGenLevelValSource(const HLTGenLevelValSource&) = delete;
-  HLTGenLevelValSource& operator=(const HLTGenLevelValSource&) = delete;
+//#include "DQMOffline/Trigger/interface/EgHLTCutCodes.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/EgammaCandidates/interface/ElectronFwd.h"
+#include "DataFormats/HLTReco/interface/TriggerFilterObjectWithRefs.h"
+using namespace HLTGenLevelVal;
 
-  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig) : nrEventsProcessed_(0) {
+  binData_.setup(iConfig.getParameter<edm::ParameterSet>("binData"));
+  cutMasks_.setup(iConfig.getParameter<edm::ParameterSet>("cutMasks"));
+  HLTFilterNames_ = iConfig.getParameter<std::vector<std::string> >("HLTFilterNames");
 
-  void analyze(const edm::Event&, const edm::EventSetup&) override;
-  void bookHistograms(DQMStore::IBooker&, edm::Run const& run, edm::EventSetup const& c) override;
+  hltTag_ = iConfig.getParameter<std::string>("hltTag");
 
-private:
-  // HLTGenLevelEff objects, each for a certain Filter
-  std::vector<HLTGenLevelEff<ObjType, ObjCollType>> effs_;
-};
+  dirName_ = iConfig.getParameter<std::string>("DQMDirName");
+  subdirName_ = iConfig.getParameter<std::string>("subDQMDirName");
+}
 
-template <typename ObjType, typename ObjCollType>
-HLTGenLevelValSource<ObjType, ObjCollType>::HLTGenLevelValSource(
-    const edm::ParameterSet& config) {
-  auto histCollConfigs = config.getParameter<std::vector<edm::ParameterSet> >("collections");
-  for (auto& histCollConfig : histCollConfigs) {
-    effs_.emplace_back(
-        HLTGenLevelEff<ObjType, ObjCollType>(histCollConfig, consumesCollector()));
+EgHLTOfflineSource::~EgHLTOfflineSource() default;
+
+void EgHLTOfflineSource::bookHistograms(DQMStore::IBooker& iBooker, edm::Run const& run, edm::EventSetup const& c) {
+  iBooker.setCurrentFolder(dirName_);
+
+  //the one monitor element the source fills directly
+  nrEventsProcessedMonElem_ = iBooker.bookInt("nrEventsProcessed");
+
+  //if the HLTConfig changes during the job, the results are "un predictable" but in practice should be fine
+  //the HLTConfig is used for working out which triggers are active, working out which filternames correspond to paths and L1 seeds
+  //assuming those dont change for E/g it *should* be fine
+  HLTConfigProvider hltConfig;
+  bool changed = false;
+  hltConfig.init(run, c, hltTag_, changed);
+
+  std::vector<std::string> hltFiltersUsed = HLTFilterNames_;
+  trigCodes.reset(TrigCodes::makeCodes(hltFiltersUsed)); // this may crash
+
+  MonElemFuncs monElemFuncs(iBooker, *trigCodes);
+
+  //now book ME's
+  iBooker.setCurrentFolder(dirName_ + "/" + subdirName_);
+  //each trigger path will generate object distributions, BUT not trigger efficiencies...
+  for (auto const& HLTFilterName : HLTFilterNames_) {
+    iBooker.setCurrentFolder(dirName_ + "/" + subdirName_ + "/" + eleHLTFilterName);
+    addEleTrigPath(monElemFuncs, eleHLTFilterName);
+  }
+
+  //efficiencies of one trigger path relative to another
+  monElemFuncs.initTightLooseTrigHists(eleMonElems_, eleTightLooseTrigNames_, binData_, "gsfEle");
+  //new EgHLTDQMVarCut<OffEle>(cutMasks_.stdEle,&OffEle::cutCode));
+  //monElemFuncs.initTightLooseTrigHistsTrigCuts(eleMonElems_,eleTightLooseTrigNames_,binData_);
+
+  iBooker.setCurrentFolder(dirName_);
+}
+
+void EgHLTOfflineSource::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  const double weight = 1.;  //we have the ability to weight but its disabled for now - maybe use this for prescales?
+  nrEventsProcessed_++;
+  nrEventsProcessedMonElem_->Fill(nrEventsProcessed_);
+
+  for (auto& filterMonHist : filterMonHists_) {
+    filterMonHist->fill(offEvt_, weight);
   }
 }
 
-
-//all python parameters used to configure the module must be specified here
-template <typename ObjType, typename ObjCollType>
-void HLTGenLevelValSource<ObjType, ObjCollType>::fillDescriptions(
-    edm::ConfigurationDescriptions& descriptions) {
-  edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("objs", edm::InputTag(""));
-  desc.addVPSet("collections",
-                HLTGenLevelEff<ObjType, ObjCollType>::makePSetDescription(),
-                std::vector<edm::ParameterSet>());
-  descriptions.addDefault(desc);
+void EgHLTOfflineSource::addEleTrigPath(MonElemFuncs& monElemFuncs, const std::string& name) {
+  auto* filterMon = new EleHLTFilterMon(monElemFuncs, name, trigCodes->getCode(name.c_str()), binData_, cutMasks_, dohep_);
+  eleFilterMonHists_.push_back(filterMon);
+  std::sort(eleFilterMonHists_.begin(), eleFilterMonHists_.end(), [](auto const& x, auto const& y) { return *x < *y; });
+  //takes a minor efficiency hit at initalisation to ensure that the vector is always sorted
 }
-
-template <typename ObjType, typename ObjCollType>
-void HLTGenLevelValSource<ObjType, ObjCollType>::bookHistograms(
-    DQMStore::IBooker& iBooker, const edm::Run& run, const edm::EventSetup& setup) {
-  for (auto& eff : effs_)
-      eff.bookHists(iBooker);
-}
-
-template <typename ObjType, typename ObjCollType>
-void HLTGenLevelValSource<ObjType, ObjCollType>::analyze(
-    const edm::Event& event, const edm::EventSetup& setup) {
-  for (auto& eff : effs_)
-    eff.fill(event, setup);
-}
-
-#include "FWCore/Framework/interface/MakerMacros.h"
-#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
-#include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
-#include "DataFormats/EgammaCandidates/interface/Photon.h"
-#include "DataFormats/EgammaCandidates/interface/PhotonFwd.h"
-#include "DataFormats/MuonReco/interface/Muon.h"
-#include "DataFormats/MuonReco/interface/MuonFwd.h"
-using HLTEleGenLevelValSource = HLTGenLevelValSource<reco::GsfElectron, reco::GsfElectronCollection>;
-using HLTPhoGenLevelValSource = HLTGenLevelValSource<reco::Photon, reco::PhotonCollection>;
-using HLTMuGenLevelValSource = HLTGenLevelValSource<reco::Muon, reco::MuonCollection>;
-DEFINE_FWK_MODULE(HLTEleGenLevelValSource);
-DEFINE_FWK_MODULE(HLTPhoGenLevelValSource);
-DEFINE_FWK_MODULE(HLTMuGenLevelValSource);
