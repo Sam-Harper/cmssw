@@ -40,6 +40,13 @@
 // FunctionDefs
 #include "DQMOffline/Trigger/interface/FunctionDefs.h"
 
+// includes of histogram collection class
+#include "Validation/HLTrigger/interface/HLTGenValHistColl.h"
+
+// DQMStore
+#include "DQMServices/Core/interface/DQMStore.h"
+#include "DQMServices/Core/interface/DQMEDAnalyzer.h"
+
 //
 // class declaration
 //
@@ -51,27 +58,30 @@
 
 using namespace reco;
 
-class HLTGenValSource : public edm::one::EDAnalyzer<edm::one::SharedResources> {
+class HLTGenValSource : public DQMEDAnalyzer {
 public:
+
   explicit HLTGenValSource(const edm::ParameterSet&);
-  ~HLTGenValSource();
+  ~HLTGenValSource() override = default;
+  HLTGenValSource(const HLTGenValSource&) = delete;
+  HLTGenValSource& operator=(const HLTGenValSource&) = delete;
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
-  void beginJob() override;
   void analyze(const edm::Event&, const edm::EventSetup&) override;
-  void endJob() override;
+  void bookHistograms(DQMStore::IBooker&, edm::Run const& run, edm::EventSetup const& c) override;
 
   // ----------member data ---------------------------
-  std::string GENobject_;
-  std::string vsVar_;
-  int GENobjectPDGID_;
+  std::string objType_;
+  std::string dirName_;
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticleToken_;
-  TH1D *demohisto;
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-  edm::ESGetToken<SetupData, SetupRecord> setupToken_;
-#endif
+  std::vector<edm::ParameterSet> filterConfigs_;
+  std::vector<edm::ParameterSet> histConfigs_;
+
+  std::vector<HLTGenValHistColl> hists_;
+  int GENobjectPDGID_;
+
 };
 
 //
@@ -86,80 +96,56 @@ private:
 // constructors and destructor
 //
 HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
-    : genParticleToken_(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"))){
-      GENobject_ = iConfig.getParameter<std::string>("GENobject");
-      vsVar_ = iConfig.getParameter<std::string>("vsVar");
+    : genParticleToken_(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"))) {
 
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-      setupDataToken_ = esConsumes<SetupData, SetupRecord>();
-#endif
+      filterConfigs_ = iConfig.getParameterSetVector("filterConfigs");
+      histConfigs_ = iConfig.getParameterSetVector("histConfigs");
 
-      //now do what ever initialization is needed
-      edm::Service<TFileService> fs;
-      demohisto = fs->make<TH1D>((TString)vsVar_ , (TString)vsVar_ , 100 , 0 , 5000 );
+      dirName_ = iConfig.getParameter<std::string>("DQMDirName");
+      objType_ = iConfig.getParameter<std::string>("objType");
+
+      // convert input GENobject to pdgID
+      // maybe there is a smarter way to do this? -> at least put it in a function somewhere ;)
+      if(objType_ == "ele") GENobjectPDGID_ = 11;
+      else if(objType_ == "pho") GENobjectPDGID_ = 22;
+      else if(objType_ == "mu") GENobjectPDGID_ = 13;
+      else if(objType_ == "tau") GENobjectPDGID_ = 15;
+      else if(objType_ == "jet") throw cms::Exception("InputError") << "Generator-level validation for jets is not yet implemented.\n";
+      else if(objType_ == "HT") throw cms::Exception("InputError") << "Generator-level validation for HT is not yet implemented.\n";
+      else if(objType_ == "MET") throw cms::Exception("InputError") << "Generator-level validation for MET is not yet implemented.\n";
+      else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << objType_ << ".\n" << "Please check for a potential spelling error.\n";
+      // handle jets here -> probably using GenJets collection?
+      // handle HT, MET here -> using something else entirely. GenMET?
+
+      std::cout << "Started job for " << objType_ << std::endl;
+
+      for (auto & filterConfig : filterConfigs_) hists_.emplace_back(HLTGenValHistColl(objType_, filterConfig));
+
 }
-
-HLTGenValSource::~HLTGenValSource() {
-  // do anything here that needs to be done at desctruction time
-  // (e.g. close files, deallocate resources etc.)
-  //
-  // please remove this method altogether if it would be left empty
-}
-
-//
-// member functions
-//
 
 // ------------ method called for each event  ------------
 void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
-  // get "sub"-collection of GenParticles
   const auto& genParticles = iEvent.getHandle(genParticleToken_);
   for(size_t i = 0; i < genParticles->size(); ++ i) {
     const GenParticle p = (*genParticles)[i];
     int id = p.pdgId();
     if (abs(id) == GENobjectPDGID_) {
-
       // main loop over all "correct" GEN particles
 
       // fill test histogram
-      auto vsVarFunc = hltdqm::getUnaryFuncFloat<GenParticle>(vsVar_);
-      demohisto->Fill(vsVarFunc(p));
+      hists_.at(0).fillHists(p, iEvent, iSetup);
     }
   }
 
-
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-  // if the SetupData is always needed
-  auto setup = iSetup.getData(setupToken_);
-  // if need the ESHandle to check if the SetupData was there or not
-  auto pSetup = iSetup.getHandle(setupToken_);
-#endif
 }
 
 // ------------ method called once each job just before starting event loop  ------------
-void HLTGenValSource::beginJob() {
-
-  // convert input GENobject to pdgID
-  // maybe there is a smarter way to do this? -> at least put it in a function somewhere ;)
-  if(GENobject_ == "ele") GENobjectPDGID_ = 11;
-  else if(GENobject_ == "pho") GENobjectPDGID_ = 22;
-  else if(GENobject_ == "mu") GENobjectPDGID_ = 13;
-  else if(GENobject_ == "tau") GENobjectPDGID_ = 15;
-  else if(GENobject_ == "jet") throw cms::Exception("InputError") << "Generator-level validation for jets is not yet implemented.\n";
-  else if(GENobject_ == "HT") throw cms::Exception("InputError") << "Generator-level validation for HT is not yet implemented.\n";
-  else if(GENobject_ == "MET") throw cms::Exception("InputError") << "Generator-level validation for MET is not yet implemented.\n";
-  else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << GENobject_ << ".\n" << "Please check for a potential spelling error.\n";
-  // handle jets here -> probably using GenJets collection?
-  // handle HT, MET here -> using something else entirely. GenMET?
-
-  std::cout << "Started job for " << GENobject_ << std::endl;
+void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run& run, const edm::EventSetup& setup) {
+  iBooker.setCurrentFolder(dirName_);
+  hists_.at(0).bookHists(iBooker, histConfigs_);
 }
 
-// ------------ method called once each job just after ending the event loop  ------------
-void HLTGenValSource::endJob() {
-  // please remove this method if not needed
-}
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
