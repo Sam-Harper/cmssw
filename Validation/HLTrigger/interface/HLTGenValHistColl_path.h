@@ -1,0 +1,110 @@
+#ifndef DQMOnline_Trigger_HLTGenValHistColl_path_h
+#define DQMOnline_Trigger_HLTGenValHistColl_path_h
+
+//********************************************************************************
+//
+// Description:
+//   This contains a collection of HLTGenvalHists used to measure the efficiency of a
+//   specified path. It is resonsible for booking and filling the histograms.
+//
+//   Currently, only one hist is booked, before the filter is applied. This will be expanded later.
+//
+// Author : Finn Labe, UHH, Oct. 2021
+// (Heavily borrowed from Sam Harpers HLTDQMFilterEffHists)
+//
+//***********************************************************************************
+
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+
+#include "DQMServices/Core/interface/DQMStore.h"
+
+#include "DataFormats/HLTReco/interface/TriggerEvent.h"
+
+#include "DQMOffline/Trigger/interface/FunctionDefs.h"
+#include "DQMOffline/Trigger/interface/UtilFuncs.h"
+
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+
+#include "Validation/HLTrigger/interface/HLTGenValHistColl_filter.h"
+#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
+
+
+using namespace reco;
+
+class HLTGenValHistColl_path {
+public:
+  typedef dqm::legacy::MonitorElement MonitorElement;
+  typedef dqm::legacy::DQMStore DQMStore;
+
+  explicit HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig);
+
+  static edm::ParameterSetDescription makePSetDescription();
+  static edm::ParameterSetDescription makePSetDescriptionHistConfigs();
+
+  void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs);
+  void fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
+
+  std::vector<std::string> moduleLabels(const std::string &);
+
+  std::string triggerPath_;
+
+private:
+  std::vector<HLTGenValHistColl_filter> collection_filter_;
+  std::string objType_;
+  std::vector<std::string> filters_;
+  HLTConfigProvider hltConfig_;
+};
+
+HLTGenValHistColl_path::HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig)
+    : triggerPath_(triggerPath), objType_(objType), hltConfig_(hltConfig) {
+
+  collection_filter_.emplace_back(HLTGenValHistColl_filter(objType_, "beforeAnyFilter"));
+
+  filters_ = moduleLabels(triggerPath_);
+  std::set<std::string>::iterator ilabel;
+  for (auto & filter : filters_) {
+    collection_filter_.emplace_back(HLTGenValHistColl_filter(objType_, filter));
+  }
+
+}
+
+edm::ParameterSetDescription HLTGenValHistColl_path::makePSetDescription() {
+  // TODO
+  edm::ParameterSetDescription desc;
+  desc.setUnknown();
+  return desc;
+}
+
+edm::ParameterSetDescription HLTGenValHistColl_path::makePSetDescriptionHistConfigs() {
+  // TODO
+  edm::ParameterSetDescription desc;
+  desc.setUnknown();
+  return desc;
+}
+
+void HLTGenValHistColl_path::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs) {
+  for (auto& collection_filter : collection_filter_) collection_filter.bookHists(iBooker, histConfigs);
+}
+
+void HLTGenValHistColl_path::fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
+  for (auto& collection_filter : collection_filter_) collection_filter.fillHists(obj, triggerEvent);
+}
+
+// TODO read this function, check what it does...
+std::vector<std::string> HLTGenValHistColl_path::moduleLabels(const std::string &path) {
+  std::vector<std::string> modules = hltConfig_.moduleLabels(path);
+  auto iter = modules.begin();
+  while (iter != modules.end()) {
+    if ((iter->find("Filtered") == std::string::npos) && (iter->find("hltL1s") == std::string::npos)) {
+      iter = modules.erase(iter);
+    } else if (iter->find("L1Filtered0") != std::string::npos)
+      iter = modules.erase(iter);
+    else
+      ++iter;
+  }
+
+  return modules;
+}
+
+#endif

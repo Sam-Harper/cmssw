@@ -35,17 +35,20 @@
 // includes needed for histogram creation
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
-#include "TH1.h"
 
 // FunctionDefs
 #include "DQMOffline/Trigger/interface/FunctionDefs.h"
 
 // includes of histogram collection class
-#include "Validation/HLTrigger/interface/HLTGenValHistColl.h"
+#include "Validation/HLTrigger/interface/HLTGenValHistColl_path.h"
 
 // DQMStore
 #include "DQMServices/Core/interface/DQMStore.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
+
+// trigger Event
+#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
+#include "DataFormats/HLTReco/interface/TriggerEvent.h"
 
 //
 // class declaration
@@ -71,16 +74,29 @@ public:
 private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker&, edm::Run const& run, edm::EventSetup const& c) override;
+  void dqmBeginRun(const edm::Run &, const edm::EventSetup &) override;
 
   // ----------member data ---------------------------
+
+  // config strings
   std::string objType_;
   std::string dirName_;
-  const edm::EDGetTokenT<reco::GenParticleCollection> genParticleToken_;
-  std::vector<edm::ParameterSet> filterConfigs_;
-  std::vector<edm::ParameterSet> histConfigs_;
 
-  std::vector<HLTGenValHistColl> hists_;
+  // tokens to get collections
+  const edm::EDGetTokenT<reco::GenParticleCollection> genParticleToken_;
+  const edm::EDGetTokenT<edm::TriggerResults> trigResultsToken_;
+  const edm::EDGetTokenT<trigger::TriggerEvent> trigEventToken_;
+
+  std::vector<edm::ParameterSet> histConfigs_;
+  std::string hltProcessName_;
+
+  std::vector<HLTGenValHistColl_path> collection_path_;
   int GENobjectPDGID_;
+
+  // not 100% sure why I need this
+  HLTConfigProvider hltConfig_;
+  std::vector<std::string> hltPathsToCheck_;
+  std::set<std::string> hltPaths;
 
 };
 
@@ -96,13 +112,17 @@ private:
 // constructors and destructor
 //
 HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
-    : genParticleToken_(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"))) {
+    : genParticleToken_(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"))),
+      trigResultsToken_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TrigResults"))),
+      trigEventToken_(consumes<trigger::TriggerEvent>(iConfig.getParameter<edm::InputTag>("TrigEvent"))) {
 
-      filterConfigs_ = iConfig.getParameterSetVector("filterConfigs");
       histConfigs_ = iConfig.getParameterSetVector("histConfigs");
 
       dirName_ = iConfig.getParameter<std::string>("DQMDirName");
       objType_ = iConfig.getParameter<std::string>("objType");
+      hltProcessName_ = iConfig.getParameter<std::string>("hltProcessName");
+
+      hltPathsToCheck_ = iConfig.getParameter<std::vector<std::string>>("hltPathsToCheck");
 
       // convert input GENobject to pdgID
       // maybe there is a smarter way to do this? -> at least put it in a function somewhere ;)
@@ -119,12 +139,44 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
 
       std::cout << "Started job for " << objType_ << std::endl;
 
-      for (auto & filterConfig : filterConfigs_) hists_.emplace_back(HLTGenValHistColl(objType_, filterConfig));
+}
+
+void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &iSetup) {
+
+  // Initialize hltConfig
+  // for cross-checking whether paths make sense
+  // later this could be used to determine all paths that relevant for certain GEN object
+  bool changedConfig;
+  if (!hltConfig_.init(iRun, iSetup, hltProcessName_, changedConfig)) {
+    edm::LogError("HLTGenVal") << "Initialization of HLTConfigProvider failed!!";
+    return;
+  }
+
+  // Get the set of trigger paths we want to make plots for
+  // not quite sure why this is needed here -> will be removed if auto-determining paths!
+  for (auto const &i : hltPathsToCheck_) {
+    for (auto const &j : hltConfig_.triggerNames()) {
+      if (j.find(i) != std::string::npos) {
+        hltPaths.insert(j);
+      }
+    }
+  } // should maybe add error handling for typos in paths...
+
+  // creating a histogram collection for each path
+  // TODO simplify this!
+  std::set<std::string>::iterator iPath;
+  for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
+    collection_path_.emplace_back(HLTGenValHistColl_path(objType_, *iPath, hltConfig_));
+  }
 
 }
 
 // ------------ method called for each event  ------------
 void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+
+  edm::Handle<trigger::TriggerEvent> triggerEvent;
+  iEvent.getByToken(trigEventToken_, triggerEvent);
+  const std::vector<std::string>& collectionTags = triggerEvent->collectionTags();
 
   const auto& genParticles = iEvent.getHandle(genParticleToken_);
   for(size_t i = 0; i < genParticles->size(); ++ i) {
@@ -134,16 +186,21 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       // main loop over all "correct" GEN particles
 
       // fill test histogram
-      hists_.at(0).fillHists(p, iEvent, iSetup);
+      for (auto& collection_path : collection_path_) {
+        collection_path.fillHists(p, triggerEvent);
+      }
     }
   }
+
 
 }
 
 // ------------ method called once each job just before starting event loop  ------------
 void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run& run, const edm::EventSetup& setup) {
-  iBooker.setCurrentFolder(dirName_);
-  hists_.at(0).bookHists(iBooker, histConfigs_);
+  for (auto& collection_path : collection_path_) {
+    iBooker.setCurrentFolder(dirName_+"/"+objType_+"/"+collection_path.triggerPath_);
+    collection_path.bookHists(iBooker, histConfigs_);
+  }
 }
 
 

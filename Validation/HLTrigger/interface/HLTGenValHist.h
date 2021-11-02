@@ -36,9 +36,7 @@ class HLTGenValHist {
 public:
   HLTGenValHist() = default;
   virtual ~HLTGenValHist() = default;
-  virtual void fill(const GenParticle& objType,
-                    const edm::Event& event,
-                    const edm::EventSetup& setup) = 0;
+  virtual void fill(const GenParticle& objType) = 0;
 };
 
 //this class is a specific implimentation of a HLTGenValHist
@@ -52,9 +50,7 @@ public:
                std::function<float(const GenParticle&)> func)
       : var_(std::move(func)), varName_(std::move(varName)), hist_(hist) {}
 
-  void fill(const GenParticle& obj,
-            const edm::Event& event,
-            const edm::EventSetup& setup) override {
+  void fill(const GenParticle& obj) override {
     hist_->Fill(var_(obj));
   }
 
