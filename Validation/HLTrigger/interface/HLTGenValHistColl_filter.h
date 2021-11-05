@@ -46,15 +46,9 @@ public:
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs);
   void fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
-  std::vector<std::string> moduleLabels(const std::string &);
-
-  template <class T1, class T2>
-  std::vector<size_t> matchByDeltaR(const std::vector<T1>&, const std::vector<T2>&, const double);
-
 private:
   void book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig);
 
-private:
   std::vector<std::unique_ptr<HLTGenValHist> > hists_;
   std::string objType_;
   std::string filter_;
@@ -82,6 +76,7 @@ void HLTGenValHistColl_filter::bookHists(DQMStore::IBooker& iBooker, std::vector
   for (auto& histConfig : histConfigs) book1D(iBooker, histConfig);
 }
 
+// actual booker function for 1D hists
 void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig) {
   auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
   std::vector<float> binLowEdges;
@@ -111,15 +106,21 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
   hists_.emplace_back(std::move(hist));
 }
 
+// histogram filling routine
 void HLTGenValHistColl_filter::fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
+
+  // this handles the "before" step
+  // there may be a better way how to do this
   if(filter_ == "beforeAnyFilter") {
     for (auto& hist : hists_) hist->fill(obj);
   } else {
-    // do matching here?
+    // main filling code
+
+    // get gilters
     edm::InputTag filterTag(filter_, "", "HLT"); // TODO replace the third argument hre
     size_t filterIndex = triggerEvent->filterIndex(filterTag);
 
-    // get matching objects
+    // get trigger objects of filter in question
     trigger::TriggerObjectCollection allTriggerObjects = triggerEvent->getObjects();
     trigger::TriggerObjectCollection selectedObjects;
     if (filterIndex < triggerEvent->sizeFilters()) {
@@ -130,63 +131,18 @@ void HLTGenValHistColl_filter::fillHists(const GenParticle& obj, edm::Handle<tri
       }
     }
 
-    // do the matching
+    // do a deltaR matching
     double mindR2 = 999;
     for (const auto & filterobj : selectedObjects) {
       double dR = deltaR2(obj, filterobj);
       if(dR < mindR2) mindR2 = dR;
     }
+    double dR2limit = 0.1; // TODO put this working point as a variable somewhere
 
-    // decide if pass
-    double dR2limit = 0.1;
+    // filling hist if GEN particle is matched to some filter object
     if(mindR2 < dR2limit) for (auto& hist : hists_) hist->fill(obj);
 
   }
-}
-
-// A generic method to find the best deltaR matches from 2 collections.
-// stolen from HLTMuonMatchAndPlot.cc
-// should put somewhere else along other helper functions
-template <class T1, class T2>
-std::vector<size_t> HLTGenValHistColl_filter::matchByDeltaR(const std::vector<T1>& collection1,
-                                                  const std::vector<T2>& collection2,
-                                                  const double maxDeltaR) {
-  const double NOMATCH = 999.;
-
-  const size_t n1 = collection1.size();
-  const size_t n2 = collection2.size();
-
-  std::vector<size_t> result(n1, -1);
-  std::vector<std::vector<double> > deltaRMatrix(n1, std::vector<double>(n2, NOMATCH));
-
-  for (size_t i = 0; i < n1; i++)
-    for (size_t j = 0; j < n2; j++) {
-      deltaRMatrix[i][j] = deltaR(collection1[i], collection2[j]);
-    }
-
-  // Run through the matrix n1 times to make sure we've found all matches.
-  for (size_t k = 0; k < n1; k++) {
-    size_t i_min = -1;
-    size_t j_min = -1;
-    double minDeltaR = maxDeltaR;
-    // find the smallest deltaR
-    for (size_t i = 0; i < n1; i++)
-      for (size_t j = 0; j < n2; j++)
-        if (deltaRMatrix[i][j] < minDeltaR) {
-          i_min = i;
-          j_min = j;
-          minDeltaR = deltaRMatrix[i][j];
-        }
-    // If a match has been made, save it and make those candidates unavailable.
-    if (minDeltaR < maxDeltaR) {
-      result[i_min] = j_min;
-      deltaRMatrix[i_min] = std::vector<double>(n2, NOMATCH);
-      for (size_t i = 0; i < n1; i++)
-        deltaRMatrix[i][j_min] = NOMATCH;
-    }
-  }
-
-  return result;
 }
 
 #endif

@@ -75,25 +75,27 @@ private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker&, edm::Run const& run, edm::EventSetup const& c) override;
   void dqmBeginRun(const edm::Run &, const edm::EventSetup &) override;
+  void convertStringToPDGID();
 
   // ----------member data ---------------------------
 
-  // config strings
-  std::string objType_;
-  std::string dirName_;
-
   // tokens to get collections
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticleToken_;
-  const edm::EDGetTokenT<edm::TriggerResults> trigResultsToken_;
   const edm::EDGetTokenT<trigger::TriggerEvent> trigEventToken_;
 
+  // config strings/Psets
+  std::string objType_;
+  std::string dirName_;
   std::vector<edm::ParameterSet> histConfigs_;
   std::string hltProcessName_;
 
+  // histogram colelction
   std::vector<HLTGenValHistColl_path> collection_path_;
+
+  // pdgID corresponding to selected objType
   int GENobjectPDGID_;
 
-  // not 100% sure why I need this
+  // HLT config provider/getter
   HLTConfigProvider hltConfig_;
   std::vector<std::string> hltPathsToCheck_;
   std::set<std::string> hltPaths;
@@ -113,7 +115,6 @@ private:
 //
 HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
     : genParticleToken_(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"))),
-      trigResultsToken_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TrigResults"))),
       trigEventToken_(consumes<trigger::TriggerEvent>(iConfig.getParameter<edm::InputTag>("TrigEvent"))) {
 
       histConfigs_ = iConfig.getParameterSetVector("histConfigs");
@@ -124,18 +125,7 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
 
       hltPathsToCheck_ = iConfig.getParameter<std::vector<std::string>>("hltPathsToCheck");
 
-      // convert input GENobject to pdgID
-      // maybe there is a smarter way to do this? -> at least put it in a function somewhere ;)
-      if(objType_ == "ele") GENobjectPDGID_ = 11;
-      else if(objType_ == "pho") GENobjectPDGID_ = 22;
-      else if(objType_ == "mu") GENobjectPDGID_ = 13;
-      else if(objType_ == "tau") GENobjectPDGID_ = 15;
-      else if(objType_ == "jet") throw cms::Exception("InputError") << "Generator-level validation for jets is not yet implemented.\n";
-      else if(objType_ == "HT") throw cms::Exception("InputError") << "Generator-level validation for HT is not yet implemented.\n";
-      else if(objType_ == "MET") throw cms::Exception("InputError") << "Generator-level validation for MET is not yet implemented.\n";
-      else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << objType_ << ".\n" << "Please check for a potential spelling error.\n";
-      // handle jets here -> probably using GenJets collection?
-      // handle HT, MET here -> using something else entirely. GenMET?
+      convertStringToPDGID();
 
       std::cout << "Started job for " << objType_ << std::endl;
 
@@ -176,7 +166,6 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   edm::Handle<trigger::TriggerEvent> triggerEvent;
   iEvent.getByToken(trigEventToken_, triggerEvent);
-  const std::vector<std::string>& collectionTags = triggerEvent->collectionTags();
 
   const auto& genParticles = iEvent.getHandle(genParticleToken_);
   for(size_t i = 0; i < genParticles->size(); ++ i) {
@@ -211,13 +200,23 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   edm::ParameterSetDescription desc;
   desc.setUnknown();
   descriptions.addDefault(desc);
-
-  //Specify that only 'tracks' is allowed
-  //To use, remove the default given above and uncomment below
-  //ParameterSetDescription desc;
-  //desc.addUntracked<edm::InputTag>("tracks","ctfWithMaterialTracks");
-  //descriptions.addWithDefaultLabel(desc);
 }
+
+void HLTGenValSource::convertStringToPDGID() {
+  // convert input GENobject to pdgID
+  // maybe there is a smarter way to do this? -> at least put it in a function somewhere ;)
+  if(objType_ == "ele") GENobjectPDGID_ = 11;
+  else if(objType_ == "pho") GENobjectPDGID_ = 22;
+  else if(objType_ == "mu") GENobjectPDGID_ = 13;
+  else if(objType_ == "tau") GENobjectPDGID_ = 15;
+  else if(objType_ == "jet") throw cms::Exception("InputError") << "Generator-level validation for jets is not yet implemented.\n";
+  else if(objType_ == "HT") throw cms::Exception("InputError") << "Generator-level validation for HT is not yet implemented.\n";
+  else if(objType_ == "MET") throw cms::Exception("InputError") << "Generator-level validation for MET is not yet implemented.\n";
+  else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << objType_ << ".\n" << "Please check for a potential spelling error.\n";
+  // handle jets here -> probably using GenJets collection?
+  // handle HT, MET here -> using something else entirely. GenMET?
+}
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(HLTGenValSource);

@@ -45,11 +45,13 @@ public:
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs);
   void fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
-  std::vector<std::string> moduleLabels(const std::string &);
-
+  // this is public as it is accessed by HLTGenValSource. Could be replaced by a getter.
   std::string triggerPath_;
 
 private:
+
+  std::vector<std::string> moduleLabels(const std::string &);
+
   std::vector<HLTGenValHistColl_filter> collection_filter_;
   std::string objType_;
   std::vector<std::string> filters_;
@@ -91,7 +93,8 @@ void HLTGenValHistColl_path::fillHists(const GenParticle& obj, edm::Handle<trigg
   for (auto& collection_filter : collection_filter_) collection_filter.fillHists(obj, triggerEvent);
 }
 
-// TODO read this function, check what it does...
+// Returns list of filters by path
+// some filters are not taken -> TODO ask why!
 std::vector<std::string> HLTGenValHistColl_path::moduleLabels(const std::string &path) {
   std::vector<std::string> modules = hltConfig_.moduleLabels(path);
   auto iter = modules.begin();

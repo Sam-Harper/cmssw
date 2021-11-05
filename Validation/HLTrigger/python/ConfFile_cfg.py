@@ -11,7 +11,6 @@ from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
 # parameter definitions
 ptBins=cms.vdouble(5,10,12.5,15,17.5,20,22.5,25,30,35,40,45,50,60,80,100,150,200,250,300,350,400)
 etaBins=cms.vdouble(-10, -8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8, 10)
-dirname = "test"
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
@@ -24,10 +23,9 @@ process.source = cms.Source("PoolSource",
 process.HLTGenValSource = cms.EDProducer('HLTGenValSource',
 
     ### general configurations
-    DQMDirName = cms.string(dirname),
+    DQMDirName = cms.string("HLTGenVal"),
     genParticles = cms.InputTag("genParticles"),
     hltProcessName = cms.string("HLT"), # this should be used to replace the following one if that one is needed
-    TrigResults = cms.InputTag("TriggerResults","","HLT"), # not used currently, but I may need this to get the "pass" booleans
     TrigEvent = cms.InputTag("hltTriggerSummaryAOD"),
     objType = cms.string("mu"),
 
@@ -60,7 +58,7 @@ process.harvester = DQMEDHarvester("DQMGenericClient",
     outputFileName= cms.untracked.string('testoutput.root'),
     commands       = cms.vstring(),
     resolution     = cms.vstring(),
-    subDirs        = cms.untracked.vstring(dirname),
+    subDirs        = cms.untracked.vstring("HLTGenVal"),
     efficiency     = cms.vstring("EFF 'title; label; label' ele_none_vspt ele_none_vspt")
 )
 
