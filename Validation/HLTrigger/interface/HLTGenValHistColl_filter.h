@@ -90,8 +90,8 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
     histname = objType_ + "_vs" + vsVar + "_before";
     histtitle = objType_ + " vs " + vsVar +" before";
   } else {
-    histname = objType_ + "_" + filter_ + "_vs" + vsVar + "_pass";
-    histtitle = objType_ + " " + filter_ + " vs " + vsVar +" pass";
+    histname = objType_ + "_" + filter_ + "_vs" + vsVar + "_after";
+    histtitle = objType_ + " " + filter_ + " vs " + vsVar +" after";
   }
 
   auto me = iBooker.book1D(histname.c_str(), histtitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);
