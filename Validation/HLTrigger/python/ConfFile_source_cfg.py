@@ -6,6 +6,7 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 process.load("DQMServices.Core.DQM_cfg")
 process.load("DQMServices.Core.DQMStore_cfg")
 process.load("DQMServices.Components.DQMEnvironment_cfi")
+process.load("DQMServices.Components.MEtoEDMConverter_cff")
 from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
 
 # parameter definitions
@@ -51,12 +52,11 @@ process.HLTGenValSource = cms.EDProducer('HLTGenValSource',
     ),
 )
 
-process.p = cms.Path(process.HLTGenValSource)
-
+process.p = cms.Path(process.HLTGenValSource*process.MEtoEDMConverter)
 # the harvester
 process.harvester = DQMEDHarvester("DQMGenericClient",
     verbose        = cms.untracked.uint32(0), #set this to zero!
-    outputFileName = cms.untracked.string('sourceoutput.root'),
+    outputFileName = cms.untracked.string('sourcehists.root'),
     commands       = cms.vstring(),
     resolution     = cms.vstring(),
     subDirs        = cms.untracked.vstring("HLTGenVal_effs"),
@@ -64,7 +64,10 @@ process.harvester = DQMEDHarvester("DQMGenericClient",
 )
 
 process.out = cms.OutputModule("PoolOutputModule",
-    fileName = cms.untracked.string('sourceoutput.root')
+    fileName = cms.untracked.string('sourceoutput.root'),
+    outputCommands = cms.untracked.vstring( 'drop *',
+                                            'keep *_MEtoEDMConverter_*_*')
+
 )
 
 process.outpath = cms.EndPath(process.harvester*process.out)
