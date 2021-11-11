@@ -91,7 +91,7 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
     histtitle = objType_ + " vs " + vsVar +" before";
   } else {
     histname = objType_ + "_" + filter_ + "_vs" + vsVar + "_after";
-    histtitle = objType_ + " " + filter_ + " vs " + vsVar +" after";
+    histtitle = objType_ + "_" + filter_ + "_vs" + vsVar + "_after";
   }
 
   auto me = iBooker.book1D(histname.c_str(), histtitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);

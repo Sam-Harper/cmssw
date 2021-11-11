@@ -34,7 +34,7 @@ process.HLTGenValSource = cms.EDProducer('HLTGenValSource',
     # vector of paths that will be looked at. Need to get this automatically for certain objType later
     # not sure yet whether I need this, the list of filters, or both
     hltPathsToCheck = cms.vstring(
-      "HLT_Mu50_v",
+      "HLT_IsoMu24_v",
     ),
 
     ### histogram configs
@@ -52,22 +52,14 @@ process.HLTGenValSource = cms.EDProducer('HLTGenValSource',
     ),
 )
 
-process.p = cms.Path(process.HLTGenValSource*process.MEtoEDMConverter)
+process.p = cms.Path(process.HLTGenValSource)
+
 # the harvester
 process.harvester = DQMEDHarvester("DQMGenericClient",
-    verbose        = cms.untracked.uint32(0), #set this to zero!
-    outputFileName = cms.untracked.string('sourcehists.root'),
-    commands       = cms.vstring(),
+    outputFileName = cms.untracked.string('sourceoutput_harvest.root'),
     resolution     = cms.vstring(),
-    subDirs        = cms.untracked.vstring("HLTGenVal_effs"),
-    efficiency     = cms.vstring("EFF 'title; label; label' mu_vspt_before mu_hltL1sSingleMu22or25_vspt_pass")
+    subDirs        = cms.untracked.vstring("/*"),
+    efficiency     = cms.vstring("eff_test_1 'efficiency; pt [GeV]; efficiency' mu_hltL1sSingleMu22_vspt_after mu_vspt_before"),
 )
 
-process.out = cms.OutputModule("PoolOutputModule",
-    fileName = cms.untracked.string('sourceoutput.root'),
-    outputCommands = cms.untracked.vstring( 'drop *',
-                                            'keep *_MEtoEDMConverter_*_*')
-
-)
-
-process.outpath = cms.EndPath(process.harvester*process.out)
+process.outpath = cms.EndPath(process.harvester)
