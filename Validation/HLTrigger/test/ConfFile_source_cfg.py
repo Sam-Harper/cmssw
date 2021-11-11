@@ -55,7 +55,7 @@ process.HLTGenValSource = cms.EDProducer('HLTGenValSource',
 process.p = cms.Path(process.HLTGenValSource)
 
 # the harvester
-process.harvester = DQMEDHarvester("DQMGenericClient",
+process.harvester = DQMEDHarvester("HLTGenValClient",
     outputFileName = cms.untracked.string('sourceoutput_harvest.root'),
     resolution     = cms.vstring(),
     subDirs        = cms.untracked.vstring("/*"),
