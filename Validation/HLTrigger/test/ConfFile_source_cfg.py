@@ -58,8 +58,7 @@ process.p = cms.Path(process.HLTGenValSource)
 process.harvester = DQMEDHarvester("HLTGenValClient",
     outputFileName = cms.untracked.string('sourceoutput_harvest.root'),
     resolution     = cms.vstring(),
-    subDirs        = cms.untracked.vstring("/*"),
-    efficiency     = cms.vstring("eff_test_1 'efficiency; pt [GeV]; efficiency' mu_hltL1sSingleMu22_vspt_after mu_vspt_before"),
+    subDirs        = cms.untracked.vstring("HLTGenVal_parts/mu/*"),
 )
 
 process.outpath = cms.EndPath(process.harvester)

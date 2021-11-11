@@ -252,46 +252,6 @@ HLTGenValClient::HLTGenValClient(const ParameterSet& pset)
   runOnEndJob_ = pset.getUntrackedParameter<bool>("runOnEndJob", true);
   makeGlobalEffPlot_ = pset.getUntrackedParameter<bool>("makeGlobalEffienciesPlot", true);
 
-  // Parse efficiency commands
-  vstring effCmds = pset.getParameter<vstring>("efficiency");
-  for (vstring::const_iterator effCmd = effCmds.begin(); effCmd != effCmds.end(); ++effCmd) {
-    if (effCmd->empty())
-      continue;
-
-    boost::tokenizer<elsc> tokens(*effCmd, commonEscapes);
-
-    vector<string> args;
-    for (boost::tokenizer<elsc>::const_iterator iToken = tokens.begin(); iToken != tokens.end(); ++iToken) {
-      if (iToken->empty())
-        continue;
-      args.push_back(*iToken);
-    }
-
-    if (args.size() < 4) {
-      LogInfo("HLTGenValClient") << "Wrong input to effCmds\n";
-      continue;
-    }
-
-    EfficOption opt;
-    opt.name = args[0];
-    opt.title = args[1];
-    opt.numerator = args[2];
-    opt.denominator = args[3];
-    opt.isProfile = false;
-
-    const string typeName = args.size() == 4 ? "eff" : args[4];
-    if (typeName == "eff")
-      opt.type = EfficType::efficiency;
-    else if (typeName == "fake")
-      opt.type = EfficType::fakerate;
-    else if (typeName == "simpleratio")
-      opt.type = EfficType::simpleratio;
-    else
-      opt.type = EfficType::none;
-
-    efficOptions_.push_back(opt);
-  }
-
   VPSet efficSets = pset.getUntrackedParameter<VPSet>("efficiencySets", VPSet());
   for (VPSet::const_iterator efficSet = efficSets.begin(); efficSet != efficSets.end(); ++efficSet) {
     EfficOption opt;
@@ -624,6 +584,7 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
     }
   }
 
+
   for (set<string>::const_iterator iSubDir = subDirSet.begin(); iSubDir != subDirSet.end(); ++iSubDir) {
     const string& dirName = *iSubDir;
 
@@ -643,6 +604,44 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
 
     for (vector<CDOption>::const_iterator cdOption = cdOptions_.begin(); cdOption != cdOptions_.end(); ++cdOption) {
       makeCumulativeDist(ibooker, igetter, dirName, cdOption->name, cdOption->ascending);
+    }
+
+    // construct efficiency options automatically
+    // we need an EfficOption object per efficiency
+    // opt.name
+    // opt.title
+    // opt.numerator
+    // opt.denominator
+    // opt.isProfile = false;
+    // opt.type = EfficType::efficiency
+    auto contents = igetter.getAllContents(dirName);
+
+    for (auto & content : contents) {
+
+      // splitting the input string
+      std::stringstream namestream(content->getName());
+      std::string namesegment;
+      std::vector<std::string> seglist;
+      while(std::getline(namestream, namesegment, '_'))
+      {
+         seglist.push_back(namesegment);
+      }
+
+      for(auto seg : seglist) std::cout << seg << std::endl;
+
+      if(seglist.size() != 4) continue; // this throws out both the "before" hist and most other wrong hists
+      if(seglist.at(3) != "after") continue; // ensuring only "after" hists are used
+
+      EfficOption opt;
+      opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_pass";
+      opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " pass";
+      opt.numerator = content->getName();
+      opt.denominator = seglist.at(0) + "_" + seglist.at(2) + "_before";
+      opt.isProfile = false;
+      opt.type = EfficType::efficiency;
+
+      efficOptions_.push_back(opt);
+
     }
 
     for (vector<EfficOption>::const_iterator efficOption = efficOptions_.begin(); efficOption != efficOptions_.end();
@@ -679,6 +678,7 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
                                          const string& simMEName,
                                          const EfficType type,
                                          const bool makeProfile) {
+
   if (!igetter.dirExists(startDir)) {
     if (verbose_ >= 2 || (verbose_ == 1 && !isWildcardUsed_)) {
       LogInfo("HLTGenValClient") << "computeEfficiency() : "
