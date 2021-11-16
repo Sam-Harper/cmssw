@@ -85,6 +85,7 @@ private:
 
   // tokens to get collections
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticleToken_;
+  const edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
   const edm::EDGetTokenT<trigger::TriggerEvent> trigEventToken_;
 
   // config strings/Psets
@@ -118,6 +119,7 @@ private:
 //
 HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
     : genParticleToken_(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genParticles"))),
+      genJetToken_(consumes<reco::GenJetCollection>(iConfig.getParameter<edm::InputTag>("genJets"))),
       trigEventToken_(consumes<trigger::TriggerEvent>(iConfig.getParameter<edm::InputTag>("TrigEvent"))) {
 
       histConfigs_ = iConfig.getParameterSetVector("histConfigs");
@@ -146,12 +148,20 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   // Get the set of trigger paths we want to make plots for
   // not quite sure why this is needed here -> will be removed if auto-determining paths!
   for (auto const &i : hltPathsToCheck_) {
+    bool pathfound = false;
     for (auto const &j : hltConfig_.triggerNames()) {
       if (j.find(i) != std::string::npos) {
         hltPaths.insert(j);
+        pathfound = true;
       }
     }
-  } // should maybe add error handling for typos in paths...
+    if(!pathfound) {
+      std::cout << "Path " << i << " does not exist!" << std::endl;
+      for (auto const &j : hltConfig_.triggerNames()) {
+        std::cout << j << std::endl;
+      }
+    }
+  }
 
   // creating a histogram collection for each path
   // TODO simplify this!
@@ -165,12 +175,11 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
 // ------------ method called for each event  ------------
 void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
-  // TODO this needs to be gone
-  edm::Handle<trigger::TriggerEvent> triggerEvent;
-  iEvent.getByToken(trigEventToken_, triggerEvent);
-
   // creating the collection of HLTGenValObjects
   fillObjectCollection(iEvent);
+
+  edm::Handle<trigger::TriggerEvent> triggerEvent;
+  iEvent.getByToken(trigEventToken_, triggerEvent);
 
   // loop over all objects and fill hists
   for (auto & object : objects_) {
@@ -200,7 +209,7 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
 }
 
 void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
-  int GENobjectPDGID_;
+  int GENobjectPDGID_ = -1;
 
   // convert input GENobject to pdgID
   // maybe there is a smarter way to do this? -> at least put it in a function somewhere ;)
@@ -208,23 +217,32 @@ void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
   else if(objType_ == "pho") GENobjectPDGID_ = 22;
   else if(objType_ == "mu") GENobjectPDGID_ = 13;
   else if(objType_ == "tau") GENobjectPDGID_ = 15;
-  else if(objType_ == "jet") throw cms::Exception("InputError") << "Generator-level validation for jets is not yet implemented.\n";
+  else if(objType_ == "jet") {
+    const auto& genJets = iEvent.getHandle(genJetToken_);
+    for(size_t i = 0; i < genJets->size(); ++ i) {
+      const GenJet p = (*genJets)[i];
+      objects_.emplace_back(p);
+    }
+  }
   else if(objType_ == "HT") throw cms::Exception("InputError") << "Generator-level validation for HT is not yet implemented.\n";
   else if(objType_ == "MET") throw cms::Exception("InputError") << "Generator-level validation for MET is not yet implemented.\n";
   else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << objType_ << ".\n" << "Please check for a potential spelling error.\n";
   // handle jets here -> probably using GenJets collection?
   // handle HT, MET here -> using something else entirely. GenMET?
 
-  const auto& genParticles = iEvent.getHandle(genParticleToken_);
-  for(size_t i = 0; i < genParticles->size(); ++ i) {
-    const GenParticle p = (*genParticles)[i];
-    int id = p.pdgId();
-    if (abs(id) == GENobjectPDGID_) {
-      // main loop over all "correct" GEN particles
+  if(GENobjectPDGID_ != -1) {
+    const auto& genParticles = iEvent.getHandle(genParticleToken_);
+    for(size_t i = 0; i < genParticles->size(); ++ i) {
+      const GenParticle p = (*genParticles)[i];
+      int id = p.pdgId();
+      if (abs(id) == GENobjectPDGID_) {
+        // main loop over all "correct" GEN particles
 
-      objects_.emplace_back(p);
+        objects_.emplace_back(p);
+      }
     }
   }
+
 }
 
 

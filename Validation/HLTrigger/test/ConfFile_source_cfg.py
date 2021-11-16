@@ -20,12 +20,13 @@ process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring("root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/67A99845-DA80-E048-BA70-CA5A4BF4F5E5.root")
 )
 
-# the source
-process.HLTGenValSource = cms.EDProducer('HLTGenValSource',
+# the sources
+process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
 
     ### general configurations
     DQMDirName = cms.string("HLTGenVal_parts"),
     genParticles = cms.InputTag("genParticles"),
+    genJets = cms.InputTag("ak4GenJets"),
     hltProcessName = cms.string("HLT"), # this should be used to replace the following one if that one is needed
     TrigEvent = cms.InputTag("hltTriggerSummaryAOD"),
     objType = cms.string("mu"),
@@ -51,14 +52,45 @@ process.HLTGenValSource = cms.EDProducer('HLTGenValSource',
         ),
     ),
 )
+process.HLTGenValSourceJET = cms.EDProducer('HLTGenValSource',
 
-process.p = cms.Path(process.HLTGenValSource)
+    ### general configurations
+    DQMDirName = cms.string("HLTGenVal_parts"),
+    genParticles = cms.InputTag("genParticles"),
+    genJets = cms.InputTag("ak4GenJets"),
+    hltProcessName = cms.string("HLT"), # this should be used to replace the following one if that one is needed
+    TrigEvent = cms.InputTag("hltTriggerSummaryAOD"),
+    objType = cms.string("jet"),
+
+    ### path configs
+    # vector of paths that will be looked at. Need to get this automatically for certain objType later
+    # not sure yet whether I need this, the list of filters, or both
+    hltPathsToCheck = cms.vstring(
+      "HLT_PFHT900_v",
+    ),
+
+    ### histogram configs
+    # Configuring individual histograms, expecting vsVar as string and bin edges
+    # this histogram is created once for each filter specified above
+    histConfigs = cms.VPSet(
+        cms.PSet(
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBins,
+        ),
+        cms.PSet(
+            vsVar = cms.string("eta"),
+            binLowEdges = etaBins,
+        ),
+    ),
+)
+
+process.p = cms.Path(process.HLTGenValSourceJET)
 
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",
     outputFileName = cms.untracked.string('sourceoutput_harvest.root'),
     resolution     = cms.vstring(),
-    subDirs        = cms.untracked.vstring("HLTGenVal_parts/mu/*"),
+    subDirs        = cms.untracked.vstring("HLTGenVal_parts/mu/*", "HLTGenVal_parts/jet/*"),
 )
 
 process.outpath = cms.EndPath(process.harvester)

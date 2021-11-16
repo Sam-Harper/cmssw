@@ -11,8 +11,9 @@
 *
 ****************************************************************************/
 
-#include "DataFormats/Candidate/interface/LeafCandidate.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/JetReco/interface/GenJet.h"
+
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include <vector>
 
@@ -26,6 +27,9 @@ public:
 
   /// constructor from GenParticle
   HLTGenValObject(const GenParticle &p)
+      : p4Polar_(p.p4()), p4Cartesian_(p.p4()) {}
+
+  HLTGenValObject(const GenJet &p)
       : p4Polar_(p.p4()), p4Cartesian_(p.p4()) {}
 
   /// constructor from GenJet
