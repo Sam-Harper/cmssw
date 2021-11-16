@@ -66,7 +66,7 @@ process.HLTGenValSourceJET = cms.EDProducer('HLTGenValSource',
     # vector of paths that will be looked at. Need to get this automatically for certain objType later
     # not sure yet whether I need this, the list of filters, or both
     hltPathsToCheck = cms.vstring(
-      "HLT_PFHT900_v",
+      "HLT_PFJet500_v",
     ),
 
     ### histogram configs
@@ -84,7 +84,7 @@ process.HLTGenValSourceJET = cms.EDProducer('HLTGenValSource',
     ),
 )
 
-process.p = cms.Path(process.HLTGenValSourceJET)
+process.p = cms.Path(process.HLTGenValSourceJET*process.HLTGenValSourceMU)
 
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",

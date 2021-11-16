@@ -93,7 +93,7 @@ void HLTGenValHistColl_path::fillHists(const HLTGenValObject& obj, edm::Handle<t
 }
 
 // Returns list of filters by path
-// some filters are not taken -> TODO ask why!
+// excluding some filters
 std::vector<std::string> HLTGenValHistColl_path::moduleLabels(const std::string &path) {
   std::vector<std::string> modules = hltConfig_.moduleLabels(path);
   auto iter = modules.begin();

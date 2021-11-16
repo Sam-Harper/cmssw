@@ -147,6 +147,7 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
 
   // Get the set of trigger paths we want to make plots for
   // not quite sure why this is needed here -> will be removed if auto-determining paths!
+  std::vector<std::string> notFoundPaths;
   for (auto const &i : hltPathsToCheck_) {
     bool pathfound = false;
     for (auto const &j : hltConfig_.triggerNames()) {
@@ -155,16 +156,16 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
         pathfound = true;
       }
     }
-    if(!pathfound) {
-      std::cout << "Path " << i << " does not exist!" << std::endl;
-      for (auto const &j : hltConfig_.triggerNames()) {
-        std::cout << j << std::endl;
-      }
-    }
+    if(!pathfound) notFoundPaths.push_back(i);
+  }
+  if(notFoundPaths.size() > 0) {
+    std::cout << "The following paths could not be found: " << std::endl;
+    for (auto & path : notFoundPaths) std::cout << "   " << path << std::endl;
+    std::cout << "The list of all available paths is: " << std::endl;
+    for (auto & path : hltConfig_.triggerNames()) std::cout << "   " << path << std::endl;
   }
 
   // creating a histogram collection for each path
-  // TODO simplify this!
   std::set<std::string>::iterator iPath;
   for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
     collection_path_.emplace_back(HLTGenValHistColl_path(objType_, *iPath, hltConfig_));
