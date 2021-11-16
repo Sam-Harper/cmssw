@@ -24,11 +24,10 @@
 #include "DQMOffline/Trigger/interface/FunctionDefs.h"
 #include "DQMOffline/Trigger/interface/UtilFuncs.h"
 
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-
 #include "Validation/HLTrigger/interface/HLTGenValHistColl_filter.h"
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 
+#include "Validation/HLTrigger/interface/HLTGenValObject.h"
 
 using namespace reco;
 
@@ -43,7 +42,7 @@ public:
   static edm::ParameterSetDescription makePSetDescriptionHistConfigs();
 
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs);
-  void fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
+  void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
   // this is public as it is accessed by HLTGenValSource. Could be replaced by a getter.
   std::string triggerPath_;
@@ -89,7 +88,7 @@ void HLTGenValHistColl_path::bookHists(DQMStore::IBooker& iBooker, std::vector<e
   for (auto& collection_filter : collection_filter_) collection_filter.bookHists(iBooker, histConfigs);
 }
 
-void HLTGenValHistColl_path::fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
+void HLTGenValHistColl_path::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
   for (auto& collection_filter : collection_filter_) collection_filter.fillHists(obj, triggerEvent);
 }
 

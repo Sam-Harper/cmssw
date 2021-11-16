@@ -21,8 +21,7 @@
 
 #include "FWCore/Framework/interface/Event.h"
 
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-
+#include "Validation/HLTrigger/interface/HLTGenValObject.h"
 
 #include <TH1.h>
 #include <TH2.h>
@@ -36,7 +35,7 @@ class HLTGenValHist {
 public:
   HLTGenValHist() = default;
   virtual ~HLTGenValHist() = default;
-  virtual void fill(const GenParticle& objType) = 0;
+  virtual void fill(const HLTGenValObject& objType) = 0;
 };
 
 //this class is a specific implimentation of a HLTGenValHist
@@ -47,15 +46,15 @@ class HLTGenValHist1D : public HLTGenValHist {
 public:
   HLTGenValHist1D(TH1* hist,
                std::string varName,
-               std::function<float(const GenParticle&)> func)
+               std::function<float(const HLTGenValObject&)> func)
       : var_(std::move(func)), varName_(std::move(varName)), hist_(hist) {}
 
-  void fill(const GenParticle& obj) override {
+  void fill(const HLTGenValObject& obj) override {
     hist_->Fill(var_(obj));
   }
 
 private:
-  std::function<float(const GenParticle&)> var_;
+  std::function<float(const HLTGenValObject&)> var_;
   std::string varName_;
   TH1* hist_;  //we do not own this
 };

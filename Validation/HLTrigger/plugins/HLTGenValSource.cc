@@ -50,6 +50,10 @@
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 #include "DataFormats/HLTReco/interface/TriggerEvent.h"
 
+// object that can be a GenJet, GenParticle or energy sum
+#include "Validation/HLTrigger/interface/HLTGenValObject.h"
+
+
 //
 // class declaration
 //
@@ -75,7 +79,7 @@ private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker&, edm::Run const& run, edm::EventSetup const& c) override;
   void dqmBeginRun(const edm::Run &, const edm::EventSetup &) override;
-  void convertStringToPDGID();
+  void fillObjectCollection(const edm::Event&);
 
   // ----------member data ---------------------------
 
@@ -92,13 +96,12 @@ private:
   // histogram colelction
   std::vector<HLTGenValHistColl_path> collection_path_;
 
-  // pdgID corresponding to selected objType
-  int GENobjectPDGID_;
-
   // HLT config provider/getter
   HLTConfigProvider hltConfig_;
   std::vector<std::string> hltPathsToCheck_;
   std::set<std::string> hltPaths;
+
+  std::vector<HLTGenValObject> objects_;
 
 };
 
@@ -124,8 +127,6 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
       hltProcessName_ = iConfig.getParameter<std::string>("hltProcessName");
 
       hltPathsToCheck_ = iConfig.getParameter<std::vector<std::string>>("hltPathsToCheck");
-
-      convertStringToPDGID();
 
       std::cout << "Started job for " << objType_ << std::endl;
 
@@ -164,23 +165,19 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
 // ------------ method called for each event  ------------
 void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
+  // TODO this needs to be gone
   edm::Handle<trigger::TriggerEvent> triggerEvent;
   iEvent.getByToken(trigEventToken_, triggerEvent);
 
-  const auto& genParticles = iEvent.getHandle(genParticleToken_);
-  for(size_t i = 0; i < genParticles->size(); ++ i) {
-    const GenParticle p = (*genParticles)[i];
-    int id = p.pdgId();
-    if (abs(id) == GENobjectPDGID_) {
-      // main loop over all "correct" GEN particles
+  // creating the collection of HLTGenValObjects
+  fillObjectCollection(iEvent);
 
-      // fill test histogram
-      for (auto& collection_path : collection_path_) {
-        collection_path.fillHists(p, triggerEvent);
-      }
+  // loop over all objects and fill hists
+  for (auto & object : objects_) {
+    for (auto& collection_path : collection_path_) {
+      collection_path.fillHists(object, triggerEvent);
     }
   }
-
 
 }
 
@@ -202,7 +199,9 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   descriptions.addDefault(desc);
 }
 
-void HLTGenValSource::convertStringToPDGID() {
+void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
+  int GENobjectPDGID_;
+
   // convert input GENobject to pdgID
   // maybe there is a smarter way to do this? -> at least put it in a function somewhere ;)
   if(objType_ == "ele") GENobjectPDGID_ = 11;
@@ -215,7 +214,20 @@ void HLTGenValSource::convertStringToPDGID() {
   else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << objType_ << ".\n" << "Please check for a potential spelling error.\n";
   // handle jets here -> probably using GenJets collection?
   // handle HT, MET here -> using something else entirely. GenMET?
+
+  const auto& genParticles = iEvent.getHandle(genParticleToken_);
+  for(size_t i = 0; i < genParticles->size(); ++ i) {
+    const GenParticle p = (*genParticles)[i];
+    int id = p.pdgId();
+    if (abs(id) == GENobjectPDGID_) {
+      // main loop over all "correct" GEN particles
+
+      objects_.emplace_back(p);
+    }
+  }
 }
+
+
 
 
 //define this as a plug-in

@@ -25,7 +25,7 @@
 #include "DQMOffline/Trigger/interface/FunctionDefs.h"
 #include "DQMOffline/Trigger/interface/UtilFuncs.h"
 
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "Validation/HLTrigger/interface/HLTGenValObject.h"
 
 #include "DataFormats/Math/interface/deltaR.h"
 
@@ -44,7 +44,7 @@ public:
   static edm::ParameterSetDescription makePSetDescriptionHistConfigs();
 
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs);
-  void fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
+  void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
 private:
   void book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig);
@@ -97,7 +97,7 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
   auto me = iBooker.book1D(histname.c_str(), histtitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);
 
   std::unique_ptr<HLTGenValHist> hist;
-  auto vsVarFunc = hltdqm::getUnaryFuncFloat<GenParticle>(vsVar);
+  auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
   if (!vsVarFunc) {
     throw cms::Exception("ConfigError") << " vsVar " << vsVar << " is giving null ptr (likely empty) in " << __FILE__
                                         << "," << __LINE__ << std::endl;
@@ -107,7 +107,7 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
 }
 
 // histogram filling routine
-void HLTGenValHistColl_filter::fillHists(const GenParticle& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
+void HLTGenValHistColl_filter::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
 
   // this handles the "before" step
   // there may be a better way how to do this
