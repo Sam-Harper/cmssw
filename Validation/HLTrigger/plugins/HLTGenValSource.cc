@@ -235,12 +235,7 @@ void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
     const auto& genParticles = iEvent.getHandle(genParticleToken_);
     for(size_t i = 0; i < genParticles->size(); ++ i) {
       const GenParticle p = (*genParticles)[i];
-      int id = p.pdgId();
-      if (abs(id) == GENobjectPDGID_) {
-        // main loop over all "correct" GEN particles
-
-        objects_.emplace_back(p);
-      }
+      if ( (abs(p.pdgId()) == GENobjectPDGID_) && (p.status() == 1)) objects_.emplace_back(p);
     }
   }
 
