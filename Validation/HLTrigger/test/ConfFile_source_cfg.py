@@ -27,7 +27,7 @@ process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
     DQMDirName = cms.string("HLTGenVal_parts"),
     genParticles = cms.InputTag("genParticles"),
     genJets = cms.InputTag("ak4GenJets"),
-    hltProcessName = cms.string("HLT"), # this should be used to replace the following one if that one is needed
+    hltProcessName = cms.string("HLT"),
     TrigEvent = cms.InputTag("hltTriggerSummaryAOD"),
     objType = cms.string("mu"),
 
@@ -58,7 +58,7 @@ process.HLTGenValSourceJET = cms.EDProducer('HLTGenValSource',
     DQMDirName = cms.string("HLTGenVal_parts"),
     genParticles = cms.InputTag("genParticles"),
     genJets = cms.InputTag("ak4GenJets"),
-    hltProcessName = cms.string("HLT"), # this should be used to replace the following one if that one is needed
+    hltProcessName = cms.string("HLT"),
     TrigEvent = cms.InputTag("hltTriggerSummaryAOD"),
     objType = cms.string("jet"),
 
@@ -89,7 +89,6 @@ process.p = cms.Path(process.HLTGenValSourceJET*process.HLTGenValSourceMU)
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",
     outputFileName = cms.untracked.string('sourceoutput_harvest.root'),
-    resolution     = cms.vstring(),
     subDirs        = cms.untracked.vstring("HLTGenVal_parts/mu/*", "HLTGenVal_parts/jet/*"),
 )
 
