@@ -33,7 +33,7 @@ process.p = cms.Path(process.HLTGenValSourceMU)
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",
     outputFileName = cms.untracked.string('sourceoutput_harvest.root'),
-    subDirs        = cms.untracked.vstring("HLTGenVal_parts/mu/*", "HLTGenVal_parts/jet/*"),
+    subDirs        = cms.untracked.vstring("HLTGenVal/*"),
 )
 
 process.outpath = cms.EndPath(process.harvester)
