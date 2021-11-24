@@ -255,8 +255,6 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
          seglist.push_back(namesegment);
       }
 
-      for(auto seg : seglist) std::cout << seg << std::endl;
-
       if(seglist.size() != 4) continue; // this throws out both the "before" hist and most other wrong hists
       if(seglist.at(3) != "after") continue; // ensuring only "after" hists are used
 
