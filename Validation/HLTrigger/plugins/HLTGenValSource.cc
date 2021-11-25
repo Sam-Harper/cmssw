@@ -85,7 +85,8 @@ private:
 
   // tokens to get collections
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticleToken_;
-  const edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
+  const edm::EDGetTokenT<reco::GenJetCollection> AK4genJetToken_;
+  const edm::EDGetTokenT<reco::GenJetCollection> AK8genJetToken_;
   const edm::EDGetTokenT<trigger::TriggerEvent> trigEventToken_;
 
   // config strings/Psets
@@ -108,7 +109,8 @@ private:
 
 HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
     : genParticleToken_( consumes<reco::GenParticleCollection>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("genParticles") ) ),
-      genJetToken_(consumes<reco::GenJetCollection>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("ak4GenJets"))),
+      AK4genJetToken_(consumes<reco::GenJetCollection>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("ak4GenJets"))),
+      AK8genJetToken_(consumes<reco::GenJetCollection>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("ak8GenJets"))),
       trigEventToken_(consumes<trigger::TriggerEvent>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("TrigEvent") )) {
 
       histConfigs_ = iConfig.getParameterSetVector("histConfigs");
@@ -135,7 +137,6 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   }
 
   // Get the set of trigger paths we want to make plots for
-  // not quite sure why this is needed here -> will be removed if auto-determining paths!
   std::vector<std::string> notFoundPaths;
   for (auto const &i : hltPathsToCheck_) {
     bool pathfound = false;
@@ -244,8 +245,15 @@ void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
   else if(objType_ == "pho") GENobjectPDGID_ = 22;
   else if(objType_ == "mu") GENobjectPDGID_ = 13;
   else if(objType_ == "tau") GENobjectPDGID_ = 15;
-  else if(objType_ == "jet") {
-    const auto& genJets = iEvent.getHandle(genJetToken_);
+  else if(objType_ == "AK4jet") {
+    const auto& genJets = iEvent.getHandle(AK4genJetToken_);
+    for(size_t i = 0; i < genJets->size(); ++ i) {
+      const GenJet p = (*genJets)[i];
+      objects_.emplace_back(p);
+    }
+  }
+  else if(objType_ == "AK8jet") {
+    const auto& genJets = iEvent.getHandle(AK8genJetToken_);
     for(size_t i = 0; i < genJets->size(); ++ i) {
       const GenJet p = (*genJets)[i];
       objects_.emplace_back(p);
