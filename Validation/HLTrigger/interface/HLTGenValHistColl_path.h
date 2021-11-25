@@ -49,8 +49,6 @@ public:
 
 private:
 
-  std::vector<std::string> moduleLabels(const std::string &);
-
   std::vector<HLTGenValHistColl_filter> collection_filter_;
   std::string objType_;
   std::vector<std::string> filters_;
@@ -62,7 +60,7 @@ HLTGenValHistColl_path::HLTGenValHistColl_path(std::string objType, std::string 
 
   collection_filter_.emplace_back(HLTGenValHistColl_filter(objType_, "beforeAnyFilter"));
 
-  filters_ = moduleLabels(triggerPath_);
+  filters_ = hltConfig_.saveTagsModules(triggerPath_);
   std::set<std::string>::iterator ilabel;
   for (auto & filter : filters_) {
     collection_filter_.emplace_back(HLTGenValHistColl_filter(objType_, filter));
@@ -90,23 +88,6 @@ void HLTGenValHistColl_path::bookHists(DQMStore::IBooker& iBooker, std::vector<e
 
 void HLTGenValHistColl_path::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
   for (auto& collection_filter : collection_filter_) collection_filter.fillHists(obj, triggerEvent);
-}
-
-// Returns list of filters by path
-// excluding some filters
-std::vector<std::string> HLTGenValHistColl_path::moduleLabels(const std::string &path) {
-  std::vector<std::string> modules = hltConfig_.moduleLabels(path);
-  auto iter = modules.begin();
-  while (iter != modules.end()) {
-    if ((iter->find("Filtered") == std::string::npos) && (iter->find("hltL1s") == std::string::npos)) {
-      iter = modules.erase(iter);
-    } else if (iter->find("L1Filtered0") != std::string::npos)
-      iter = modules.erase(iter);
-    else
-      ++iter;
-  }
-
-  return modules;
 }
 
 #endif
