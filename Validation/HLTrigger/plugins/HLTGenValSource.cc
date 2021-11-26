@@ -80,6 +80,9 @@ private:
   void bookHistograms(DQMStore::IBooker&, edm::Run const& run, edm::EventSetup const& c) override;
   void dqmBeginRun(const edm::Run &, const edm::EventSetup &) override;
   void fillObjectCollection(const edm::Event&);
+  void fillObjectCollection(const edm::Event&, int pdgID); // this overloaded function will be called for GenParticles
+  GenParticle get_lastcopy_prefsr(GenParticle part);
+  GenParticle get_lastcopy(GenParticle part);
 
   // ----------member data ---------------------------
 
@@ -169,6 +172,7 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   // creating the collection of HLTGenValObjects
   fillObjectCollection(iEvent);
 
+  // init triggerEvent, which is always needed
   edm::Handle<trigger::TriggerEvent> triggerEvent;
   iEvent.getByToken(trigEventToken_, triggerEvent);
 
@@ -265,14 +269,48 @@ void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
   // handle jets here -> probably using GenJets collection?
   // handle HT, MET here -> using something else entirely. GenMET?
 
-  if(GENobjectPDGID_ != -1) {
-    const auto& genParticles = iEvent.getHandle(genParticleToken_);
-    for(size_t i = 0; i < genParticles->size(); ++ i) {
-      const GenParticle p = (*genParticles)[i];
-      if ( (abs(p.pdgId()) == GENobjectPDGID_) && (p.status() == 1)) objects_.emplace_back(p);
+  // if GenParticles are used, this function selects only the proper ones
+  if(GENobjectPDGID_ != -1) fillObjectCollection(iEvent, GENobjectPDGID_);
+}
+
+void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent, const int pdgID) {
+
+  // getting all GenParticles
+  const auto& genParticles = iEvent.getHandle(genParticleToken_);
+
+  // main loop over GenParticles
+  for(size_t i = 0; i < genParticles->size(); ++ i) {
+    const GenParticle p = (*genParticles)[i];
+
+    // only select status 1 with correct ID
+    if (p.status() != 1) continue;
+    if (abs(p.pdgId()) != pdgID) continue;
+
+    // checking if particle comes from "hard process"
+    if(p.isHardProcess()) {
+
+      // depending on the particle type, last particle before or after FSR is chosen
+
+      if( (objType_ == "ele") || (objType_ == "pho")) objects_.emplace_back( get_lastcopy_prefsr(p) );
+      else if( objType_ == "mu" ) objects_.emplace_back( get_lastcopy(p) );
+      else throw cms::Exception("InputError") << "Generator-level collection handling for " << objType_ << " is not yet implemented.\n";
     }
+
   }
 
+}
+
+GenParticle HLTGenValSource::get_lastcopy_prefsr(GenParticle part) {
+    auto daughters = part.daughterRefVector();
+    if (daughters.size() == 1 && daughters.at(0)->pdgId() == part.pdgId()) return get_lastcopy_prefsr(*daughters.at(0).get()); // recursion, whooo
+    else return part;
+}
+
+GenParticle HLTGenValSource::get_lastcopy(GenParticle part) {
+  for (const auto & daughter : part.daughterRefVector()){
+    if (daughter->pdgId() == part.pdgId()) return get_lastcopy(*daughter.get());
+  }
+  return part;
 }
 
 
