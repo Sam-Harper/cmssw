@@ -250,19 +250,38 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
   else if(objType_ == "tau") GENobjectPDGID_ = 15;
   else if(objType_ == "AK4jet") {
     const auto& genJets = iEvent.getHandle(AK4genJetToken_);
-    for(size_t i = 0; i < genJets->size(); ++ i) {
+    for(size_t i = 0; i < genJets->size(); i++) {
       const GenJet p = (*genJets)[i];
       objects.emplace_back(p);
     }
   }
   else if(objType_ == "AK8jet") {
     const auto& genJets = iEvent.getHandle(AK8genJetToken_);
-    for(size_t i = 0; i < genJets->size(); ++ i) {
+    for(size_t i = 0; i < genJets->size(); i++) {
       const GenJet p = (*genJets)[i];
       objects.emplace_back(p);
     }
   }
-  else if(objType_ == "HT") throw cms::Exception("InputError") << "Generator-level validation for HT is not yet implemented.\n";
+  else if(objType_ == "AK4HT") {
+    // HT is calculated based on the GENJet collection
+    const auto& genJets = iEvent.getHandle(AK4genJetToken_);
+    if(genJets->size() > 0){
+      auto HTsum = (*genJets)[0].pt();
+      for(size_t i = 1; i < genJets->size(); i++) HTsum += (*genJets)[i].pt();
+      objects.emplace_back(Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
+    }
+
+  }
+  else if(objType_ == "AK8HT") {
+    // HT is calculated based on the GENJet collection
+    const auto& genJets = iEvent.getHandle(AK8genJetToken_);
+    if(genJets->size() > 0){
+      auto HTsum = (*genJets)[0].pt();
+      for(size_t i = 1; i < genJets->size(); i++) HTsum += (*genJets)[i].pt();
+      objects.emplace_back(Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
+    }
+
+  }
   else if(objType_ == "MET") throw cms::Exception("InputError") << "Generator-level validation for MET is not yet implemented.\n";
   else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << objType_ << ".\n" << "Please check for a potential spelling error.\n";
   // handle jets here -> probably using GenJets collection?

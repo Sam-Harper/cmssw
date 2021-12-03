@@ -32,11 +32,8 @@ public:
   HLTGenValObject(const GenJet &p)
       : p4Polar_(p.p4()), p4Cartesian_(p.p4()) {}
 
-  /// constructor from GenJet
-  // HLTGenValObject(const GenJet);
-
-  /// constructor from energy sum
-  // TODO
+  HLTGenValObject(const Candidate::PolarLorentzVector& p)
+      : p4Polar_(p), p4Cartesian_(p) {}
 
   /// destructor
   ~HLTGenValObject() {}
