@@ -102,7 +102,10 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
     throw cms::Exception("ConfigError") << " vsVar " << vsVar << " is giving null ptr (likely empty) in " << __FILE__
                                         << "," << __LINE__ << std::endl;
   }
-  hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc);
+
+  // extracting rangeCuts from histConfigs
+  VarRangeCutColl<HLTGenValObject> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
+  hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc, rangeCuts);
   hists_.emplace_back(std::move(hist));
 }
 

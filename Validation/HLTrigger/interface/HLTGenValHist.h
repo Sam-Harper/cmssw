@@ -16,8 +16,7 @@
 
 #include "DQMOffline/Trigger/interface/FunctionDefs.h"
 
-// May be useful later for applying event level cuts
-//#include "DQMOffline/Trigger/interface/VarRangeCutColl.h"
+#include "DQMOffline/Trigger/interface/VarRangeCutColl.h"
 
 #include "FWCore/Framework/interface/Event.h"
 
@@ -42,20 +41,23 @@ public:
 //it has the value with which to fill the histogram
 //and the histogram itself
 //we do not own the histogram
+// also it has some cut values that are applied to that set of hists
 class HLTGenValHist1D : public HLTGenValHist {
 public:
   HLTGenValHist1D(TH1* hist,
                std::string varName,
-               std::function<float(const HLTGenValObject&)> func)
-      : var_(std::move(func)), varName_(std::move(varName)), hist_(hist) {}
+               std::function<float(const HLTGenValObject&)> func,
+               VarRangeCutColl<HLTGenValObject> rangeCuts)
+      : var_(std::move(func)), varName_(std::move(varName)), rangeCuts_(std::move(rangeCuts)), hist_(hist) {}
 
   void fill(const HLTGenValObject& obj) override {
-    hist_->Fill(var_(obj));
+    if(rangeCuts_(obj)) hist_->Fill(var_(obj));
   }
 
 private:
   std::function<float(const HLTGenValObject&)> var_;
   std::string varName_;
+  VarRangeCutColl<HLTGenValObject> rangeCuts_;
   TH1* hist_;  //we do not own this
 };
 

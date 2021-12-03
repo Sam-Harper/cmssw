@@ -79,8 +79,8 @@ private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker&, edm::Run const& run, edm::EventSetup const& c) override;
   void dqmBeginRun(const edm::Run &, const edm::EventSetup &) override;
-  void fillObjectCollection(const edm::Event&);
-  void fillObjectCollection(const edm::Event&, int pdgID); // this overloaded function will be called for GenParticles
+  std::vector<HLTGenValObject> getObjectCollection(const edm::Event&);
+  std::vector<HLTGenValObject> getObjectCollection(const edm::Event&, int pdgID); // this overloaded function will be called for GenParticles
   GenParticle get_lastcopy_prefsr(GenParticle part);
   GenParticle get_lastcopy(GenParticle part);
 
@@ -105,8 +105,6 @@ private:
   HLTConfigProvider hltConfig_;
   std::vector<std::string> hltPathsToCheck_;
   std::set<std::string> hltPaths;
-
-  std::vector<HLTGenValObject> objects_;
 
 };
 
@@ -170,14 +168,15 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
 void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   // creating the collection of HLTGenValObjects
-  fillObjectCollection(iEvent);
+  std::vector<HLTGenValObject> objects = getObjectCollection(iEvent);
 
   // init triggerEvent, which is always needed
   edm::Handle<trigger::TriggerEvent> triggerEvent;
   iEvent.getByToken(trigEventToken_, triggerEvent);
 
   // loop over all objects and fill hists
-  for (auto & object : objects_) {
+  std::cout << "Objects: " << objects.size() << std::endl;
+  for (auto & object : objects) {
     for (auto& collection_path : collection_path_) {
       collection_path.fillHists(object, triggerEvent);
     }
@@ -219,6 +218,7 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   edm::ParameterSetDescription histConfig;
   histConfig.add<std::string>("vsVar");
   histConfig.add<std::vector<double>>("binLowEdges");
+  histConfig.addVPSet("rangeCuts", VarRangeCut<HLTGenValObject>::makePSetDescription(), std::vector<edm::ParameterSet>());
 
   // default set of histConfigs
   std::vector<edm::ParameterSet> histConfigDefaults;
@@ -240,8 +240,10 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   descriptions.addDefault(desc);
 }
 
-void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
+std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Event& iEvent) {
   int GENobjectPDGID_ = -1;
+
+  std::vector<HLTGenValObject> objects;
 
   // convert input GENobject to pdgID
   // maybe there is a smarter way to do this? -> at least put it in a function somewhere ;)
@@ -251,16 +253,17 @@ void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
   else if(objType_ == "tau") GENobjectPDGID_ = 15;
   else if(objType_ == "AK4jet") {
     const auto& genJets = iEvent.getHandle(AK4genJetToken_);
+    std::cout << "Number of jets: " << genJets->size() << std::endl;
     for(size_t i = 0; i < genJets->size(); ++ i) {
       const GenJet p = (*genJets)[i];
-      objects_.emplace_back(p);
+      objects.emplace_back(p);
     }
   }
   else if(objType_ == "AK8jet") {
     const auto& genJets = iEvent.getHandle(AK8genJetToken_);
     for(size_t i = 0; i < genJets->size(); ++ i) {
       const GenJet p = (*genJets)[i];
-      objects_.emplace_back(p);
+      objects.emplace_back(p);
     }
   }
   else if(objType_ == "HT") throw cms::Exception("InputError") << "Generator-level validation for HT is not yet implemented.\n";
@@ -270,10 +273,13 @@ void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent) {
   // handle HT, MET here -> using something else entirely. GenMET?
 
   // if GenParticles are used, this function selects only the proper ones
-  if(GENobjectPDGID_ != -1) fillObjectCollection(iEvent, GENobjectPDGID_);
+  if(GENobjectPDGID_ != -1) return getObjectCollection(iEvent, GENobjectPDGID_);
+  else return objects;
 }
 
-void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent, const int pdgID) {
+std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Event& iEvent, const int pdgID) {
+
+  std::vector<HLTGenValObject> objects;
 
   // getting all GenParticles
   const auto& genParticles = iEvent.getHandle(genParticleToken_);
@@ -291,12 +297,14 @@ void HLTGenValSource::fillObjectCollection(const edm::Event& iEvent, const int p
 
       // depending on the particle type, last particle before or after FSR is chosen
 
-      if( (objType_ == "ele") || (objType_ == "pho")) objects_.emplace_back( get_lastcopy_prefsr(p) );
-      else if( objType_ == "mu" ) objects_.emplace_back( get_lastcopy(p) );
+      if( (objType_ == "ele") || (objType_ == "pho")) objects.emplace_back( get_lastcopy_prefsr(p) );
+      else if( objType_ == "mu" ) objects.emplace_back( get_lastcopy(p) );
       else throw cms::Exception("InputError") << "Generator-level collection handling for " << objType_ << " is not yet implemented.\n";
     }
 
   }
+
+  return objects;
 
 }
 

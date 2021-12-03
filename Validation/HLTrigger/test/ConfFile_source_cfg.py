@@ -9,22 +9,41 @@ process.load("DQMServices.Components.DQMEnvironment_cfi")
 process.load("DQMServices.Components.MEtoEDMConverter_cff")
 from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 process.source = cms.Source("PoolSource",
     #fileNames = cms.untracked.vstring("root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL18RECO/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/AODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/00000/B4A06248-D09E-314A-ACD7-F157B86109E6.root")
     fileNames = cms.untracked.vstring("root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/67A99845-DA80-E048-BA70-CA5A4BF4F5E5.root")
 )
 
-process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
+ptBins=cms.vdouble(0,10,25,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,850,1000)
+etaBins=cms.vdouble(-5,0,5)
+etaTestCut=cms.PSet(
+    rangeVar=cms.string("eta"),
+    allowedRanges=cms.vstring("0:100000")
+)
+
+process.HLTGenValSourceAK4 = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
-    objType = cms.string("mu"),
+    objType = cms.string("AK4jet"),
     hltPathsToCheck = cms.vstring(
-      "HLT_IsoMu24_v",
+      "HLT_PFJet500_v",
+    ),
+    histConfigs = cms.VPSet(
+        cms.PSet(
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBins,
+            rangeCuts = cms.VPSet(etaTestCut)
+        ),
+        cms.PSet(
+            vsVar = cms.string("eta"),
+            binLowEdges = etaBins,
+            rangeCuts = cms.VPSet(etaTestCut)
+        ),
     ),
 )
 
-process.p = cms.Path(process.HLTGenValSourceMU)
+process.p = cms.Path(process.HLTGenValSourceAK4)
 
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",
