@@ -122,8 +122,6 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
 
       hltPathsToCheck_ = iConfig.getParameter<std::vector<std::string>>("hltPathsToCheck");
 
-      std::cout << "Started job for " << objType_ << std::endl;
-
 }
 
 void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &iSetup) {
@@ -175,7 +173,6 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByToken(trigEventToken_, triggerEvent);
 
   // loop over all objects and fill hists
-  std::cout << "Objects: " << objects.size() << std::endl;
   for (auto & object : objects) {
     for (auto& collection_path : collection_path_) {
       collection_path.fillHists(object, triggerEvent);
@@ -253,7 +250,6 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
   else if(objType_ == "tau") GENobjectPDGID_ = 15;
   else if(objType_ == "AK4jet") {
     const auto& genJets = iEvent.getHandle(AK4genJetToken_);
-    std::cout << "Number of jets: " << genJets->size() << std::endl;
     for(size_t i = 0; i < genJets->size(); ++ i) {
       const GenJet p = (*genJets)[i];
       objects.emplace_back(p);
