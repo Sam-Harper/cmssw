@@ -202,18 +202,33 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
          seglist.push_back(namesegment);
       }
 
-      if(seglist.size() != 4) continue; // this throws out both the "before" hist and most other wrong hists
-      if(seglist.at(3) != "after") continue; // ensuring only "after" hists are used
+      if(seglist.size() == 4) { // 1D case
+        if(seglist.at(3) != "after") continue; // ensuring only "after" hists are used
 
-      EfficOption opt;
-      opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_pass";
-      opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " pass";
-      opt.numerator = content->getName();
-      opt.denominator = seglist.at(0) + "_" + seglist.at(2) + "_before";
-      opt.isProfile = false;
-      opt.type = EfficType::efficiency;
+        EfficOption opt;
+        opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_pass";
+        opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " pass";
+        opt.numerator = content->getName();
+        opt.denominator = seglist.at(0) + "_" + seglist.at(2) + "_before";
+        opt.isProfile = false;
+        opt.type = EfficType::efficiency;
 
-      efficOptions_.push_back(opt);
+        efficOptions_.push_back(opt);
+      }
+      else if(seglist.size() == 5) { // 1D case
+        if(seglist.at(4) != "after") continue; // ensuring only "after" hists are used
+
+        EfficOption opt;
+        opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_" + seglist.at(3) + "_pass";
+        opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " " + seglist.at(3) + " pass";
+        opt.numerator = content->getName();
+        opt.denominator = seglist.at(0) + "_" + seglist.at(2) + "_" +seglist.at(3) + "_before";
+        opt.isProfile = false;
+        opt.type = EfficType::efficiency;
+
+        efficOptions_.push_back(opt);
+      }
+
 
     }
 
