@@ -54,29 +54,6 @@ public:
     bool isProfile;
   };
 
-  struct ResolOption {
-    std::string namePrefix, titlePrefix;
-    std::string srcName;
-  };
-
-  struct ProfileOption {
-    std::string name, title;
-    std::string srcName;
-  };
-
-  struct NormOption {
-    std::string name, normHistName;
-  };
-
-  struct CDOption {
-    std::string name;
-    bool ascending;
-  };
-
-  struct NoFlowOption {
-    std::string name;
-  };
-
   void computeEfficiency(DQMStore::IBooker& ibooker,
                          DQMStore::IGetter& igetter,
                          const std::string& startDir,
@@ -86,33 +63,6 @@ public:
                          const std::string& simMEName,
                          const EfficType type = EfficType::efficiency,
                          const bool makeProfile = false);
-  void computeResolution(DQMStore::IBooker& ibooker,
-                         DQMStore::IGetter& igetter,
-                         const std::string& startDir,
-                         const std::string& fitMEPrefix,
-                         const std::string& fitMETitlePrefix,
-                         const std::string& srcMEName);
-  void computeProfile(DQMStore::IBooker& ibooker,
-                      DQMStore::IGetter& igetter,
-                      const std::string& startDir,
-                      const std::string& profileMEName,
-                      const std::string& profileMETitle,
-                      const std::string& srcMEName);
-
-  void normalizeToEntries(DQMStore::IBooker& ibooker,
-                          DQMStore::IGetter& igetter,
-                          const std::string& startDir,
-                          const std::string& histName,
-                          const std::string& normHistName);
-  void makeCumulativeDist(DQMStore::IBooker& ibooker,
-                          DQMStore::IGetter& igetter,
-                          const std::string& startDir,
-                          const std::string& cdName,
-                          bool ascending = true);
-  void makeNoFlowDist(DQMStore::IBooker& ibooker,
-                      DQMStore::IGetter& igetter,
-                      const std::string& startDir,
-                      const std::string& cdName);
 
   void limitedFit(MonitorElement* srcME, MonitorElement* meanME, MonitorElement* sigmaME);
 
@@ -124,7 +74,6 @@ private:
   bool runOnEndJob_;
   bool makeGlobalEffPlot_;
   bool isWildcardUsed_;
-  bool resLimitedFit_;
 
   DQMStore* theDQM;
   std::vector<std::string> subDirs_;
@@ -142,7 +91,6 @@ private:
 
   void makeAllPlots(DQMStore::IBooker&, DQMStore::IGetter&);
 
-  void removeMEIfBooked(const std::string& meName, DQMStore::IGetter& igetter);
 };
 
 typedef HLTGenValClient::MonitorElement ME;
@@ -163,7 +111,6 @@ HLTGenValClient::HLTGenValClient(const ParameterSet& pset)
   outputFileName_ = pset.getUntrackedParameter<string>("outputFileName", "");
   subDirs_ = pset.getUntrackedParameter<vstring>("subDirs");
 
-  resLimitedFit_ = pset.getUntrackedParameter<bool>("resolutionLimitedFit", false);
   isWildcardUsed_ = false;
 }
 
