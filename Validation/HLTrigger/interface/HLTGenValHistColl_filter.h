@@ -38,7 +38,7 @@ public:
   typedef dqm::legacy::MonitorElement MonitorElement;
   typedef dqm::legacy::DQMStore DQMStore;
 
-  explicit HLTGenValHistColl_filter(std::string objType, std::string path);
+  explicit HLTGenValHistColl_filter(std::string objType, std::string path, double dR2limit);
 
   static edm::ParameterSetDescription makePSetDescription();
   static edm::ParameterSetDescription makePSetDescriptionHistConfigs();
@@ -52,11 +52,13 @@ private:
   std::vector<std::unique_ptr<HLTGenValHist> > hists_;
   std::string objType_;
   std::string filter_;
+  double dR2limit_;
 };
 
-HLTGenValHistColl_filter::HLTGenValHistColl_filter(std::string objType, std::string filter)
+HLTGenValHistColl_filter::HLTGenValHistColl_filter(std::string objType, std::string filter, double dR2limit)
     : objType_(objType),
-      filter_(filter) {}
+      filter_(filter),
+      dR2limit_(dR2limit) {}
 
 edm::ParameterSetDescription HLTGenValHistColl_filter::makePSetDescription() {
   // TODO
@@ -140,10 +142,9 @@ void HLTGenValHistColl_filter::fillHists(const HLTGenValObject& obj, edm::Handle
       double dR = deltaR2(obj, filterobj);
       if(dR < mindR2) mindR2 = dR;
     }
-    double dR2limit = 0.1; // TODO put this working point as a variable somewhere
 
     // filling hist if GEN particle is matched to some filter object
-    if(mindR2 < dR2limit) for (auto& hist : hists_) hist->fill(obj);
+    if(mindR2 < dR2limit_) for (auto& hist : hists_) hist->fill(obj);
 
   }
 }

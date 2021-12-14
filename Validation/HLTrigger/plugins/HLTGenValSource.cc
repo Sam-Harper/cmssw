@@ -105,6 +105,7 @@ private:
   HLTConfigProvider hltConfig_;
   std::vector<std::string> hltPathsToCheck_;
   std::set<std::string> hltPaths;
+  double dR2limit_;
 
 };
 
@@ -118,6 +119,7 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
 
       dirName_ = iConfig.getParameter<std::string>("DQMDirName");
       objType_ = iConfig.getParameter<std::string>("objType");
+      dR2limit_ = iConfig.getParameter<double>("dR2limit");
       hltProcessName_ = iConfig.getParameter<std::string>("hltProcessName");
 
       hltPathsToCheck_ = iConfig.getParameter<std::vector<std::string>>("hltPathsToCheck");
@@ -157,7 +159,7 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   // creating a histogram collection for each path
   std::set<std::string>::iterator iPath;
   for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
-    collection_path_.emplace_back(HLTGenValHistColl_path(objType_, *iPath, hltConfig_));
+    collection_path_.emplace_back(HLTGenValHistColl_path(objType_, *iPath, hltConfig_, dR2limit_));
   }
 
 }
@@ -199,6 +201,7 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   desc.add<std::vector<std::string>>("hltPathsToCheck"); // this for the moment also has no default: maybe there can be some way to handle this later?
   desc.add<std::string>("DQMDirName", "HLTGenVal");
   desc.add<std::string>("hltProcessName", "HLT");
+  desc.add<double>("dR2limit", 0.1);
 
   // input collections, a PSet
   edm::ParameterSetDescription inputCollections;
@@ -335,9 +338,6 @@ GenParticle HLTGenValSource::get_lastcopy(GenParticle part) {
   }
   return part;
 }
-
-
-
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(HLTGenValSource);

@@ -36,7 +36,7 @@ public:
   typedef dqm::legacy::MonitorElement MonitorElement;
   typedef dqm::legacy::DQMStore DQMStore;
 
-  explicit HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig);
+  explicit HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig, double dR2limit);
 
   static edm::ParameterSetDescription makePSetDescription();
   static edm::ParameterSetDescription makePSetDescriptionHistConfigs();
@@ -50,20 +50,19 @@ public:
 private:
 
   std::vector<HLTGenValHistColl_filter> collection_filter_;
-  std::string objType_;
   std::vector<std::string> filters_;
   HLTConfigProvider hltConfig_;
 };
 
-HLTGenValHistColl_path::HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig)
-    : triggerPath_(triggerPath), objType_(objType), hltConfig_(hltConfig) {
+HLTGenValHistColl_path::HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig, double dR2limit)
+    : triggerPath_(triggerPath), hltConfig_(hltConfig) {
 
-  collection_filter_.emplace_back(HLTGenValHistColl_filter(objType_, "beforeAnyFilter"));
+  collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, "beforeAnyFilter", dR2limit));
 
   filters_ = hltConfig_.saveTagsModules(triggerPath_);
   std::set<std::string>::iterator ilabel;
   for (auto & filter : filters_) {
-    collection_filter_.emplace_back(HLTGenValHistColl_filter(objType_, filter));
+    collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, filter, dR2limit));
   }
 
 }
