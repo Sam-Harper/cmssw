@@ -61,4 +61,29 @@ private:
   TH1* hist_;  //we do not own this
 };
 
+//this class is a specific implimentation of a HLTGenValHist
+//it has the value with which to fill the histogram
+//and the histogram itself
+//we do not own the histogram
+class HLTGenValHist2D : public HLTGenValHist {
+public:
+  HLTGenValHist2D(TH2* hist,
+               std::string varName_x,
+               std::string varName_y,
+               std::function<float(const HLTGenValObject&)> func_x,
+               std::function<float(const HLTGenValObject&)> func_y)
+      : var_x_(std::move(func_x)), var_y_(std::move(func_y)), varName_x_(std::move(varName_x)), varName_y_(std::move(varName_y)), hist_(hist) {}
+
+  void fill(const HLTGenValObject& obj) override {
+    hist_->Fill(var_x_(obj), var_y_(obj));
+  }
+
+private:
+  std::function<float(const HLTGenValObject&)> var_x_;
+  std::function<float(const HLTGenValObject&)> var_y_;
+  std::string varName_x_;
+  std::string varName_y_;
+  TH2* hist_;  //we do not own this
+};
+
 #endif

@@ -43,11 +43,12 @@ public:
   static edm::ParameterSetDescription makePSetDescription();
   static edm::ParameterSetDescription makePSetDescriptionHistConfigs();
 
-  void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs);
+  void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
 private:
   void book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig);
+  void book2D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig2D);
 
   std::vector<std::unique_ptr<HLTGenValHist> > hists_;
   std::string objType_;
@@ -74,8 +75,9 @@ edm::ParameterSetDescription HLTGenValHistColl_filter::makePSetDescriptionHistCo
   return desc;
 }
 
-void HLTGenValHistColl_filter::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs) {
+void HLTGenValHistColl_filter::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {
   for (auto& histConfig : histConfigs) book1D(iBooker, histConfig);
+  for (auto& histConfig : histConfigs2D) book2D(iBooker, histConfig);
 }
 
 // actual booker function for 1D hists
@@ -108,6 +110,48 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
   // extracting rangeCuts from histConfigs
   VarRangeCutColl<HLTGenValObject> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
   hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc, rangeCuts);
+  hists_.emplace_back(std::move(hist));
+}
+
+// actual booker function for 2D hists
+void HLTGenValHistColl_filter::book2D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig2D) {
+  auto binLowEdgesDouble_x = histConfig2D.getParameter<std::vector<double> >("binLowEdges_x");
+  auto binLowEdgesDouble_y = histConfig2D.getParameter<std::vector<double> >("binLowEdges_y");
+  std::vector<float> binLowEdges_x;
+  std::vector<float> binLowEdges_y;
+  binLowEdges_x.reserve(binLowEdgesDouble_x.size());
+  binLowEdges_y.reserve(binLowEdgesDouble_y.size());
+  for (double lowEdge : binLowEdgesDouble_x) binLowEdges_x.push_back(lowEdge);
+  for (double lowEdge : binLowEdgesDouble_y) binLowEdges_y.push_back(lowEdge);
+  auto vsVar_x = histConfig2D.getParameter<std::string>("vsVar_x");
+  auto vsVar_y = histConfig2D.getParameter<std::string>("vsVar_y");
+
+  std::string histname, histtitle;
+
+  if(filter_ == "beforeAnyFilter") {
+    histname = objType_ + "_2Dvs" + vsVar_x + "_" + vsVar_y + "_before";
+    histtitle = objType_ + " 2D vs " + vsVar_x + " " + vsVar_y + " before";
+  } else {
+    histname = objType_ + "_" + filter_ + "_2Dvs" + vsVar_x + "_" + vsVar_y + "_after";
+    histtitle = objType_ + " " + filter_ + " 2D vs" + vsVar_x + " " + vsVar_y + " after";
+  }
+
+  auto me = iBooker.book2D(histname.c_str(), histtitle.c_str(), binLowEdges_x.size() - 1, &binLowEdges_x[0], binLowEdges_y.size() - 1, &binLowEdges_y[0]);
+
+  std::unique_ptr<HLTGenValHist> hist;
+  auto vsVarFunc_x = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar_x);
+  auto vsVarFunc_y = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar_y);
+  if (!vsVarFunc_x) {
+    throw cms::Exception("ConfigError") << " vsVar " << vsVar_x << " is giving null ptr (likely empty) in " << __FILE__
+                                        << "," << __LINE__ << std::endl;
+  }
+  if (!vsVarFunc_y) {
+    throw cms::Exception("ConfigError") << " vsVar " << vsVar_y << " is giving null ptr (likely empty) in " << __FILE__
+                                        << "," << __LINE__ << std::endl;
+  }
+
+  // extracting rangeCuts from histConfigs
+  hist = std::make_unique<HLTGenValHist2D>(me->getTH2F(), vsVar_x, vsVar_y, vsVarFunc_x, vsVarFunc_y);
   hists_.emplace_back(std::move(hist));
 }
 

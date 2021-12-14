@@ -96,6 +96,7 @@ private:
   std::string objType_;
   std::string dirName_;
   std::vector<edm::ParameterSet> histConfigs_;
+  std::vector<edm::ParameterSet> histConfigs2D_;
   std::string hltProcessName_;
 
   // histogram colelction
@@ -116,6 +117,7 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
       trigEventToken_(consumes<trigger::TriggerEvent>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("TrigEvent") )) {
 
       histConfigs_ = iConfig.getParameterSetVector("histConfigs");
+      histConfigs2D_ = iConfig.getParameterSetVector("histConfigs2D");
 
       dirName_ = iConfig.getParameter<std::string>("DQMDirName");
       objType_ = iConfig.getParameter<std::string>("objType");
@@ -187,7 +189,7 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run& run, const edm::EventSetup& setup) {
   for (auto& collection_path : collection_path_) {
     iBooker.setCurrentFolder(dirName_+"/"+objType_+"/"+collection_path.triggerPath_);
-    collection_path.bookHists(iBooker, histConfigs_);
+    collection_path.bookHists(iBooker, histConfigs_, histConfigs2D_);
   }
 }
 
@@ -236,6 +238,25 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   histConfigDefaults.push_back(histConfigDefault1);
 
   desc.addVPSet("histConfigs", histConfig, histConfigDefaults);
+
+  // defining single histConfig2D
+  edm::ParameterSetDescription histConfig2D;
+  histConfig2D.add<std::string>("vsVar_x");
+  histConfig2D.add<std::string>("vsVar_y");
+  histConfig2D.add<std::vector<double>>("binLowEdges_x");
+  histConfig2D.add<std::vector<double>>("binLowEdges_y");
+
+  // default set of histConfigs
+  std::vector<edm::ParameterSet> histConfigDefaults2D;
+
+  edm::ParameterSet histConfigDefault2D0;
+  histConfigDefault2D0.addParameter<std::string>("vsVar_x", "pt");
+  histConfigDefault2D0.addParameter<std::string>("vsVar_y", "eta");
+  histConfigDefault2D0.addParameter<std::vector<double>>("binLowEdges_x", defaultPtBinning);
+  histConfigDefault2D0.addParameter<std::vector<double>>("binLowEdges_y", defaultetaBinning);
+  histConfigDefaults2D.push_back(histConfigDefault2D0);
+
+  desc.addVPSet("histConfigs2D", histConfig2D, histConfigDefaults2D);
 
   descriptions.addDefault(desc);
 }

@@ -41,7 +41,7 @@ public:
   static edm::ParameterSetDescription makePSetDescription();
   static edm::ParameterSetDescription makePSetDescriptionHistConfigs();
 
-  void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs);
+  void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
   // this is public as it is accessed by HLTGenValSource. Could be replaced by a getter.
@@ -81,8 +81,8 @@ edm::ParameterSetDescription HLTGenValHistColl_path::makePSetDescriptionHistConf
   return desc;
 }
 
-void HLTGenValHistColl_path::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs) {
-  for (auto& collection_filter : collection_filter_) collection_filter.bookHists(iBooker, histConfigs);
+void HLTGenValHistColl_path::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {
+  for (auto& collection_filter : collection_filter_) collection_filter.bookHists(iBooker, histConfigs, histConfigs2D);
 }
 
 void HLTGenValHistColl_path::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
