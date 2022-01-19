@@ -27,9 +27,7 @@
 
 using namespace reco;
 
-//our base class for our histograms
-//takes an object, edm::Event,edm::EventSetup and fills the histogram
-//with the predetermined variable (or varaibles)
+// base histogram class, with specific implementations following below
 class HLTGenValHist {
 public:
   HLTGenValHist() = default;
@@ -37,11 +35,11 @@ public:
   virtual void fill(const HLTGenValObject& objType) = 0;
 };
 
-//this class is a specific implimentation of a HLTGenValHist
-//it has the value with which to fill the histogram
-//and the histogram itself
-//we do not own the histogram
-// also it has some cut values that are applied to that set of hists
+// specific implimentation of a HLTGenValHist for 1D histograms
+// it takes the histogram which it will fill
+// it takes the variable to plot (func) and its name (varName)
+// also, it takes additional cuts (rangeCuts) applied before filling
+// to fill the histogram, an object is passed in the Fill function
 class HLTGenValHist1D : public HLTGenValHist {
 public:
   HLTGenValHist1D(TH1* hist,
@@ -61,10 +59,10 @@ private:
   TH1* hist_;  //we do not own this
 };
 
-//this class is a specific implimentation of a HLTGenValHist
-//it has the value with which to fill the histogram
-//and the histogram itself
-//we do not own the histogram
+// specific implimentation of a HLTGenValHist for 2D histograms
+// it takes the histogram which it will fill
+// it takes the two variable to plot (func) and their name (varName)
+// to fill the histogram, two objects are passed in the Fill function
 class HLTGenValHist2D : public HLTGenValHist {
 public:
   HLTGenValHist2D(TH2* hist,

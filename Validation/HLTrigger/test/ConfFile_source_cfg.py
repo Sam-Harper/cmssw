@@ -9,41 +9,60 @@ process.load("DQMServices.Components.DQMEnvironment_cfi")
 process.load("DQMServices.Components.MEtoEDMConverter_cff")
 from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+
+process.load("FWCore.MessageService.MessageLogger_cfi")
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
 
 process.source = cms.Source("PoolSource",
     #fileNames = cms.untracked.vstring("root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL18RECO/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/AODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/00000/B4A06248-D09E-314A-ACD7-F157B86109E6.root")
-    fileNames = cms.untracked.vstring("root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/67A99845-DA80-E048-BA70-CA5A4BF4F5E5.root")
+    fileNames = cms.untracked.vstring(
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/66DECAFD-992F-E640-9F8C-5B24C46DF44C.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/67A99845-DA80-E048-BA70-CA5A4BF4F5E5.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/88469F37-B606-914B-9011-0296A98C5148.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/B17199CD-F17A-8C43-AB4E-FFC19BCD9DC3.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/B3818D4B-CE8C-FA4B-AD3F-458562EA0CEE.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/B636085B-1567-8644-B4CB-738D5F28FDC3.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/CB7C971A-DCBE-904D-9285-622FAAACBDBB.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/DC7751C3-B7AB-3245-BB8F-75AF564959F4.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/FB718118-108C-A848-BC16-B2F2A120E034.root",
+    )
 )
 
-ptBins=cms.vdouble(0,10,25,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,850,1000)
-etaBins=cms.vdouble(-5,0,5)
-etaTestCut=cms.PSet(
+ptBins=cms.vdouble(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
+etaBins=cms.vdouble(-4,-3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 4)
+
+etaCut=cms.PSet(
     rangeVar=cms.string("eta"),
-    allowedRanges=cms.vstring("0:100000")
+    allowedRanges=cms.vstring("-2.4:2.4")
+)
+ptCut=cms.PSet(
+    rangeVar=cms.string("pt"),
+    allowedRanges=cms.vstring("40:9999")
 )
 
-process.HLTGenValSourceAK4 = cms.EDProducer('HLTGenValSource',
+process.HLTGenValSourceMu = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
-    objType = cms.string("AK4jet"),
+    objType = cms.string("mu"),
     hltPathsToCheck = cms.vstring(
-      "HLT_PFJet500_v",
+      "HLT_IsoMu24_v",
     ),
     histConfigs = cms.VPSet(
         cms.PSet(
             vsVar = cms.string("pt"),
             binLowEdges = ptBins,
-            rangeCuts = cms.VPSet(etaTestCut)
+            rangeCuts = cms.VPSet(etaCut)
         ),
         cms.PSet(
             vsVar = cms.string("eta"),
             binLowEdges = etaBins,
-            rangeCuts = cms.VPSet(etaTestCut)
+            rangeCuts = cms.VPSet(ptCut)
         ),
     ),
 )
 
-process.p = cms.Path(process.HLTGenValSourceAK4)
+
+process.p = cms.Path(process.HLTGenValSourceMu)
 
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",
