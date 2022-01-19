@@ -34,6 +34,10 @@
 // including GenParticles
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
+// icnluding GenMET
+#include "DataFormats/METReco/interface/GenMETCollection.h"
+#include "DataFormats/METReco/interface/GenMET.h"
+
 // includes needed for histogram creation
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
@@ -87,6 +91,7 @@ private:
 
   // tokens to get collections
   const edm::EDGetTokenT<reco::GenParticleCollection> genParticleToken_;
+  const edm::EDGetTokenT<reco::GenMETCollection> genMETToken_;
   const edm::EDGetTokenT<reco::GenJetCollection> AK4genJetToken_;
   const edm::EDGetTokenT<reco::GenJetCollection> AK8genJetToken_;
   const edm::EDGetTokenT<trigger::TriggerEvent> trigEventToken_;
@@ -111,6 +116,7 @@ private:
 
 HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
     : genParticleToken_( consumes<reco::GenParticleCollection>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("genParticles") ) ),
+      genMETToken_( consumes<reco::GenMETCollection>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("genMET") ) ),
       AK4genJetToken_(consumes<reco::GenJetCollection>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("ak4GenJets"))),
       AK8genJetToken_(consumes<reco::GenJetCollection>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("ak8GenJets"))),
       trigEventToken_(consumes<trigger::TriggerEvent>( iConfig.getParameterSet("inputCollections").getParameter<edm::InputTag>("TrigEvent") )) {
@@ -211,6 +217,7 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   // input collections, a PSet
   edm::ParameterSetDescription inputCollections;
   inputCollections.add<edm::InputTag>("genParticles", edm::InputTag("genParticles"));
+  inputCollections.add<edm::InputTag>("genMET", edm::InputTag("genMetTrue"));
   inputCollections.add<edm::InputTag>("ak4GenJets", edm::InputTag("ak4GenJets"));
   inputCollections.add<edm::InputTag>("ak8GenJets", edm::InputTag("ak8GenJets"));
   inputCollections.add<edm::InputTag>("TrigEvent", edm::InputTag("hltTriggerSummaryAOD"));
@@ -303,7 +310,13 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
       objects.emplace_back(Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
     }
   }
-  else if(objType_ == "MET") throw cms::Exception("InputError") << "Generator-level validation for MET is not yet implemented.\n";
+  else if(objType_ == "MET") {
+    const auto& genMET = iEvent.getHandle(genMETToken_);
+    if(genMET->size() > 0){
+      auto genMETpt = (*genMET)[0].pt();
+      objects.emplace_back(Candidate::PolarLorentzVector(genMETpt, 0, 0, 0));
+    }
+  }
   else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << objType_ << ".\n" << "Please check for a potential spelling error.\n";
 
   return objects;

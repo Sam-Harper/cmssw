@@ -9,7 +9,7 @@ process.load("DQMServices.Components.DQMEnvironment_cfi")
 process.load("DQMServices.Components.MEtoEDMConverter_cff")
 from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
@@ -29,7 +29,7 @@ process.source = cms.Source("PoolSource",
     )
 )
 
-ptBins=cms.vdouble(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
+ptBins=cms.vdouble(0, 10,  20,  30,  40,  50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 275, 300)
 etaBins=cms.vdouble(-4,-3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 4)
 
 etaCut=cms.PSet(
@@ -41,11 +41,11 @@ ptCut=cms.PSet(
     allowedRanges=cms.vstring("40:9999")
 )
 
-process.HLTGenValSourceMu = cms.EDProducer('HLTGenValSource',
+process.HLTGenValSourceMET = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
-    objType = cms.string("mu"),
+    objType = cms.string("MET"),
     hltPathsToCheck = cms.vstring(
-      "HLT_IsoMu24_v",
+      "HLT_PFMET120_PFMHT120_IDTight_v",
     ),
     histConfigs = cms.VPSet(
         cms.PSet(
@@ -62,7 +62,7 @@ process.HLTGenValSourceMu = cms.EDProducer('HLTGenValSource',
 )
 
 
-process.p = cms.Path(process.HLTGenValSourceMu)
+process.p = cms.Path(process.HLTGenValSourceMET)
 
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",

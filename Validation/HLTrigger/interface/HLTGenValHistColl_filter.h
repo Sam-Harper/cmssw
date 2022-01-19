@@ -171,15 +171,20 @@ void HLTGenValHistColl_filter::fillHists(const HLTGenValObject& obj, edm::Handle
       }
     }
 
-    // do a deltaR matching between trigger object and GEN object
-    double mindR2 = 99999;
-    for (const auto & filterobj : selectedObjects) {
-      double dR = deltaR2(obj, filterobj);
-      if(dR < mindR2) mindR2 = dR;
+    std::vector<std::string> event_level_variables = {"AK4HT", "AK8HT", "MET"};
+    if(std::find(event_level_variables.begin(), event_level_variables.end(), objType_) != event_level_variables.end()) {
+      // for these we only require the existence of a trigger object, but no matching
+      if(selectedObjects.size() > 0) for (auto& hist : hists_) hist->fill(obj);
+    } else {
+      // do a deltaR matching between trigger object and GEN object
+      double mindR2 = 99999;
+      for (const auto & filterobj : selectedObjects) {
+        double dR = deltaR2(obj, filterobj);
+        if(dR < mindR2) mindR2 = dR;
+      }
+      if(mindR2 < dR2limit_) for (auto& hist : hists_) hist->fill(obj);
     }
 
-    // filling hist if GEN object is matched to some filter object
-    if(mindR2 < dR2limit_) for (auto& hist : hists_) hist->fill(obj);
 
   }
 }
