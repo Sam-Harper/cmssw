@@ -111,6 +111,7 @@ private:
   std::vector<std::string> hltPathsToCheck_;
   std::set<std::string> hltPaths;
   double dR2limit_;
+  bool doOnlyLastFilter_;
 
 };
 
@@ -129,6 +130,7 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
       dirName_ = iConfig.getParameter<std::string>("DQMDirName");
       objType_ = iConfig.getParameter<std::string>("objType");
       dR2limit_ = iConfig.getParameter<double>("dR2limit");
+      doOnlyLastFilter_ = iConfig.getParameter<bool>("doOnlyLastFilter");
       hltProcessName_ = iConfig.getParameter<std::string>("hltProcessName");
       hltPathsToCheck_ = iConfig.getParameter<std::vector<std::string>>("hltPathsToCheck");
 
@@ -167,7 +169,7 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   // creating a histogram collection for each path
   std::set<std::string>::iterator iPath;
   for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
-    collection_path_.emplace_back(HLTGenValHistColl_path(objType_, *iPath, hltConfig_, dR2limit_));
+    collection_path_.emplace_back(HLTGenValHistColl_path(objType_, *iPath, hltConfig_, dR2limit_, doOnlyLastFilter_));
   }
 
 }
@@ -213,6 +215,7 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   desc.add<std::string>("DQMDirName", "HLTGenVal");
   desc.add<std::string>("hltProcessName", "HLT");
   desc.add<double>("dR2limit", 0.1);
+  desc.add<bool>("doOnlyLastFilter", false);
 
   // input collections, a PSet
   edm::ParameterSetDescription inputCollections;

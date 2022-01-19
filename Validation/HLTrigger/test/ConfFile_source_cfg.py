@@ -47,6 +47,7 @@ process.HLTGenValSourceMET = cms.EDProducer('HLTGenValSource',
     hltPathsToCheck = cms.vstring(
       "HLT_PFMET120_PFMHT120_IDTight_v",
     ),
+    doOnlyLastFilter = cms.bool(True),
     histConfigs = cms.VPSet(
         cms.PSet(
             vsVar = cms.string("pt"),

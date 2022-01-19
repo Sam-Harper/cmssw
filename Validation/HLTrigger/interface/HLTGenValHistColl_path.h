@@ -38,7 +38,7 @@ public:
   typedef dqm::legacy::MonitorElement MonitorElement;
   typedef dqm::legacy::DQMStore DQMStore;
 
-  explicit HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig, double dR2limit);
+  explicit HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig, double dR2limit, bool doOnlyLastFilter);
 
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
@@ -52,7 +52,7 @@ private:
   HLTConfigProvider hltConfig_;
 };
 
-HLTGenValHistColl_path::HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig, double dR2limit)
+HLTGenValHistColl_path::HLTGenValHistColl_path(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig, double dR2limit, bool doOnlyLastFilter)
     : triggerPath_(triggerPath), hltConfig_(hltConfig) {
 
   // as we want a "before" hist before any filter is applied, this dummy is added to the collection
@@ -60,9 +60,14 @@ HLTGenValHistColl_path::HLTGenValHistColl_path(std::string objType, std::string 
 
   // getting all filters from path
   filters_ = hltConfig_.saveTagsModules(triggerPath_);
-  for (auto & filter : filters_) {
-    std::cout << filter << std::endl; // debug to see which filter we found
-    collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, filter, "HLT", dR2limit));
+  if(doOnlyLastFilter) {
+    std::cout << "Wer are doing only one filter!" << std::endl; // debug
+    collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, filters_.back(), "HLT", dR2limit));
+  } else {
+    for (auto & filter : filters_) {
+      std::cout << filter << std::endl; // debug to see which filter we found
+      collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, filter, "HLT", dR2limit));
+    }
   }
 
 }
