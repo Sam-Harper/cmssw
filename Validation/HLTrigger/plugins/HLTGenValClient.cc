@@ -202,34 +202,38 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
          seglist.push_back(namesegment);
       }
 
-      if(seglist.size() == 4) { // 1D case
-        if(seglist.at(3) != "after") continue; // ensuring only "after" hists are used
+      if(seglist.size() == 3) { // this should be the only "proper" files we want to look at
+        if(seglist.at(1) == "GEN") continue; // this is the before hist, if we stumble across it we just ignore it
 
-        EfficOption opt;
-        opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_pass";
-        opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " pass";
-        opt.numerator = content->getName();
-        opt.denominator = seglist.at(0) + "_" + seglist.at(2) + "_before";
-        opt.isProfile = false;
-        opt.type = EfficType::efficiency;
+        // first we determing whether we have the 1D or 2D case
+        if(seglist.at(2).rfind("2D", 0) == 0) {
 
-        efficOptions_.push_back(opt);
+          // 2D case
+          EfficOption opt;
+          opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff";
+          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency";
+          opt.numerator = content->getName();
+          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2);
+          opt.isProfile = false;
+          opt.type = EfficType::efficiency;
+
+          efficOptions_.push_back(opt);
+
+        } else {
+
+          // 1D case
+          EfficOption opt;
+          opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff";
+          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency";
+          opt.numerator = content->getName();
+          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2);
+          opt.isProfile = false;
+          opt.type = EfficType::efficiency;
+
+          efficOptions_.push_back(opt);
+
+        }
       }
-      else if(seglist.size() == 5) { // 1D case
-        if(seglist.at(4) != "after") continue; // ensuring only "after" hists are used
-
-        EfficOption opt;
-        opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_" + seglist.at(3) + "_pass";
-        opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " " + seglist.at(3) + " pass";
-        opt.numerator = content->getName();
-        opt.denominator = seglist.at(0) + "_" + seglist.at(2) + "_" +seglist.at(3) + "_before";
-        opt.isProfile = false;
-        opt.type = EfficType::efficiency;
-
-        efficOptions_.push_back(opt);
-      }
-
-
     }
 
     for (vector<EfficOption>::const_iterator efficOption = efficOptions_.begin(); efficOption != efficOptions_.end();

@@ -89,11 +89,11 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
   // name and title will be systematically constructed
   std::string histname, histtitle;
   if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
-    histname = objType_ + "_vs" + vsVar + "_before";
-    histtitle = objType_ + " vs " + vsVar +" before";
+    histname = objType_ + "_GEN_vs" + vsVar ;
+    histtitle = objType_ + " GEN vs " + vsVar;
   } else { // naming of all regular hists
-    histname = objType_ + "_" + filter_ + "_vs" + vsVar + "_after";
-    histtitle = objType_ + "_" + filter_ + "_vs" + vsVar + "_after";
+    histname = objType_ + "_" + filter_ + "_vs" + vsVar;
+    histtitle = objType_ + "_" + filter_ + "_vs" + vsVar;
   }
 
   auto me = iBooker.book1D(histname.c_str(), histtitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);   // booking MonitorElement
@@ -130,11 +130,11 @@ void HLTGenValHistColl_filter::book2D(DQMStore::IBooker& iBooker, edm::Parameter
   // name and title will be systematically constructed
   std::string histname, histtitle;
   if(filter_ == "beforeAnyFilter") {
-    histname = objType_ + "_2Dvs" + vsVar_x + "_" + vsVar_y + "_before";
-    histtitle = objType_ + " 2D vs " + vsVar_x + " " + vsVar_y + " before";
+    histname = objType_ + "_GEN_2Dvs" + vsVar_x + "_" + vsVar_y;
+    histtitle = objType_ + " GEN 2D vs " + vsVar_x + " " + vsVar_y;
   } else {
-    histname = objType_ + "_" + filter_ + "_2Dvs" + vsVar_x + "_" + vsVar_y + "_after";
-    histtitle = objType_ + " " + filter_ + " 2D vs" + vsVar_x + " " + vsVar_y + " after";
+    histname = objType_ + "_" + filter_ + "_2Dvs" + vsVar_x + vsVar_y;
+    histtitle = objType_ + " " + filter_ + " 2D vs" + vsVar_x + " " + vsVar_y;
   }
 
   auto me = iBooker.book2D(histname.c_str(), histtitle.c_str(), binLowEdges_x.size() - 1, &binLowEdges_x[0], binLowEdges_y.size() - 1, &binLowEdges_y[0]);
