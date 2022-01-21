@@ -64,8 +64,6 @@
 // class declaration
 //
 
-using namespace reco;
-
 class HLTGenValSource : public DQMEDAnalyzer {
 public:
 
@@ -84,8 +82,8 @@ private:
   // functions to get correct object collection for chosen object type
   std::vector<HLTGenValObject> getObjectCollection(const edm::Event&);
   std::vector<HLTGenValObject> getGenParticles(const edm::Event&);
-  GenParticle getLastCopyPreFSR(GenParticle part);
-  GenParticle getLastCopy(GenParticle part);
+  reco::GenParticle getLastCopyPreFSR(reco::GenParticle part);
+  reco::GenParticle getLastCopy(reco::GenParticle part);
 
   // ----------member data ---------------------------
 
@@ -293,14 +291,14 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
   else if(objType_ == "AK4jet") { // ak4 jets, using the ak4GenJets collection
     const auto& genJets = iEvent.getHandle(AK4genJetToken_);
     for(size_t i = 0; i < genJets->size(); i++) {
-      const GenJet p = (*genJets)[i];
+      const reco::GenJet p = (*genJets)[i];
       objects.emplace_back(p);
     }
   }
   else if(objType_ == "AK8jet") { // ak8 jets, using the ak8GenJets collection
     const auto& genJets = iEvent.getHandle(AK8genJetToken_);
     for(size_t i = 0; i < genJets->size(); i++) {
-      const GenJet p = (*genJets)[i];
+      const reco::GenJet p = (*genJets)[i];
       objects.emplace_back(p);
     }
   }
@@ -309,7 +307,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
     if(genJets->size() > 0){
       auto HTsum = (*genJets)[0].pt();
       for(size_t i = 1; i < genJets->size(); i++) HTsum += (*genJets)[i].pt();
-      objects.emplace_back(Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
+      objects.emplace_back(reco::Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
     }
   }
   else if(objType_ == "AK8HT") { // ak8-based HT, using the ak8GenJets collection
@@ -317,14 +315,14 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
     if(genJets->size() > 0){
       auto HTsum = (*genJets)[0].pt();
       for(size_t i = 1; i < genJets->size(); i++) HTsum += (*genJets)[i].pt();
-      objects.emplace_back(Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
+      objects.emplace_back(reco::Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
     }
   }
   else if(objType_ == "MET") {
     const auto& genMET = iEvent.getHandle(genMETToken_);
     if(genMET->size() > 0){
       auto genMETpt = (*genMET)[0].pt();
-      objects.emplace_back(Candidate::PolarLorentzVector(genMETpt, 0, 0, 0));
+      objects.emplace_back(reco::Candidate::PolarLorentzVector(genMETpt, 0, 0, 0));
     }
   }
   else throw cms::Exception("InputError") << "Generator-level validation is not available for type " << objType_ << ".\n" << "Please check for a potential spelling error.\n";
@@ -347,7 +345,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& 
 
   // main loop over GenParticles
   for(size_t i = 0; i < genParticles->size(); ++ i) {
-    const GenParticle p = (*genParticles)[i];
+    const reco::GenParticle p = (*genParticles)[i];
 
     // only select status 1 with correct ID
     if (p.status() != 1) continue;
@@ -369,14 +367,14 @@ std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& 
 }
 
 // function returning the last GenParticle in a decay chain before FSR
-GenParticle HLTGenValSource::getLastCopyPreFSR(GenParticle part) {
+reco::GenParticle HLTGenValSource::getLastCopyPreFSR(reco::GenParticle part) {
     auto daughters = part.daughterRefVector();
     if (daughters.size() == 1 && daughters.at(0)->pdgId() == part.pdgId()) return getLastCopyPreFSR(*daughters.at(0).get()); // recursion, whooo
     else return part;
 }
 
 // function returning the last GenParticle in a decay chain
-GenParticle HLTGenValSource::getLastCopy(GenParticle part) {
+reco::GenParticle HLTGenValSource::getLastCopy(reco::GenParticle part) {
   for (const auto & daughter : part.daughterRefVector()){
     if (daughter->pdgId() == part.pdgId()) return getLastCopy(*daughter.get());
   }

@@ -17,8 +17,6 @@
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include <vector>
 
-using namespace reco;
-
 class HLTGenValObject {
 public:
 
@@ -26,15 +24,15 @@ public:
   HLTGenValObject() {}
 
   // constructor from GenParticle
-  HLTGenValObject(const GenParticle &p)
+  HLTGenValObject(const reco::GenParticle &p)
       : p4Polar_(p.p4()), p4Cartesian_(p.p4()) {}
 
   // constructor from GenJet
-  HLTGenValObject(const GenJet &p)
+  HLTGenValObject(const reco::GenJet &p)
       : p4Polar_(p.p4()), p4Cartesian_(p.p4()) {}
 
   // constructor from LorentzVector (for energy sums)
-  HLTGenValObject(const Candidate::PolarLorentzVector& p)
+  HLTGenValObject(const reco::Candidate::PolarLorentzVector& p)
       : p4Polar_(p), p4Cartesian_(p) {}
 
   // destructor

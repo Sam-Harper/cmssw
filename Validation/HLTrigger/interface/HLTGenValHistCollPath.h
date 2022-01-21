@@ -27,8 +27,6 @@
 
 #include "Validation/HLTrigger/interface/HLTGenValObject.h"
 
-using namespace reco;
-
 // class containing a collection of HLTGenValHistCollFilters for a specific path
 // at object creation time, the object type (used for systematically naming the histogram),
 // triggerPath, hltConfig and dR2limit (for deltaR matching) need to be specified

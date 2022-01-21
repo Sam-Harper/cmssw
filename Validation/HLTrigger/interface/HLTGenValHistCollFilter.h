@@ -30,8 +30,6 @@
 
 #include <utility>
 
-using namespace reco;
-
 // class containing a collection of HLTGenValHist for a specific filter
 // at object creation time, the object type (used for systematically naming the histogram),
 // path and dR2limit (for deltaR matching) need to be specified

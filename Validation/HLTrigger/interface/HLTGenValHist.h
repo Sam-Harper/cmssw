@@ -25,8 +25,6 @@
 #include <TH1.h>
 #include <TH2.h>
 
-using namespace reco;
-
 // base histogram class, with specific implementations following below
 class HLTGenValHist {
 public:
