@@ -166,6 +166,9 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
     for (auto & path : hltConfig_.triggerNames()) std::cout << "   " << path << std::endl;
   }
 
+  // we want "before" histograms, which we will use this dummy path for
+  collection_path_.emplace_back(HLTGenValHistColl_path(objType_, "beforeAnyPath", hltConfig_, dR2limit_, doOnlyLastFilter_));
+
   // creating a histogram collection for each path
   std::set<std::string>::iterator iPath;
   for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
@@ -198,7 +201,11 @@ void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run&
 
   // booking all histograms
   for (auto& collection_path : collection_path_) {
-    iBooker.setCurrentFolder(dirName_+"/"+objType_+"/"+collection_path.triggerPath_);
+    // currently splitting into multiple folders
+    // this will most likely be changed later
+    // currently only the "before" hists are present at top level
+    if(collection_path.triggerPath_ == "beforeAnyPath") iBooker.setCurrentFolder(dirName_+"/"+objType_);
+    else iBooker.setCurrentFolder(dirName_+"/"+objType_+"/"+collection_path.triggerPath_);
     collection_path.bookHists(iBooker, histConfigs_, histConfigs2D_);
   }
 

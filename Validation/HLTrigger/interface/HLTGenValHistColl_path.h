@@ -56,20 +56,23 @@ HLTGenValHistColl_path::HLTGenValHistColl_path(std::string objType, std::string 
     : triggerPath_(triggerPath), hltConfig_(hltConfig) {
 
   // as we want a "before" hist before any filter is applied, this dummy is added to the collection
-  collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, "beforeAnyFilter", "HLT", dR2limit));
-
-  // getting all filters from path
-  filters_ = hltConfig_.saveTagsModules(triggerPath_);
-  if(doOnlyLastFilter) {
-    std::cout << "Wer are doing only one filter!" << std::endl; // debug
-    collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, filters_.back(), "HLT", dR2limit));
+  if(triggerPath == "beforeAnyPath") {
+    collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, "beforeAnyFilter", "HLT", dR2limit));
   } else {
-    for (auto & filter : filters_) {
-      std::cout << filter << std::endl; // debug to see which filter we found
-      collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, filter, "HLT", dR2limit));
-    }
-  }
 
+    // getting all filters from path
+    filters_ = hltConfig_.saveTagsModules(triggerPath_);
+    if(doOnlyLastFilter) {
+      std::cout << "Wer are doing only one filter!" << std::endl; // debug
+      collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, filters_.back(), "HLT", dR2limit));
+    } else {
+      for (auto & filter : filters_) {
+        std::cout << filter << std::endl; // debug to see which filter we found
+        collection_filter_.emplace_back(HLTGenValHistColl_filter(objType, filter, "HLT", dR2limit));
+      }
+    }
+
+  }
 }
 
 // hist booking function
