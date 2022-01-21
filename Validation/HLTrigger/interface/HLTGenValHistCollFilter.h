@@ -1,5 +1,5 @@
-#ifndef DQMOnline_Trigger_HLTGenValHistColl_filter_h
-#define DQMOnline_Trigger_HLTGenValHistColl_filter_h
+#ifndef DQMOnline_Trigger_HLTGenValHistCollFilter_h
+#define DQMOnline_Trigger_HLTGenValHistCollFilter_h
 
 //********************************************************************************
 //
@@ -36,12 +36,12 @@ using namespace reco;
 // at object creation time, the object type (used for systematically naming the histogram),
 // path and dR2limit (for deltaR matching) need to be specified
 // functions for initial booking of hists, and filling of hists for a single object, are available
-class HLTGenValHistColl_filter {
+class HLTGenValHistCollFilter {
 public:
   typedef dqm::legacy::MonitorElement MonitorElement;
   typedef dqm::legacy::DQMStore DQMStore;
 
-  explicit HLTGenValHistColl_filter(std::string objType, std::string path, std::string hltprocessname, double dR2limit);
+  explicit HLTGenValHistCollFilter(std::string objType, std::string path, std::string hltprocessname, double dR2limit);
 
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
@@ -58,20 +58,20 @@ private:
 };
 
 // constructor
-HLTGenValHistColl_filter::HLTGenValHistColl_filter(std::string objType, std::string filter, std::string hltprocessname, double dR2limit)
+HLTGenValHistCollFilter::HLTGenValHistCollFilter(std::string objType, std::string filter, std::string hltprocessname, double dR2limit)
     : objType_(objType),
       filter_(filter),
       hltprocessname_(hltprocessname),
       dR2limit_(dR2limit) {}
 
 // general hist booking function, receiving configurations for 1D and 2D hists and calling the respective functions
-void HLTGenValHistColl_filter::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {
+void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {
   for (auto& histConfig : histConfigs) book1D(iBooker, histConfig);
   for (auto& histConfig : histConfigs2D) book2D(iBooker, histConfig);
 }
 
 // booker function for 1D hists
-void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig) {
+void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig) {
   // extracting parameters from configuration
   auto vsVar = histConfig.getParameter<std::string>("vsVar");
   auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
@@ -106,7 +106,7 @@ void HLTGenValHistColl_filter::book1D(DQMStore::IBooker& iBooker, edm::Parameter
 }
 
 // booker function for 2D hists
-void HLTGenValHistColl_filter::book2D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig2D) {
+void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig2D) {
   // extracting parameters from configuration
   auto vsVar_x = histConfig2D.getParameter<std::string>("vsVar_x");
   auto vsVar_y = histConfig2D.getParameter<std::string>("vsVar_y");
@@ -147,7 +147,7 @@ void HLTGenValHistColl_filter::book2D(DQMStore::IBooker& iBooker, edm::Parameter
 }
 
 // histogram filling routine
-void HLTGenValHistColl_filter::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
+void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
 
   // this handles the "before" step, denoted by a "dummy" filter called "beforeAnyFilter"
   // the histogram is filled without any additional requirements for all objects

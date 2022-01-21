@@ -46,7 +46,7 @@
 #include "DQMOffline/Trigger/interface/FunctionDefs.h"
 
 // includes of histogram collection class
-#include "Validation/HLTrigger/interface/HLTGenValHistColl_path.h"
+#include "Validation/HLTrigger/interface/HLTGenValHistCollPath.h"
 
 // DQMStore
 #include "DQMServices/Core/interface/DQMStore.h"
@@ -84,8 +84,8 @@ private:
   // functions to get correct object collection for chosen object type
   std::vector<HLTGenValObject> getObjectCollection(const edm::Event&);
   std::vector<HLTGenValObject> getGenParticles(const edm::Event&);
-  GenParticle get_lastcopy_prefsr(GenParticle part);
-  GenParticle get_lastcopy(GenParticle part);
+  GenParticle getLastCopyPreFSR(GenParticle part);
+  GenParticle getLastCopy(GenParticle part);
 
   // ----------member data ---------------------------
 
@@ -104,7 +104,7 @@ private:
   std::string hltProcessName_;
 
   // histogram collection per path
-  std::vector<HLTGenValHistColl_path> collection_path_;
+  std::vector<HLTGenValHistCollPath> collection_path_;
 
   // HLT config provider/getter
   HLTConfigProvider hltConfig_;
@@ -167,12 +167,12 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   }
 
   // we want "before" histograms, which we will use this dummy path for
-  collection_path_.emplace_back(HLTGenValHistColl_path(objType_, "beforeAnyPath", hltConfig_, dR2limit_, doOnlyLastFilter_));
+  collection_path_.emplace_back(HLTGenValHistCollPath(objType_, "beforeAnyPath", hltConfig_, dR2limit_, doOnlyLastFilter_));
 
   // creating a histogram collection for each path
   std::set<std::string>::iterator iPath;
   for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
-    collection_path_.emplace_back(HLTGenValHistColl_path(objType_, *iPath, hltConfig_, dR2limit_, doOnlyLastFilter_));
+    collection_path_.emplace_back(HLTGenValHistCollPath(objType_, *iPath, hltConfig_, dR2limit_, doOnlyLastFilter_));
   }
 
 }
@@ -357,8 +357,8 @@ std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& 
     if(p.isHardProcess()) {
 
       // depending on the particle type, last particle before or after FSR is chosen
-      if( (objType_ == "ele") || (objType_ == "pho") ) objects.emplace_back( get_lastcopy_prefsr(p) );
-      else if( (objType_ == "mu") || (objType_ == "tau") ) objects.emplace_back( get_lastcopy(p) );
+      if( (objType_ == "ele") || (objType_ == "pho") ) objects.emplace_back( getLastCopyPreFSR(p) );
+      else if( (objType_ == "mu") || (objType_ == "tau") ) objects.emplace_back( getLastCopy(p) );
 
     }
 
@@ -369,16 +369,16 @@ std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& 
 }
 
 // function returning the last GenParticle in a decay chain before FSR
-GenParticle HLTGenValSource::get_lastcopy_prefsr(GenParticle part) {
+GenParticle HLTGenValSource::getLastCopyPreFSR(GenParticle part) {
     auto daughters = part.daughterRefVector();
-    if (daughters.size() == 1 && daughters.at(0)->pdgId() == part.pdgId()) return get_lastcopy_prefsr(*daughters.at(0).get()); // recursion, whooo
+    if (daughters.size() == 1 && daughters.at(0)->pdgId() == part.pdgId()) return getLastCopyPreFSR(*daughters.at(0).get()); // recursion, whooo
     else return part;
 }
 
 // function returning the last GenParticle in a decay chain
-GenParticle HLTGenValSource::get_lastcopy(GenParticle part) {
+GenParticle HLTGenValSource::getLastCopy(GenParticle part) {
   for (const auto & daughter : part.daughterRefVector()){
-    if (daughter->pdgId() == part.pdgId()) return get_lastcopy(*daughter.get());
+    if (daughter->pdgId() == part.pdgId()) return getLastCopy(*daughter.get());
   }
   return part;
 }
