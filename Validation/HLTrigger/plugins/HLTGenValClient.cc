@@ -45,13 +45,9 @@ public:
   void dqmEndRun(DQMStore::IBooker&, DQMStore::IGetter&, edm::Run const&, edm::EventSetup const&) override;
   void dqmEndJob(DQMStore::IBooker&, DQMStore::IGetter&) override{};
 
-  enum class EfficType { none = 0, efficiency, fakerate, simpleratio };
-
   struct EfficOption {
     std::string name, title;
     std::string numerator, denominator;
-    EfficType type;
-    bool isProfile;
   };
 
   void computeEfficiency(DQMStore::IBooker& ibooker,
@@ -60,9 +56,8 @@ public:
                          const std::string& efficMEName,
                          const std::string& efficMETitle,
                          const std::string& recoMEName,
-                         const std::string& simMEName,
-                         const EfficType type = EfficType::efficiency,
-                         const bool makeProfile = false);
+                         const std::string& simMEName
+                    );
 
   void limitedFit(MonitorElement* srcME, MonitorElement* meanME, MonitorElement* sigmaME);
 
@@ -81,7 +76,7 @@ private:
 
   std::vector<EfficOption> efficOptions_;
 
-  void generic_eff(TH1* denom, TH1* numer, MonitorElement* efficiencyHist, const EfficType type = EfficType::efficiency);
+  void generic_eff(TH1* denom, TH1* numer, MonitorElement* efficiencyHist);
 
   void findAllSubdirectories(DQMStore::IBooker& ibooker,
                              DQMStore::IGetter& igetter,
@@ -188,8 +183,6 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
     // opt.title
     // opt.numerator
     // opt.denominator
-    // opt.isProfile = false;
-    // opt.type = EfficType::efficiency
     auto contents = igetter.getAllContents(dirName);
     for (auto & content : contents) {
 
@@ -214,8 +207,6 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
           opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency";
           opt.numerator = content->getName();
           opt.denominator = "../" + seglist.at(0) + "_GEN_" + seglist.at(2);
-          opt.isProfile = false;
-          opt.type = EfficType::efficiency;
 
           efficOptions_.push_back(opt);
 
@@ -227,8 +218,6 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
           opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency";
           opt.numerator = content->getName();
           opt.denominator = "../" + seglist.at(0) + "_GEN_" + seglist.at(2);
-          opt.isProfile = false;
-          opt.type = EfficType::efficiency;
 
           efficOptions_.push_back(opt);
 
@@ -244,9 +233,7 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
                         efficOption->name,
                         efficOption->title,
                         efficOption->numerator,
-                        efficOption->denominator,
-                        efficOption->type,
-                        efficOption->isProfile);
+                        efficOption->denominator);
     }
   }
 }
@@ -257,9 +244,7 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
                                          const string& efficMEName,
                                          const string& efficMETitle,
                                          const string& recoMEName,
-                                         const string& simMEName,
-                                         const EfficType type,
-                                         const bool makeProfile) {
+                                         const string& simMEName) {
 
   if (!igetter.dirExists(startDir)) {
     if (verbose_ >= 2 || (verbose_ == 1 && !isWildcardUsed_)) {
@@ -312,91 +297,38 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
   }
   ibooker.setCurrentFolder(efficDir);
 
-  if (makeProfile) {
-    TProfile* efficHist = (hReco->GetXaxis()->GetXbins()->GetSize() == 0)
-                              ? new TProfile(newEfficMEName.c_str(),
-                                             efficMETitle.c_str(),
-                                             hReco->GetXaxis()->GetNbins(),
-                                             hReco->GetXaxis()->GetXmin(),
-                                             hReco->GetXaxis()->GetXmax())
-                              : new TProfile(newEfficMEName.c_str(),
-                                             efficMETitle.c_str(),
-                                             hReco->GetXaxis()->GetNbins(),
-                                             hReco->GetXaxis()->GetXbins()->GetArray());
+  TH1* efficHist = (TH1*)hSim->Clone(newEfficMEName.c_str());
+  efficHist->SetTitle(efficMETitle.c_str());
 
-    efficHist->GetXaxis()->SetTitle(hSim->GetXaxis()->GetTitle());
-    efficHist->GetYaxis()->SetTitle(hSim->GetYaxis()->GetTitle());
+  // Here is where you have trouble --- you need
+  // to understand what type of hist you have.
 
-    for (int i = 1; i <= hReco->GetNbinsX(); i++) {
-      const double nReco = hReco->GetBinContent(i);
-      const double nSim = hSim->GetBinContent(i);
+  ME* efficME = nullptr;
 
-      if (!std::string(hSim->GetXaxis()->GetBinLabel(i)).empty())
-        efficHist->GetXaxis()->SetBinLabel(i, hSim->GetXaxis()->GetBinLabel(i));
+  // Parse the class name
+  // This works, but there might be a better way
+  TClass* myHistClass = efficHist->IsA();
+  TString histClassName = myHistClass->GetName();
 
-      if (nSim == 0 or nReco < 0 or nReco > nSim)
-        continue;
-      const double effVal = nReco / nSim;
-      const double errLo = TEfficiency::ClopperPearson(nSim, nReco, 0.683, false);
-      const double errUp = TEfficiency::ClopperPearson(nSim, nReco, 0.683, true);
-      const double errVal = (effVal - errLo > errUp - effVal) ? effVal - errLo : errUp - effVal;
-      efficHist->SetBinContent(i, effVal);
-      efficHist->SetBinEntries(i, 1);
-      efficHist->SetBinError(i, std::hypot(effVal, errVal));
-    }
-    ibooker.bookProfile(newEfficMEName, efficHist);
-    delete efficHist;
+  if (histClassName == "TH1F") {
+    efficME = ibooker.book1D(newEfficMEName, (TH1F*)efficHist);
+  } else if (histClassName == "TH2F") {
+    efficME = ibooker.book2D(newEfficMEName, (TH2F*)efficHist);
+  } else if (histClassName == "TH3F") {
+    efficME = ibooker.book3D(newEfficMEName, (TH3F*)efficHist);
   }
 
-  else {
-    TH1* efficHist = (TH1*)hSim->Clone(newEfficMEName.c_str());
-    efficHist->SetTitle(efficMETitle.c_str());
+  delete efficHist;
 
-    // Here is where you have trouble --- you need
-    // to understand what type of hist you have.
-
-    ME* efficME = nullptr;
-
-    // Parse the class name
-    // This works, but there might be a better way
-    TClass* myHistClass = efficHist->IsA();
-    TString histClassName = myHistClass->GetName();
-
-    if (histClassName == "TH1F") {
-      efficME = ibooker.book1D(newEfficMEName, (TH1F*)efficHist);
-    } else if (histClassName == "TH2F") {
-      efficME = ibooker.book2D(newEfficMEName, (TH2F*)efficHist);
-    } else if (histClassName == "TH3F") {
-      efficME = ibooker.book3D(newEfficMEName, (TH3F*)efficHist);
-    }
-
-    delete efficHist;
-
-    if (!efficME) {
-      LogInfo("HLTGenValClient") << "computeEfficiency() : "
-                                  << "Cannot book effic-ME from the DQM\n";
-      return;
-    }
-
-    // Update: 2009-9-16 slaunwhj
-    // call the most generic efficiency function
-    // works up to 3-d histograms
-
-    generic_eff(hSim, hReco, efficME, type);
-
-    //   const int nBin = efficME->getNbinsX();
-    //   for(int bin = 0; bin <= nBin; ++bin) {
-    //     const float nSim  = simME ->getBinContent(bin);
-    //     const float nReco = recoME->getBinContent(bin);
-    //     float eff =0;
-    //     if (type=="fake")eff = nSim ? 1-nReco/nSim : 0.;
-    //     else eff= nSim ? nReco/nSim : 0.;
-    //     const float err = nSim && eff <= 1 ? sqrt(eff*(1-eff)/nSim) : 0.;
-    //     efficME->setBinContent(bin, eff);
-    //     efficME->setBinError(bin, err);
-    //   }
-    efficME->setEntries(simME->getEntries());
+  if (!efficME) {
+    LogInfo("HLTGenValClient") << "computeEfficiency() : "
+                                << "Cannot book effic-ME from the DQM\n";
+    return;
   }
+
+  generic_eff(hSim, hReco, efficME);
+
+  efficME->setEntries(simME->getEntries());
 
   // Global efficiency
   if (makeGlobalEffPlot_) {
@@ -408,7 +340,7 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
                                   << "Cannot book globalEffic-ME from the DQM\n";
       return;
     }
-    globalEfficME->setEfficiencyFlag();
+    //globalEfficME->setEfficiencyFlag();
     TH1F* hGlobalEffic = globalEfficME->getTH1F();
     if (!hGlobalEffic) {
       LogInfo("HLTGenValClient") << "computeEfficiency() : "
@@ -419,18 +351,9 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
     const float nSimAll = hSim->GetEntries();
     const float nRecoAll = hReco->GetEntries();
     float efficAll = 0;
-    if (type == EfficType::efficiency || type == EfficType::simpleratio)
-      efficAll = nSimAll ? nRecoAll / nSimAll : 0;
-    else if (type == EfficType::fakerate)
-      efficAll = nSimAll ? 1 - nRecoAll / nSimAll : 0;
     float errorAll = 0;
-    if (type == EfficType::simpleratio) {
-      if (nSimAll) {
-        const float x = nRecoAll / nSimAll;
-        errorAll = std::sqrt(1.f / nSimAll * x * (1 + x));
-      }
-    } else
-      errorAll = nSimAll && efficAll < 1 ? sqrt(efficAll * (1 - efficAll) / nSimAll) : 0;
+    efficAll = nSimAll ? nRecoAll / nSimAll : 0;
+    errorAll = nSimAll && efficAll < 1 ? sqrt(efficAll * (1 - efficAll) / nSimAll) : 0;
 
     const int iBin = hGlobalEffic->Fill(newEfficMEName.c_str(), 0);
     hGlobalEffic->SetBinContent(iBin, efficAll);
@@ -478,7 +401,7 @@ void HLTGenValClient::findAllSubdirectories(DQMStore::IBooker& ibooker,
   return;
 }
 
-void HLTGenValClient::generic_eff(TH1* denom, TH1* numer, MonitorElement* efficiencyHist, const EfficType type) {
+void HLTGenValClient::generic_eff(TH1* denom, TH1* numer, MonitorElement* efficiencyHist) {
   for (int iBinX = 1; iBinX < denom->GetNbinsX() + 1; iBinX++) {
     for (int iBinY = 1; iBinY < denom->GetNbinsY() + 1; iBinY++) {
       for (int iBinZ = 1; iBinZ < denom->GetNbinsZ() + 1; iBinZ++) {
@@ -489,23 +412,10 @@ void HLTGenValClient::generic_eff(TH1* denom, TH1* numer, MonitorElement* effici
 
         float effVal = 0;
 
-        // fake eff is in use
-        if (type == EfficType::fakerate) {
-          effVal = denomVal ? (1 - numerVal / denomVal) : 0;
-        } else {
-          effVal = denomVal ? numerVal / denomVal : 0;
-        }
+        effVal = denomVal ? numerVal / denomVal : 0;
 
         float errVal = 0;
-        if (type == EfficType::simpleratio) {
-          //          errVal = denomVal ? 1.f/denomVal*effVal*(1+effVal) : 0;
-          float numerErr = numer->GetBinError(globalBinNum);
-          float denomErr = denom->GetBinError(globalBinNum);
-          float denomsq = denomVal * denomVal;
-          errVal = denomVal ? sqrt(pow(1.f / denomVal * numerErr, 2.0) + pow(numerVal / denomsq * denomErr, 2)) : 0;
-        } else {
-          errVal = (denomVal && (effVal <= 1)) ? sqrt(effVal * (1 - effVal) / denomVal) : 0;
-        }
+        errVal = (denomVal && (effVal <= 1)) ? sqrt(effVal * (1 - effVal) / denomVal) : 0;
 
         LogDebug("HLTGenValClient") << "(iBinX, iBinY, iBinZ)  = " << iBinX << ", " << iBinY << ", " << iBinZ
                                      << "), global bin =  " << globalBinNum << "eff = " << numerVal << "  /  "
@@ -515,15 +425,10 @@ void HLTGenValClient::generic_eff(TH1* denom, TH1* numer, MonitorElement* effici
 
         efficiencyHist->setBinContent(globalBinNum, effVal);
         efficiencyHist->setBinError(globalBinNum, errVal);
-        efficiencyHist->setEfficiencyFlag();
+        //efficiencyHist->setEfficiencyFlag();
       }
     }
   }
-
-  //efficiencyHist->setMinimum(0.0);
-  //efficiencyHist->setMaximum(1.0);
 }
 
 DEFINE_FWK_MODULE(HLTGenValClient);
-
-/* vim:set ts=2 sts=2 sw=2 expandtab: */
