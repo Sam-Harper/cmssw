@@ -95,8 +95,8 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, edm::ParameterS
 // booker function for 2D hists
 void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig2D) {
   // extracting parameters from configuration
-  auto vsVarX_ = histConfig2D.getParameter<std::string>("vsVarX_");
-  auto vsVarY_ = histConfig2D.getParameter<std::string>("vsVarY_");
+  auto vsVarX_ = histConfig2D.getParameter<std::string>("vsVarX");
+  auto vsVarY_ = histConfig2D.getParameter<std::string>("vsVarY");
   auto vsVarFunc_x = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVarX_);
   auto vsVarFunc_y = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVarY_);
   auto binLowEdgesDoubleX = histConfig2D.getParameter<std::vector<double> >("binLowEdgesX");

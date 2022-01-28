@@ -259,19 +259,19 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
 
   // defining single histConfig2D
   edm::ParameterSetDescription histConfig2D;
-  histConfig2D.add<std::string>("vsVar_x");
-  histConfig2D.add<std::string>("vsVar_y");
-  histConfig2D.add<std::vector<double>>("binLowEdges_x");
-  histConfig2D.add<std::vector<double>>("binLowEdges_y");
+  histConfig2D.add<std::string>("vsVarX");
+  histConfig2D.add<std::string>("vsVarY");
+  histConfig2D.add<std::vector<double>>("binLowEdgesX");
+  histConfig2D.add<std::vector<double>>("binLowEdgesY");
 
   // default set of histConfigs
   std::vector<edm::ParameterSet> histConfigDefaults2D;
 
   edm::ParameterSet histConfigDefault2D0;
-  histConfigDefault2D0.addParameter<std::string>("vsVar_x", "pt");
-  histConfigDefault2D0.addParameter<std::string>("vsVar_y", "eta");
-  histConfigDefault2D0.addParameter<std::vector<double>>("binLowEdges_x", defaultPtBinning);
-  histConfigDefault2D0.addParameter<std::vector<double>>("binLowEdges_y", defaultetaBinning);
+  histConfigDefault2D0.addParameter<std::string>("vsVarX", "pt");
+  histConfigDefault2D0.addParameter<std::string>("vsVarY", "eta");
+  histConfigDefault2D0.addParameter<std::vector<double>>("binLowEdgesX", defaultPtBinning);
+  histConfigDefault2D0.addParameter<std::vector<double>>("binLowEdgesY", defaultetaBinning);
   histConfigDefaults2D.push_back(histConfigDefault2D0);
 
   desc.addVPSet("histConfigs2D", histConfig2D, histConfigDefaults2D);
