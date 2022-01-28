@@ -102,7 +102,7 @@ private:
   std::string hltProcessName_;
 
   // histogram collection per path
-  std::vector<HLTGenValHistCollPath> collection_path_;
+  std::vector<HLTGenValHistCollPath> collectionPath_;
 
   // HLT config provider/getter
   HLTConfigProvider hltConfig_;
@@ -165,12 +165,12 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   }
 
   // we want "before" histograms, which we will use this dummy path for
-  collection_path_.emplace_back(HLTGenValHistCollPath(objType_, "beforeAnyPath", hltConfig_, dR2limit_, doOnlyLastFilter_));
+  collectionPath_.emplace_back(HLTGenValHistCollPath(objType_, "beforeAnyPath", hltConfig_, dR2limit_, doOnlyLastFilter_));
 
   // creating a histogram collection for each path
   std::set<std::string>::iterator iPath;
   for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
-    collection_path_.emplace_back(HLTGenValHistCollPath(objType_, *iPath, hltConfig_, dR2limit_, doOnlyLastFilter_));
+    collectionPath_.emplace_back(HLTGenValHistCollPath(objType_, *iPath, hltConfig_, dR2limit_, doOnlyLastFilter_));
   }
 
 }
@@ -187,7 +187,7 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   // loop over all objects and fill hists
   for (auto & object : objects) {
-    for (auto& collection_path : collection_path_) {
+    for (auto& collection_path : collectionPath_) {
       collection_path.fillHists(object, triggerEvent);
     }
   }
@@ -198,7 +198,7 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run& run, const edm::EventSetup& setup) {
 
   // booking all histograms
-  for (auto& collection_path : collection_path_) {
+  for (auto& collection_path : collectionPath_) {
     // currently splitting into multiple folders
     // this will most likely be changed later
     // currently only the "before" hists are present at top level
