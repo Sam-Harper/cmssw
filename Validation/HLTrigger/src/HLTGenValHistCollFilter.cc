@@ -13,82 +13,6 @@ void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, std::vector<
   for (auto& histConfig : histConfigs2D) book2D(iBooker, histConfig);
 }
 
-// booker function for 1D hists
-void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig) {
-  // extracting parameters from configuration
-  auto vsVar = histConfig.getParameter<std::string>("vsVar");
-  auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
-  auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
-  VarRangeCutColl<HLTGenValObject> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
-
-  // checking validity of vsVar
-  if (!vsVarFunc) { throw cms::Exception("ConfigError") << " vsVar " << vsVar << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
-
-  // converting bin edges to float
-  std::vector<float> binLowEdges;
-  binLowEdges.reserve(binLowEdgesDouble.size());
-  for (double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
-
-  // name and title will be systematically constructed
-  std::string histname, histtitle;
-  if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
-    histname = objType_ + "_GEN_vs" + vsVar ;
-    histtitle = objType_ + " GEN vs " + vsVar;
-  } else { // naming of all regular hists
-    histname = objType_ + "_" + filter_ + "_vs" + vsVar;
-    histtitle = objType_ + "_" + filter_ + "_vs" + vsVar;
-  }
-
-  auto me = iBooker.book1D(histname.c_str(), histtitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);   // booking MonitorElement
-
-  std::unique_ptr<HLTGenValHist> hist; // creating the hist object
-
-  hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc, rangeCuts);
-
-  hists_.emplace_back(std::move(hist));
-}
-
-// booker function for 2D hists
-void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig2D) {
-  // extracting parameters from configuration
-  auto vsVar_x = histConfig2D.getParameter<std::string>("vsVar_x");
-  auto vsVar_y = histConfig2D.getParameter<std::string>("vsVar_y");
-  auto vsVarFunc_x = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar_x);
-  auto vsVarFunc_y = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar_y);
-  auto binLowEdgesDouble_x = histConfig2D.getParameter<std::vector<double> >("binLowEdges_x");
-  auto binLowEdgesDouble_y = histConfig2D.getParameter<std::vector<double> >("binLowEdges_y");
-
-  // checking validity of vsVar
-  if (!vsVarFunc_x) {throw cms::Exception("ConfigError") << " vsVar " << vsVar_x << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
-  if (!vsVarFunc_y) {throw cms::Exception("ConfigError") << " vsVar " << vsVar_y << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
-
-  // converting bin edges to float
-  std::vector<float> binLowEdges_x;
-  std::vector<float> binLowEdges_y;
-  binLowEdges_x.reserve(binLowEdgesDouble_x.size());
-  binLowEdges_y.reserve(binLowEdgesDouble_y.size());
-  for (double lowEdge : binLowEdgesDouble_x) binLowEdges_x.push_back(lowEdge);
-  for (double lowEdge : binLowEdgesDouble_y) binLowEdges_y.push_back(lowEdge);
-
-  // name and title will be systematically constructed
-  std::string histname, histtitle;
-  if(filter_ == "beforeAnyFilter") {
-    histname = objType_ + "_GEN_2Dvs" + vsVar_x + "_" + vsVar_y;
-    histtitle = objType_ + " GEN 2D vs " + vsVar_x + " " + vsVar_y;
-  } else {
-    histname = objType_ + "_" + filter_ + "_2Dvs" + vsVar_x + vsVar_y;
-    histtitle = objType_ + " " + filter_ + " 2D vs" + vsVar_x + " " + vsVar_y;
-  }
-
-  auto me = iBooker.book2D(histname.c_str(), histtitle.c_str(), binLowEdges_x.size() - 1, &binLowEdges_x[0], binLowEdges_y.size() - 1, &binLowEdges_y[0]);
-
-  std::unique_ptr<HLTGenValHist> hist;
-
-  hist = std::make_unique<HLTGenValHist2D>(me->getTH2F(), vsVar_x, vsVar_y, vsVarFunc_x, vsVarFunc_y);
-
-  hists_.emplace_back(std::move(hist));
-}
-
 // histogram filling routine
 void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
 
@@ -130,4 +54,81 @@ void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<
 
 
   }
+}
+
+
+// booker function for 1D hists
+void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig) {
+  // extracting parameters from configuration
+  auto vsVar = histConfig.getParameter<std::string>("vsVar");
+  auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
+  auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
+  VarRangeCutColl<HLTGenValObject> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
+
+  // checking validity of vsVar
+  if (!vsVarFunc) { throw cms::Exception("ConfigError") << " vsVar " << vsVar << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
+
+  // converting bin edges to float
+  std::vector<float> binLowEdges;
+  binLowEdges.reserve(binLowEdgesDouble.size());
+  for (double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
+
+  // name and title will be systematically constructed
+  std::string histname, histtitle;
+  if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
+    histname = objType_ + "_GEN_vs" + vsVar ;
+    histtitle = objType_ + " GEN vs " + vsVar;
+  } else { // naming of all regular hists
+    histname = objType_ + "_" + filter_ + "_vs" + vsVar;
+    histtitle = objType_ + "_" + filter_ + "_vs" + vsVar;
+  }
+
+  auto me = iBooker.book1D(histname.c_str(), histtitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);   // booking MonitorElement
+
+  std::unique_ptr<HLTGenValHist> hist; // creating the hist object
+
+  hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc, rangeCuts);
+
+  hists_.emplace_back(std::move(hist));
+}
+
+// booker function for 2D hists
+void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig2D) {
+  // extracting parameters from configuration
+  auto vsVarX_ = histConfig2D.getParameter<std::string>("vsVarX_");
+  auto vsVarY_ = histConfig2D.getParameter<std::string>("vsVarY_");
+  auto vsVarFunc_x = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVarX_);
+  auto vsVarFunc_y = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVarY_);
+  auto binLowEdgesDoubleX = histConfig2D.getParameter<std::vector<double> >("binLowEdgesX");
+  auto binLowEdgesDoubleY = histConfig2D.getParameter<std::vector<double> >("binLowEdgesY");
+
+  // checking validity of vsVar
+  if (!vsVarFunc_x) {throw cms::Exception("ConfigError") << " vsVar " << vsVarX_ << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
+  if (!vsVarFunc_y) {throw cms::Exception("ConfigError") << " vsVar " << vsVarY_ << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
+
+  // converting bin edges to float
+  std::vector<float> binLowEdgesX;
+  std::vector<float> binLowEdgesY;
+  binLowEdgesX.reserve(binLowEdgesDoubleX.size());
+  binLowEdgesY.reserve(binLowEdgesDoubleY.size());
+  for (double lowEdge : binLowEdgesDoubleX) binLowEdgesX.push_back(lowEdge);
+  for (double lowEdge : binLowEdgesDoubleY) binLowEdgesY.push_back(lowEdge);
+
+  // name and title will be systematically constructed
+  std::string histname, histtitle;
+  if(filter_ == "beforeAnyFilter") {
+    histname = objType_ + "_GEN_2Dvs" + vsVarX_ + "_" + vsVarY_;
+    histtitle = objType_ + " GEN 2D vs " + vsVarX_ + " " + vsVarY_;
+  } else {
+    histname = objType_ + "_" + filter_ + "_2Dvs" + vsVarX_ + vsVarY_;
+    histtitle = objType_ + " " + filter_ + " 2D vs" + vsVarX_ + " " + vsVarY_;
+  }
+
+  auto me = iBooker.book2D(histname.c_str(), histtitle.c_str(), binLowEdgesX.size() - 1, &binLowEdgesX[0], binLowEdgesY.size() - 1, &binLowEdgesY[0]);
+
+  std::unique_ptr<HLTGenValHist> hist;
+
+  hist = std::make_unique<HLTGenValHist2D>(me->getTH2F(), vsVarX_, vsVarY_, vsVarFunc_x, vsVarFunc_y);
+
+  hists_.emplace_back(std::move(hist));
 }

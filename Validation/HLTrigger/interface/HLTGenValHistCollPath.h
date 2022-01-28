@@ -45,7 +45,7 @@ public:
   std::string triggerPath_;
 
 private:
-  std::vector<HLTGenValHistCollFilter> collection_filter_;
+  std::vector<HLTGenValHistCollFilter> collectionFilter_;
   std::vector<std::string> filters_;
   HLTConfigProvider hltConfig_;
 };

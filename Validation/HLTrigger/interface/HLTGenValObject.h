@@ -1,5 +1,5 @@
-#ifndef DQMOnline_Trigger_HLTGenValObject_h
-#define DQMOnline_Trigger_HLTGenValObject_h
+#ifndef Validation_HLTrigger_HLTGenValObject_h
+#define Validation_HLTrigger_HLTGenValObject_h
 
 /****************************************************************************
 * \class HLTGenValObject

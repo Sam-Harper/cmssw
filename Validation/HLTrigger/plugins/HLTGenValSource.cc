@@ -337,7 +337,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& 
   const auto& genParticles = iEvent.getHandle(genParticleToken_); // getting all GenParticles
 
   // we need to ge the ID corresponding to the desired GenParticle type
-  int pdgID;
+  int pdgID = -1; // setting to -1 should not be needed, but prevents warning :)
   if(objType_ == "ele") pdgID = 11;
   else if(objType_ == "pho") pdgID = 22;
   else if(objType_ == "mu") pdgID = 13;

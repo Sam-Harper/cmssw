@@ -1,5 +1,5 @@
-#ifndef DQMOnline_Trigger_HLTGenValHist_h
-#define DQMOnline_Trigger_HLTGenValHist_h
+#ifndef Validation_HLTrigger_HLTGenValHist_h
+#define Validation_HLTrigger_HLTGenValHist_h
 
 //********************************************************************************
 //
@@ -64,21 +64,21 @@ private:
 class HLTGenValHist2D : public HLTGenValHist {
 public:
   HLTGenValHist2D(TH2* hist,
-               std::string varName_x,
-               std::string varName_y,
-               std::function<float(const HLTGenValObject&)> func_x,
-               std::function<float(const HLTGenValObject&)> func_y)
-      : var_x_(std::move(func_x)), var_y_(std::move(func_y)), varName_x_(std::move(varName_x)), varName_y_(std::move(varName_y)), hist_(hist) {}
+               std::string varNameX,
+               std::string varNameY,
+               std::function<float(const HLTGenValObject&)> funcX,
+               std::function<float(const HLTGenValObject&)> funcY)
+      : varX_(std::move(funcX)), varY_(std::move(funcY)), varNameX_(std::move(varNameX)), varNameY_(std::move(varNameY)), hist_(hist) {}
 
   void fill(const HLTGenValObject& obj) override {
-    hist_->Fill(var_x_(obj), var_y_(obj));
+    hist_->Fill(varX_(obj), varY_(obj));
   }
 
 private:
-  std::function<float(const HLTGenValObject&)> var_x_;
-  std::function<float(const HLTGenValObject&)> var_y_;
-  std::string varName_x_;
-  std::string varName_y_;
+  std::function<float(const HLTGenValObject&)> varX_;
+  std::function<float(const HLTGenValObject&)> varY_;
+  std::string varNameX_;
+  std::string varNameY_;
   TH2* hist_;  //we do not own this
 };
 
