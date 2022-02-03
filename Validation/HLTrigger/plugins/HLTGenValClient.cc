@@ -206,7 +206,7 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
           opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff";
           opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency";
           opt.numerator = content->getName();
-          opt.denominator = "../" + seglist.at(0) + "_GEN_" + seglist.at(2);
+          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2);
 
           efficOptions_.push_back(opt);
 
@@ -217,7 +217,7 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
           opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff";
           opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency";
           opt.numerator = content->getName();
-          opt.denominator = "../" + seglist.at(0) + "_GEN_" + seglist.at(2);
+          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2);
 
           efficOptions_.push_back(opt);
 

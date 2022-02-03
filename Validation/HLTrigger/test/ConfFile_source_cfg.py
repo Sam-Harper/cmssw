@@ -50,7 +50,7 @@ process.HLTGenValSourceMET = cms.EDProducer('HLTGenValSource',
       "HLT_PFMET120_PFMHT120_IDTight_v",
       "HLT_PFMET110_PFMHT110_IDTight_v",
     ),
-    doOnlyLastFilter = cms.bool(True),
+    doOnlyLastFilter = cms.bool(False),
     histConfigs = cms.VPSet(
         cms.PSet(
             vsVar = cms.string("pt"),
@@ -65,13 +65,34 @@ process.HLTGenValSourceMET = cms.EDProducer('HLTGenValSource',
     ),
 )
 
+process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
+    # these are the only one the user needs to specify
+    objType = cms.string("mu"),
+    hltPathsToCheck = cms.vstring(
+      "HLT_IsoMu24_v",
+      "HLT_Mu50_v",
+    ),
+    doOnlyLastFilter = cms.bool(False),
+    histConfigs = cms.VPSet(
+        cms.PSet(
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBins,
+            rangeCuts = cms.VPSet(etaCut)
+        ),
+        cms.PSet(
+            vsVar = cms.string("eta"),
+            binLowEdges = etaBins,
+            rangeCuts = cms.VPSet(ptCut)
+        ),
+    ),
+)
 
-process.p = cms.Path(process.HLTGenValSourceMET)
+process.p = cms.Path(process.HLTGenValSourceMET*process.HLTGenValSourceMU)
 
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",
     outputFileName = cms.untracked.string('sourceoutput_harvest.root'),
-    subDirs        = cms.untracked.vstring("HLTGenVal/*"),
+    subDirs        = cms.untracked.vstring("HLTGenVal"),
 )
 
 process.outpath = cms.EndPath(process.harvester)

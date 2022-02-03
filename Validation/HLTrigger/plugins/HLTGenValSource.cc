@@ -197,13 +197,10 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 // ------------ method called once each job just before starting event loop  ------------
 void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run& run, const edm::EventSetup& setup) {
 
+  iBooker.setCurrentFolder(dirName_);
+
   // booking all histograms
   for (auto& collection_path : collectionPath_) {
-    // currently splitting into multiple folders
-    // this will most likely be changed later
-    // currently only the "before" hists are present at top level
-    if(collection_path.triggerPath_ == "beforeAnyPath") iBooker.setCurrentFolder(dirName_+"/"+objType_);
-    else iBooker.setCurrentFolder(dirName_+"/"+objType_+"/"+collection_path.triggerPath_);
     collection_path.bookHists(iBooker, histConfigs_, histConfigs2D_);
   }
 
