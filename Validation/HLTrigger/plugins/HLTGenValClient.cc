@@ -340,7 +340,7 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
                                   << "Cannot book globalEffic-ME from the DQM\n";
       return;
     }
-    //globalEfficME->setEfficiencyFlag();
+    globalEfficME->setEfficiencyFlag();
     TH1F* hGlobalEffic = globalEfficME->getTH1F();
     if (!hGlobalEffic) {
       LogInfo("HLTGenValClient") << "computeEfficiency() : "
@@ -425,7 +425,7 @@ void HLTGenValClient::generic_eff(TH1* denom, TH1* numer, MonitorElement* effici
 
         efficiencyHist->setBinContent(globalBinNum, effVal);
         efficiencyHist->setBinError(globalBinNum, errVal);
-        //efficiencyHist->setEfficiencyFlag();
+        efficiencyHist->setEfficiencyFlag();
       }
     }
   }
