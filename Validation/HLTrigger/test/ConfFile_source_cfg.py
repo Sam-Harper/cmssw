@@ -19,10 +19,15 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 100
 process.source = cms.Source("PoolSource",
     #fileNames = cms.untracked.vstring("root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL18RECO/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/AODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/00000/B4A06248-D09E-314A-ACD7-F157B86109E6.root")
     fileNames = cms.untracked.vstring(
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM/123X_mcRun3_2021_realistic_v4-v1/2580000/299fa756-9ac5-4cd6-95f5-b9e5482c34e6.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM/123X_mcRun3_2021_realistic_v4-v1/2580000/968d62a1-4053-4d1e-b50b-2843aca5b693.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM/123X_mcRun3_2021_realistic_v4-v1/2580000/a8872a98-50ca-4f48-992b-b136d4131040.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM/123X_mcRun3_2021_realistic_v4-v1/2580000/edcec532-ce30-4db5-bc36-bead4ee733ed.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/07f08321-b24c-4397-b019-18c8ba54696c.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/22cc5971-134c-4a49-94b6-a3f96de01d94.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/2d20a2a4-b411-4124-bf1d-93db155b76e8.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/5f762599-4ddb-4c5f-8975-0229b54cae07.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/7964789d-c81b-4927-abaf-73acbd202abc.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/9cfca190-28f6-43af-b300-e3af7dbbfdd2.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/d22883fe-df35-48f3-ad2b-dbad44c8eaa4.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/f8ee9482-41e8-4126-ae00-bf07ef019d66.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/123X_mcRun3_2021_realistic_v4-v1/2580000/fe617389-a652-418d-b24e-55ea0ccacd7e.root",
     )
 )
 
