@@ -9,23 +9,20 @@ process.load("DQMServices.Components.DQMEnvironment_cfi")
 process.load("DQMServices.Components.MEtoEDMConverter_cff")
 from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
 
+
+# using: CMSSW_12_3_0_pre4__fullsim_noPU_2021_14TeV-TTbar_14TeV-00001
 process.source = cms.Source("PoolSource",
     #fileNames = cms.untracked.vstring("root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL18RECO/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/AODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/00000/B4A06248-D09E-314A-ACD7-F157B86109E6.root")
     fileNames = cms.untracked.vstring(
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/66DECAFD-992F-E640-9F8C-5B24C46DF44C.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/67A99845-DA80-E048-BA70-CA5A4BF4F5E5.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/88469F37-B606-914B-9011-0296A98C5148.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/B17199CD-F17A-8C43-AB4E-FFC19BCD9DC3.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/B3818D4B-CE8C-FA4B-AD3F-458562EA0CEE.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/B636085B-1567-8644-B4CB-738D5F28FDC3.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/CB7C971A-DCBE-904D-9285-622FAAACBDBB.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/DC7751C3-B7AB-3245-BB8F-75AF564959F4.root",
-    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_10_6_12/RelValTTbar_13UP16/AODSIM/PU25ns_106X_mcRun2_asymptotic_v13_hltul16_postVFP-v1/20000/FB718118-108C-A848-BC16-B2F2A120E034.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM/123X_mcRun3_2021_realistic_v4-v1/2580000/299fa756-9ac5-4cd6-95f5-b9e5482c34e6.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM/123X_mcRun3_2021_realistic_v4-v1/2580000/968d62a1-4053-4d1e-b50b-2843aca5b693.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM/123X_mcRun3_2021_realistic_v4-v1/2580000/a8872a98-50ca-4f48-992b-b136d4131040.root",
+    "root://cmsxrootd.fnal.gov//store/relval/CMSSW_12_3_0_pre4/RelValTTbar_14TeV/GEN-SIM/123X_mcRun3_2021_realistic_v4-v1/2580000/edcec532-ce30-4db5-bc36-bead4ee733ed.root",
     )
 )
 
