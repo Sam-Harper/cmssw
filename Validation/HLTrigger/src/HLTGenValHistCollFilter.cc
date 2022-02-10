@@ -1,11 +1,12 @@
 #include "Validation/HLTrigger/interface/HLTGenValHistCollFilter.h"
 
 // constructor
-HLTGenValHistCollFilter::HLTGenValHistCollFilter(std::string objType, std::string filter, std::string hltprocessname, double dR2limit)
-    : objType_(objType),
-      filter_(filter),
-      hltprocessname_(hltprocessname),
-      dR2limit_(dR2limit) {}
+HLTGenValHistCollFilter::HLTGenValHistCollFilter(edm::ParameterSet filterCollConfig) {
+  objType_ = filterCollConfig.getParameter<std::string>("objType");
+  filter_ = filterCollConfig.getParameter<std::string>("filterName");
+  hltprocessname_ = filterCollConfig.getParameter<std::string>("hltProcessName");
+  dR2limit_ = filterCollConfig.getParameter<double>("dR2limit");
+}
 
 // general hist booking function, receiving configurations for 1D and 2D hists and calling the respective functions
 void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {

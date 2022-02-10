@@ -1,27 +1,42 @@
 #include "Validation/HLTrigger/interface/HLTGenValHistCollPath.h"
 
-HLTGenValHistCollPath::HLTGenValHistCollPath(std::string objType, std::string triggerPath, HLTConfigProvider& hltConfig, double dR2limit, bool doOnlyLastFilter)
-    : triggerPath_(triggerPath), hltConfig_(hltConfig) {
+HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, HLTConfigProvider& hltConfig) :
+  hltConfig_(hltConfig) {
+
+  triggerPath_ = pathCollConfig.getParameter<std::string>("triggerPath");
+  doOnlyLastFilter_ = pathCollConfig.getParameter<bool>("doOnlyLastFilter");
+
+  // before creating the collections for each filter, we'll store the needed configurations in a pset
+  // we'll copy this basis multiple times and add the paths later
+  edm::ParameterSet filterCollConfig;
+  filterCollConfig.addParameter<std::string>("objType", pathCollConfig.getParameter<std::string>("objType"));
+  filterCollConfig.addParameter<std::string>("hltProcessName", pathCollConfig.getParameter<std::string>("hltProcessName"));
+  filterCollConfig.addParameter<double>("dR2limit", pathCollConfig.getParameter<double>("dR2limit"));
 
   // as we want a "before" hist before any filter is applied, this dummy is added to the collection
-  if(triggerPath == "beforeAnyPath") {
-    collectionFilter_.emplace_back(HLTGenValHistCollFilter(objType, "beforeAnyFilter", "HLT", dR2limit));
+  if(triggerPath_ == "beforeAnyPath") {
+    edm::ParameterSet filterCollConfigBeforeAnyPath = filterCollConfig;
+    filterCollConfigBeforeAnyPath.addParameter<std::string>("filterName", "beforeAnyFilter");
+    collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigBeforeAnyPath));
   } else {
 
     // getting all filters from path
     filters_ = hltConfig_.saveTagsModules(triggerPath_);
-    if(doOnlyLastFilter) {
-      std::cout << "Wer are doing only one filter!" << std::endl; // debug
-      collectionFilter_.emplace_back(HLTGenValHistCollFilter(objType, filters_.back(), "HLT", dR2limit));
+    if(doOnlyLastFilter_) {
+      edm::ParameterSet filterCollConfigOnlyLastFilter = filterCollConfig;
+      filterCollConfigOnlyLastFilter.addParameter<std::string>("filterName", filters_.back());
+      collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigOnlyLastFilter));
     } else {
       for (auto & filter : filters_) {
-        std::cout << filter << std::endl; // debug to see which filter we found
-        collectionFilter_.emplace_back(HLTGenValHistCollFilter(objType, filter, "HLT", dR2limit));
+        edm::ParameterSet filterCollConfigStep = filterCollConfig;
+        filterCollConfigStep.addParameter<std::string>("filterName", filter);
+        collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigStep));
       }
     }
 
   }
 }
+
 
 // hist booking function
 // this just calls the booking for each object in the collection_filter

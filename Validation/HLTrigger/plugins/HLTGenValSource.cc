@@ -158,19 +158,33 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
     if(!pathfound) notFoundPaths.push_back(i);
   }
   if(notFoundPaths.size() > 0) {
+    // probably this should instead be thrown as
     std::cout << "The following paths could not be found: " << std::endl;
     for (auto & path : notFoundPaths) std::cout << "   " << path << std::endl;
     std::cout << "The list of all available paths is: " << std::endl;
     for (auto & path : hltConfig_.triggerNames()) std::cout << "   " << path << std::endl;
   }
 
+  // before creating the collections for each path, we'll store the needed configurations in a pset
+  // we'll copy this basis multiple times and add the paths later
+  // most of these options are not needed in the pathColl, but in the filterColl child
+  edm::ParameterSet pathCollConfig;
+  pathCollConfig.addParameter<std::string>("objType", objType_);
+  pathCollConfig.addParameter<double>("dR2limit", dR2limit_);
+  pathCollConfig.addParameter<bool>("doOnlyLastFilter", doOnlyLastFilter_);
+  pathCollConfig.addParameter<std::string>("hltProcessName", hltProcessName_);
+
   // we want "before" histograms, which we will use this dummy path for
-  collectionPath_.emplace_back(HLTGenValHistCollPath(objType_, "beforeAnyPath", hltConfig_, dR2limit_, doOnlyLastFilter_));
+  edm::ParameterSet pathCollConfigBefore = pathCollConfig;
+  pathCollConfigBefore.addParameter<std::string>("triggerPath", "beforeAnyPath");
+  collectionPath_.emplace_back(HLTGenValHistCollPath(pathCollConfigBefore, hltConfig_));
 
   // creating a histogram collection for each path
   std::set<std::string>::iterator iPath;
   for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
-    collectionPath_.emplace_back(HLTGenValHistCollPath(objType_, *iPath, hltConfig_, dR2limit_, doOnlyLastFilter_));
+    edm::ParameterSet pathCollConfigStep = pathCollConfig;
+    pathCollConfigStep.addParameter<std::string>("triggerPath", *iPath);
+    collectionPath_.emplace_back(HLTGenValHistCollPath(pathCollConfigStep, hltConfig_));
   }
 
 }

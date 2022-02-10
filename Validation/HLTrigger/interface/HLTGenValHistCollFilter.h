@@ -39,7 +39,7 @@ public:
   typedef dqm::legacy::MonitorElement MonitorElement;
   typedef dqm::legacy::DQMStore DQMStore;
 
-  explicit HLTGenValHistCollFilter(std::string objType, std::string path, std::string hltprocessname, double dR2limit);
+  explicit HLTGenValHistCollFilter(edm::ParameterSet filterCollConfig);
 
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
