@@ -8,6 +8,15 @@ HLTGenValHistCollFilter::HLTGenValHistCollFilter(edm::ParameterSet filterCollCon
   dR2limit_ = filterCollConfig.getParameter<double>("dR2limit");
 }
 
+edm::ParameterSetDescription HLTGenValHistCollFilter::makePSetDescription() {
+  edm::ParameterSetDescription desc;
+  desc.add<std::string>("objType", "");
+  desc.add<std::string>("hltProcessName", "HLT");
+  desc.add<double>("dR2limit", 0.1);
+  desc.add<std::string>("filterName", "");
+  return desc;
+}
+
 // general hist booking function, receiving configurations for 1D and 2D hists and calling the respective functions
 void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {
   for (auto& histConfig : histConfigs) book1D(iBooker, histConfig);

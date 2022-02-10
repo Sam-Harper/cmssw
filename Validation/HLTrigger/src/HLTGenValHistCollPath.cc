@@ -38,6 +38,17 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
 }
 
 
+edm::ParameterSetDescription HLTGenValHistCollPath::makePSetDescription() {
+  edm::ParameterSetDescription desc;
+  desc.add<std::string>("objType", "");
+  desc.add<double>("dR2limit", 0.1);
+  desc.add<bool>("doOnlyLastFilter", false);
+  desc.add<std::string>("hltProcessName", "HLT");
+  desc.add<std::string>("triggerPath", "");
+  return desc;
+}
+
+
 // hist booking function
 // this just calls the booking for each object in the collection_filter
 void HLTGenValHistCollPath::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {

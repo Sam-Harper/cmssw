@@ -38,6 +38,8 @@ public:
 
   explicit HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, HLTConfigProvider& hltConfig);
 
+  static edm::ParameterSetDescription makePSetDescription();
+
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
