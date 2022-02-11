@@ -69,7 +69,6 @@ process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
     objType = cms.string("mu"),
     hltPathsToCheck = cms.vstring(
-      "HLT_IsoMu24_v",
       "HLT_Mu50_v",
     ),
     doOnlyLastFilter = cms.bool(False),
@@ -87,7 +86,7 @@ process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
     ),
 )
 
-process.p = cms.Path(process.HLTGenValSourceMET*process.HLTGenValSourceMU)
+process.p = cms.Path(process.HLTGenValSourceMU)
 
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",
