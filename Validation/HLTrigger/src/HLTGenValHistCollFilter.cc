@@ -48,9 +48,10 @@ void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<
       }
     }
 
+    // differentiate between event level and particle level variables
     std::vector<std::string> event_level_variables = {"AK4HT", "AK8HT", "MET"};
     if(std::find(event_level_variables.begin(), event_level_variables.end(), objType_) != event_level_variables.end()) {
-      // for these we only require the existence of a trigger object, but no matching
+      // for these event level variables we only require the existence of a trigger object, but no matching
       if(selectedObjects.size() > 0) for (auto& hist : hists_) hist->fill(obj);
     } else {
       // do a deltaR matching between trigger object and GEN object
@@ -62,10 +63,8 @@ void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<
       if(mindR2 < dR2limit_) for (auto& hist : hists_) hist->fill(obj);
     }
 
-
   }
 }
-
 
 // booker function for 1D hists
 void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig) {
@@ -83,7 +82,7 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, edm::ParameterS
   binLowEdges.reserve(binLowEdgesDouble.size());
   for (double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
 
-  // name and title will be systematically constructed
+  // name and title are systematically constructed
   std::string histname, histtitle;
   if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
     histname = objType_ + "_GEN_vs" + vsVar ;
@@ -124,7 +123,7 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, edm::ParameterS
   for (double lowEdge : binLowEdgesDoubleX) binLowEdgesX.push_back(lowEdge);
   for (double lowEdge : binLowEdgesDoubleY) binLowEdgesY.push_back(lowEdge);
 
-  // name and title will be systematically constructed
+  // name and title are systematically constructed
   std::string histname, histtitle;
   if(filter_ == "beforeAnyFilter") {
     histname = objType_ + "_GEN_2Dvs" + vsVarX_ + "_" + vsVarY_;

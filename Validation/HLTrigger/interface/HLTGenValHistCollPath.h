@@ -43,10 +43,8 @@ public:
   void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
-  // this is public as it is accessed by HLTGenValSource. Could be replaced by a getter.
-  std::string triggerPath_;
-
 private:
+  std::string triggerPath_;
   std::vector<HLTGenValHistCollFilter> collectionFilter_;
   std::vector<std::string> filters_;
   HLTConfigProvider hltConfig_;

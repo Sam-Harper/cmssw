@@ -1,22 +1,18 @@
-// -*- C++ -*-
+//********************************************************************************
 //
-// Package:    Validation/HLTrigger
-// Class:      HLTGenValSource
+//  Description:
+//    Producing and filling histograms for generator-level HLT path efficiency histograms. Harvested by a HLTGenValClient.
 //
-/**\class HLTGenValSource HLTGenValSource.cc Validation/HLTrigger/plugins/HLTGenValSource.cc
-
- Description: Producing and filling histograms for generator-level HLT path efficiency histograms, used by a HLTGenValCLient.
-
- Implementation:
-   Histograms for objects of a certain type are created for multiple paths chosen by the user: for all objects,
-   and for objects passing filters in the path, determined by deltaR matching.
-   Each HLTGenValSource can handle a single object type and any number of paths (and filters in them).
-*/
+// Implementation:
+//   Histograms for objects of a certain type are created for multiple paths chosen by the user: for all objects,
+//   and for objects passing filters in the path, determined by deltaR matching.
+//   Each HLTGenValSource can handle a single object type and any number of paths (and filters in them).
 //
-// Original Author:  Finn Jonathan Labe
+// Author:  Finn Jonathan Labe
 //         Created:  Thu, 21 Oct 2021 11:51:30 GMT
 //
-//
+//********************************************************************************
+
 
 // system include files
 #include <memory>
@@ -58,11 +54,6 @@
 
 // object that can be a GenJet, GenParticle or energy sum
 #include "Validation/HLTrigger/interface/HLTGenValObject.h"
-
-
-//
-// class declaration
-//
 
 class HLTGenValSource : public DQMEDAnalyzer {
 public:
@@ -106,6 +97,8 @@ private:
 
   // HLT config provider/getter
   HLTConfigProvider hltConfig_;
+
+  // some miscellaneous member variables
   std::vector<std::string> hltPathsToCheck_;
   std::set<std::string> hltPaths;
   double dR2limit_;
@@ -136,12 +129,10 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
 
 void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &iSetup) {
 
-  // Initialize hltConfig
-  // for cross-checking whether paths make sense
-  // later this could be used to determine all paths that relevant for certain GEN object
+  // Initialize hltConfig, for cross-checking whether chosen paths exist
   bool changedConfig;
   if (!hltConfig_.init(iRun, iSetup, hltProcessName_, changedConfig)) {
-    edm::LogError("HLTGenVal") << "Initialization of HLTConfigProvider failed!!";
+    edm::LogError("HLTGenValSource") << "Initialization of HLTConfigProvider failed!";
     return;
   }
 
@@ -158,16 +149,15 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
     if(!pathfound) notFoundPaths.push_back(i);
   }
   if(notFoundPaths.size() > 0) {
-    // probably this should instead be thrown as
-    std::cout << "The following paths could not be found: " << std::endl;
-    for (auto & path : notFoundPaths) std::cout << "   " << path << std::endl;
-    std::cout << "The list of all available paths is: " << std::endl;
-    for (auto & path : hltConfig_.triggerNames()) std::cout << "   " << path << std::endl;
+    // error handling in case some paths do not exist
+    std::string notFoundPathsMessage = "";
+    for (auto & path : notFoundPaths) notFoundPathsMessage += "- " + path + "\n";
+    edm::LogError("HLTGenValSource") << "The following paths could not be found and will not be used: " << std::endl << notFoundPathsMessage << std::endl;
   }
 
   // before creating the collections for each path, we'll store the needed configurations in a pset
-  // we'll copy this basis multiple times and add the paths later
-  // most of these options are not needed in the pathColl, but in the filterColl child
+  // we'll copy this base multiple times and add the respective path
+  // most of these options are not needed in the pathColl, but in the filterColls created in the pathColl
   edm::ParameterSet pathCollConfig;
   pathCollConfig.addParameter<std::string>("objType", objType_);
   pathCollConfig.addParameter<double>("dR2limit", dR2limit_);
@@ -290,6 +280,7 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   descriptions.addDefault(desc);
 }
 
+// this method handles the different object types and collections that can be used for efficiency calculation
 std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Event& iEvent) {
 
   std::vector<HLTGenValObject> objects; // the vector of objects to be filled
@@ -329,7 +320,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
       objects.emplace_back(reco::Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
     }
   }
-  else if(objType_ == "MET") {
+  else if(objType_ == "MET") { // MET, using genMET
     const auto& genMET = iEvent.getHandle(genMETToken_);
     if(genMET->size() > 0){
       auto genMETpt = (*genMET)[0].pt();
@@ -341,6 +332,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
   return objects;
 }
 
+// in case of GenParticles, a subset of the entire collection needs to be chosen
 std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& iEvent) {
 
   std::vector<HLTGenValObject> objects; // vector to be filled
@@ -348,7 +340,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& 
   const auto& genParticles = iEvent.getHandle(genParticleToken_); // getting all GenParticles
 
   // we need to ge the ID corresponding to the desired GenParticle type
-  int pdgID = -1; // setting to -1 should not be needed, but prevents warning :)
+  int pdgID = -1; // setting to -1 should not be needed, but prevents the compiler warning :)
   if(objType_ == "ele") pdgID = 11;
   else if(objType_ == "pho") pdgID = 22;
   else if(objType_ == "mu") pdgID = 13;

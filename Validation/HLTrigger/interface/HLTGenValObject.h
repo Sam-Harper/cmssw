@@ -1,15 +1,16 @@
 #ifndef Validation_HLTrigger_HLTGenValObject_h
 #define Validation_HLTrigger_HLTGenValObject_h
 
-/****************************************************************************
-* \class HLTGenValObject
-*
-* This class is a "wrapper" for the Generator level validation code, which unifies various object types.
-* It handles the different type of objects the code needs to run on: GenParticles, GenJets and event-level pt sums
-*
-* \author Finn Labe - University of Hamburg - Nov. 2021
-*
-****************************************************************************/
+//********************************************************************************
+//
+// Description:
+//   This class is a "wrapper" for the Generator level validation code, which unifies various object types.
+//   It handles the different type of objects the code needs to run on: GenParticles, GenJets and event-level energy sums
+//
+// Author : Finn Labe, UHH, Nov. 2021
+//
+//********************************************************************************
+
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/JetReco/interface/GenJet.h"

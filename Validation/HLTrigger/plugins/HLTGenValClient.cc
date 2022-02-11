@@ -1,12 +1,15 @@
-/*
- *  Class:HLTGenValClient
- *
- *  DQM histogram post processor of HLT Gen validation code
- *  Modyfied copy of DQMGenericClient
- *
- *  \author Finn Labe - UHH
- *  original by Junghwan Goh - SungKyunKwan University
- */
+//********************************************************************************
+//
+//  Description:
+//    DQM histogram post processor for the HLT Gen validation source module
+//    Given a folder name, this module will find histograms before and after
+//    HLT filters and produce efficiency histograms from these.
+//    The structure of this model is strongly inspired by the DQMGenericClient,
+//    replacing most user input parameters by the automatic parsing of the given directory.
+//
+//  Author: Finn Labe, UHH, Nov. 2021
+//  DQMGenericClient by Junghwan Goh - SungKyunKwan University
+//********************************************************************************
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -30,9 +33,6 @@
 #include <climits>
 #include <boost/tokenizer.hpp>
 
-using namespace std;
-using namespace edm;
-
 class HLTGenValClient : public DQMEDHarvester {
 public:
   HLTGenValClient(const edm::ParameterSet& pset);
@@ -52,14 +52,12 @@ public:
 
   void computeEfficiency(DQMStore::IBooker& ibooker,
                          DQMStore::IGetter& igetter,
-                         const std::string& startDir,
+                         const std::string& dirName,
                          const std::string& efficMEName,
                          const std::string& efficMETitle,
-                         const std::string& recoMEName,
-                         const std::string& simMEName
+                         const std::string& numeratorMEName,
+                         const std::string& denominatorMEName
                     );
-
-  void limitedFit(MonitorElement* srcME, MonitorElement* meanME, MonitorElement* sigmaME);
 
 private:
   TPRegexp metacharacters_;
@@ -76,7 +74,7 @@ private:
 
   std::vector<EfficOption> efficOptions_;
 
-  void generic_eff(TH1* denom, TH1* numer, MonitorElement* efficiencyHist);
+  void makeAllPlots(DQMStore::IBooker&, DQMStore::IGetter&);
 
   void findAllSubdirectories(DQMStore::IBooker& ibooker,
                              DQMStore::IGetter& igetter,
@@ -84,27 +82,23 @@ private:
                              std::set<std::string>* myList,
                              const TString& pattern);
 
-  void makeAllPlots(DQMStore::IBooker&, DQMStore::IGetter&);
+  void genericEff(TH1* denom, TH1* numer, MonitorElement* efficiencyHist);
+
 
 };
 
-typedef HLTGenValClient::MonitorElement ME;
-
-HLTGenValClient::HLTGenValClient(const ParameterSet& pset)
+HLTGenValClient::HLTGenValClient(const edm::ParameterSet& pset)
     : metacharacters_("[\\^\\$\\.\\*\\+\\?\\|\\(\\)\\{\\}\\[\\]]"), nonPerlWildcard_("\\w\\*|^\\*") {
-  typedef std::vector<edm::ParameterSet> VPSet;
-  typedef std::vector<std::string> vstring;
-  typedef boost::escaped_list_separator<char> elsc;
 
-  elsc commonEscapes("\\", " \t", "\'");
+  boost::escaped_list_separator<char> commonEscapes("\\", " \t", "\'");
 
   verbose_ = pset.getUntrackedParameter<unsigned int>("verbose", 0);
   runOnEndLumi_ = pset.getUntrackedParameter<bool>("runOnEndLumi", false);
   runOnEndJob_ = pset.getUntrackedParameter<bool>("runOnEndJob", true);
   makeGlobalEffPlot_ = pset.getUntrackedParameter<bool>("makeGlobalEffienciesPlot", true);
 
-  outputFileName_ = pset.getUntrackedParameter<string>("outputFileName", "");
-  subDirs_ = pset.getUntrackedParameter<vstring>("subDirs");
+  outputFileName_ = pset.getUntrackedParameter<std::string>("outputFileName", "");
+  subDirs_ = pset.getUntrackedParameter<std::vector<std::string>>("subDirs");
 
   isWildcardUsed_ = false;
 }
@@ -122,6 +116,9 @@ void HLTGenValClient::dqmEndRun(DQMStore::IBooker& ibooker,
                                  DQMStore::IGetter& igetter,
                                  edm::Run const&,
                                  edm::EventSetup const&) {
+
+  // so I am not sure what the following really means, but I jost wont touch it for the moment :D
+
   // Create new MEs in endRun, even though we are requested to do it in endJob.
   // This gives the QTests a chance to run, before summaries are created in
   // endJob. The negative side effect is that we cannot run the GenericClient
@@ -136,7 +133,7 @@ void HLTGenValClient::dqmEndRun(DQMStore::IBooker& ibooker,
 
   // needed to access the DQMStore::save method
   theDQM = nullptr;
-  theDQM = Service<DQMStore>().operator->();
+  theDQM = edm::Service<DQMStore>().operator->();
 
   if (runOnEndJob_) {
     makeAllPlots(ibooker, igetter);
@@ -146,14 +143,13 @@ void HLTGenValClient::dqmEndRun(DQMStore::IBooker& ibooker,
     theDQM->save(outputFileName_);
 }
 
+// the main method that creates the plots
 void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter& igetter) {
-  typedef vector<string> vstring;
 
   // Process wildcard in the sub-directory
-  set<string> subDirSet;
-
-  for (vstring::const_iterator iSubDir = subDirs_.begin(); iSubDir != subDirs_.end(); ++iSubDir) {
-    string subDir = *iSubDir;
+  std::set<std::string> subDirSet;
+  for (std::vector<std::string>::const_iterator iSubDir = subDirs_.begin(); iSubDir != subDirs_.end(); ++iSubDir) {
+    std::string subDir = *iSubDir;
 
     if (subDir[subDir.size() - 1] == '/')
       subDir.erase(subDir.size() - 1);
@@ -161,9 +157,9 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
     if (TString(subDir).Contains(metacharacters_)) {
       isWildcardUsed_ = true;
 
-      const string::size_type shiftPos = subDir.rfind('/');
-      const string searchPath = subDir.substr(0, shiftPos);
-      const string pattern = subDir.substr(shiftPos + 1, subDir.length());
+      const std::string::size_type shiftPos = subDir.rfind('/');
+      const std::string searchPath = subDir.substr(0, shiftPos);
+      const std::string pattern = subDir.substr(shiftPos + 1, subDir.length());
       //std::cout << "\n\n\n\nLooking for all subdirs of " << subDir << std::endl;
 
       findAllSubdirectories(ibooker, igetter, searchPath, &subDirSet, pattern);
@@ -173,16 +169,13 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
     }
   }
 
+  // loop through all sub-directories
+  // from the current implementation of the HLTGenValSource, we expect all histograms in a single directory
+  // however, this module is also capable of handling sub-directories, if needed
+  for (std::set<std::string>::const_iterator iSubDir = subDirSet.begin(); iSubDir != subDirSet.end(); ++iSubDir) {
+    const std::string& dirName = *iSubDir;
 
-  for (set<string>::const_iterator iSubDir = subDirSet.begin(); iSubDir != subDirSet.end(); ++iSubDir) {
-    const string& dirName = *iSubDir;
-
-    // construct efficiency options automatically
-    // we need an EfficOption object per efficiency
-    // opt.name
-    // opt.title
-    // opt.numerator
-    // opt.denominator
+    // construct efficiency options automatically from systematically names histograms^
     auto contents = igetter.getAllContents(dirName);
     for (auto & content : contents) {
 
@@ -196,17 +189,17 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
       }
 
       if(seglist.size() == 3) { // this should be the only "proper" files we want to look at
-        if(seglist.at(1) == "GEN") continue; // this is the before hist, if we stumble across it we just ignore it
+        if(seglist.at(1) == "GEN") continue; // this is the "before" hist, we won't create an effiency from this
 
         // first we determing whether we have the 1D or 2D case
         if(seglist.at(2).rfind("2D", 0) == 0) {
 
           // 2D case
           EfficOption opt;
-          opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff";
-          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency";
-          opt.numerator = content->getName();
-          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2);
+          opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff"; // efficiency histogram name
+          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency"; // efficiency histogram title
+          opt.numerator = content->getName(); // numerator histogram (after a filter)
+          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2); // denominator histogram (before all filters)
 
           efficOptions_.push_back(opt);
 
@@ -214,10 +207,10 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
 
           // 1D case
           EfficOption opt;
-          opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff";
-          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency";
-          opt.numerator = content->getName();
-          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2);
+          opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff"; // efficiency histogram name
+          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency"; // efficiency histogram title
+          opt.numerator = content->getName(); // numerator histogram (after a filter)
+          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2); // denominator histogram (before all filters)
 
           efficOptions_.push_back(opt);
 
@@ -225,91 +218,84 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
       }
     }
 
-    for (vector<EfficOption>::const_iterator efficOption = efficOptions_.begin(); efficOption != efficOptions_.end();
-         ++efficOption) {
-      computeEfficiency(ibooker,
-                        igetter,
-                        dirName,
-                        efficOption->name,
-                        efficOption->title,
-                        efficOption->numerator,
-                        efficOption->denominator);
+    // now that we have all EfficOptions, we create the histograms
+    for (std::vector<EfficOption>::const_iterator efficOption = efficOptions_.begin(); efficOption != efficOptions_.end(); ++efficOption) {
+      computeEfficiency(ibooker, igetter, dirName, efficOption->name, efficOption->title, efficOption->numerator, efficOption->denominator);
     }
+
   }
 }
 
+// main method of efficiency computation, called once for each EfficOption
 void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
                                          DQMStore::IGetter& igetter,
-                                         const string& startDir,
-                                         const string& efficMEName,
-                                         const string& efficMETitle,
-                                         const string& recoMEName,
-                                         const string& simMEName) {
+                                         const std::string& dirName,
+                                         const std::string& efficMEName,
+                                         const std::string& efficMETitle,
+                                         const std::string& numeratorMEName,
+                                         const std::string& denominatorMEName) {
 
-  if (!igetter.dirExists(startDir)) {
+  // checking if directory exists
+  if (!igetter.dirExists(dirName)) {
     if (verbose_ >= 2 || (verbose_ == 1 && !isWildcardUsed_)) {
-      LogInfo("HLTGenValClient") << "computeEfficiency() : "
-                                  << "Cannot find sub-directory " << startDir << endl;
+      edm::LogError("HLTGenValClient") << "computeEfficiency() : " << "Cannot find sub-directory " << dirName << std::endl;
     }
     return;
   }
 
   ibooker.cd();
 
-  ME* simME = igetter.get(startDir + "/" + simMEName);
-  ME* recoME = igetter.get(startDir + "/" + recoMEName);
+  // getting input MEs
+  HLTGenValClient::MonitorElement* denominatorME = igetter.get(dirName + "/" + denominatorMEName);
+  HLTGenValClient::MonitorElement* numeratorME = igetter.get(dirName + "/" + numeratorMEName);
 
-  if (!simME) {
+  // checking of input MEs exist
+  if (!denominatorME) {
     if (verbose_ >= 2 || (verbose_ == 1 && !isWildcardUsed_)) {
-      LogInfo("HLTGenValClient") << "computeEfficiency() : "
-                                  << "No sim-ME '" << simMEName << "' found\n";
+      edm::LogError("HLTGenValClient") << "computeEfficiency() : " << "No denominator-ME '" << denominatorMEName << "' found\n";
+    }
+    return;
+  }
+  if (!numeratorME) {
+    if (verbose_ >= 2 || (verbose_ == 1 && !isWildcardUsed_)) {
+      edm::LogError("HLTGenValClient") << "computeEfficiency() : " << "No numerator-ME '" << numeratorMEName << "' found\n";
     }
     return;
   }
 
-  if (!recoME) {
-    if (verbose_ >= 2 || (verbose_ == 1 && !isWildcardUsed_)) {
-      LogInfo("HLTGenValClient") << "computeEfficiency() : "
-                                  << "No reco-ME '" << recoMEName << "' found\n";
-    }
-    return;
-  }
 
   // Treat everything as the base class, TH1
+  TH1* hDenominator = denominatorME->getTH1();
+  TH1* hNumerator = numeratorME->getTH1();
 
-  TH1* hSim = simME->getTH1();
-  TH1* hReco = recoME->getTH1();
-
-  if (!hSim || !hReco) {
+  // check if TH1 extraction has succeeded
+  if (!hDenominator || !hNumerator) {
     if (verbose_ >= 2 || (verbose_ == 1 && !isWildcardUsed_)) {
-      LogInfo("HLTGenValClient") << "computeEfficiency() : "
-                                  << "Cannot create TH1 from ME\n";
+      edm::LogError("HLTGenValClient") << "computeEfficiency() : " << "Cannot create TH1 from ME\n";
     }
     return;
   }
 
-  string efficDir = startDir;
-  string newEfficMEName = efficMEName;
-  string::size_type shiftPos;
-  if (string::npos != (shiftPos = efficMEName.rfind('/'))) {
+  // preparing efficiency output path and name
+  std::string efficDir = dirName;
+  std::string newEfficMEName = efficMEName;
+  std::string::size_type shiftPos;
+  if (std::string::npos != (shiftPos = efficMEName.rfind('/'))) {
     efficDir += "/" + efficMEName.substr(0, shiftPos);
     newEfficMEName.erase(0, shiftPos + 1);
   }
   ibooker.setCurrentFolder(efficDir);
 
-  TH1* efficHist = (TH1*)hSim->Clone(newEfficMEName.c_str());
+  // creating the efficiency MonitorElement
+  HLTGenValClient::MonitorElement* efficME = nullptr;
+
+  // We need to know what kind of TH1 we have
+  // That information is obtained from the class name of the hDenominator
+  // Then we use the appropriate booking function
+  TH1* efficHist = (TH1*) hDenominator->Clone(newEfficMEName.c_str());
   efficHist->SetTitle(efficMETitle.c_str());
-
-  // Here is where you have trouble --- you need
-  // to understand what type of hist you have.
-
-  ME* efficME = nullptr;
-
-  // Parse the class name
-  // This works, but there might be a better way
   TClass* myHistClass = efficHist->IsA();
   TString histClassName = myHistClass->GetName();
-
   if (histClassName == "TH1F") {
     efficME = ibooker.book1D(newEfficMEName, (TH1F*)efficHist);
   } else if (histClassName == "TH2F") {
@@ -317,112 +303,121 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
   } else if (histClassName == "TH3F") {
     efficME = ibooker.book3D(newEfficMEName, (TH3F*)efficHist);
   }
-
   delete efficHist;
 
+  // checking whether efficME was succesfully created
   if (!efficME) {
-    LogInfo("HLTGenValClient") << "computeEfficiency() : "
-                                << "Cannot book effic-ME from the DQM\n";
+    edm::LogError("HLTGenValClient") << "computeEfficiency() : " << "Cannot book effic-ME from the DQM\n";
     return;
   }
 
-  generic_eff(hSim, hReco, efficME);
+  // actually calculating the efficiency and filling the ME
+  genericEff(hDenominator, hNumerator, efficME);
+  efficME->setEntries(denominatorME->getEntries());
 
-  efficME->setEntries(simME->getEntries());
-
-  // Global efficiency
+  // Putting total efficiency in "GLobal efficiencies" histogram
   if (makeGlobalEffPlot_) {
-    ME* globalEfficME = igetter.get(efficDir + "/globalEfficiencies");
-    if (!globalEfficME)
+
+    // getting global efficiency ME
+    HLTGenValClient::MonitorElement* globalEfficME = igetter.get(efficDir + "/globalEfficiencies");
+    if (!globalEfficME) // in case it does not exist yet, we create it
       globalEfficME = ibooker.book1D("globalEfficiencies", "Global efficiencies", 1, 0, 1);
-    if (!globalEfficME) {
-      LogInfo("HLTGenValClient") << "computeEfficiency() : "
-                                  << "Cannot book globalEffic-ME from the DQM\n";
+    if (!globalEfficME) { // error handling in case creation failed
+      edm::LogError("HLTGenValClient") << "computeEfficiency() : " << "Cannot book globalEffic-ME from the DQM\n";
       return;
     }
     globalEfficME->setEfficiencyFlag();
+
+    // extracting histogram
     TH1F* hGlobalEffic = globalEfficME->getTH1F();
     if (!hGlobalEffic) {
-      LogInfo("HLTGenValClient") << "computeEfficiency() : "
-                                  << "Cannot create TH1F from ME, globalEfficME\n";
+      edm::LogError("HLTGenValClient") << "computeEfficiency() : "  << "Cannot create TH1F from ME, globalEfficME\n";
       return;
     }
 
-    const float nSimAll = hSim->GetEntries();
-    const float nRecoAll = hReco->GetEntries();
+    // getting total counts
+    const float nDenominatorAll = hDenominator->GetEntries();
+    const float nNumeratorAll = hNumerator->GetEntries();
+
+    // calculating total efficiency
     float efficAll = 0;
     float errorAll = 0;
-    efficAll = nSimAll ? nRecoAll / nSimAll : 0;
-    errorAll = nSimAll && efficAll < 1 ? sqrt(efficAll * (1 - efficAll) / nSimAll) : 0;
+    efficAll = nDenominatorAll ? nNumeratorAll / nDenominatorAll : 0;
+    errorAll = nDenominatorAll && efficAll < 1 ? sqrt(efficAll * (1 - efficAll) / nDenominatorAll) : 0;
 
+    // Filling the histogram bin
     const int iBin = hGlobalEffic->Fill(newEfficMEName.c_str(), 0);
     hGlobalEffic->SetBinContent(iBin, efficAll);
     hGlobalEffic->SetBinError(iBin, errorAll);
   }
 }
 
-//=================================
-
+// method to find all subdirectories of the given directory
+// goal is to fill myList with paths to all subdirectories
 void HLTGenValClient::findAllSubdirectories(DQMStore::IBooker& ibooker,
                                              DQMStore::IGetter& igetter,
                                              std::string dir,
                                              std::set<std::string>* myList,
                                              const TString& _pattern = TString("")) {
   TString pattern = _pattern;
+
+  // checking if directory exists
   if (!igetter.dirExists(dir)) {
-    LogError("HLTGenValClient") << " HLTGenValClient::findAllSubdirectories ==> Missing folder " << dir << " !!!";
+    edm::LogError("HLTGenValClient") << " HLTGenValClient::findAllSubdirectories ==> Missing folder " << dir << " !!!";
     return;
   }
+
+  // replacing wildcards
   if (pattern != "") {
-    if (pattern.Contains(nonPerlWildcard_))
-      pattern.ReplaceAll("*", ".*");
+    if (pattern.Contains(nonPerlWildcard_)) pattern.ReplaceAll("*", ".*");
     TPRegexp regexp(pattern);
     ibooker.cd(dir);
-    vector<string> foundDirs = igetter.getSubdirs();
-    for (vector<string>::const_iterator iDir = foundDirs.begin(); iDir != foundDirs.end(); ++iDir) {
+    std::vector<std::string> foundDirs = igetter.getSubdirs();
+    for (std::vector<std::string>::const_iterator iDir = foundDirs.begin(); iDir != foundDirs.end(); ++iDir) {
       TString dirName = iDir->substr(iDir->rfind('/') + 1, iDir->length());
-      if (dirName.Contains(regexp))
-        findAllSubdirectories(ibooker, igetter, *iDir, myList);
+      if (dirName.Contains(regexp)) findAllSubdirectories(ibooker, igetter, *iDir, myList);
     }
   }
-  //std::cout << "Looking for directory " << dir ;
   else if (igetter.dirExists(dir)) {
-    //std::cout << "... it exists! Inserting it into the list ";
+
+    // we have found a subdirectory - adding it to the list
     myList->insert(dir);
-    //std::cout << "... now list has size " << myList->size() << std::endl;
+
+    // moving into the found subdirectory and recursively continue
     ibooker.cd(dir);
     findAllSubdirectories(ibooker, igetter, dir, myList, "*");
-  } else {
-    //std::cout << "... DOES NOT EXIST!!! Skip bogus dir" << std::endl;
 
-    LogInfo("HLTGenValClient") << "Trying to find sub-directories of " << dir << " failed because " << dir
-                                << " does not exist";
+  } else {
+
+    // error handling in case found directory does not exist
+    edm::LogError("HLTGenValClient") << "Trying to find sub-directories of " << dir << " failed because " << dir << " does not exist";
   }
   return;
 }
 
-void HLTGenValClient::generic_eff(TH1* denom, TH1* numer, MonitorElement* efficiencyHist) {
+// efficiency calculation from two histograms
+void HLTGenValClient::genericEff(TH1* denom, TH1* numer, MonitorElement* efficiencyHist) {
+
+  // looping over all bins. Up to three dimentions can be handled
+  // in case of less dimensions, the inner for loops are excecuted only once
   for (int iBinX = 1; iBinX < denom->GetNbinsX() + 1; iBinX++) {
     for (int iBinY = 1; iBinY < denom->GetNbinsY() + 1; iBinY++) {
       for (int iBinZ = 1; iBinZ < denom->GetNbinsZ() + 1; iBinZ++) {
         int globalBinNum = denom->GetBin(iBinX, iBinY, iBinZ);
 
+        // getting numerator and denominator values
         float numerVal = numer->GetBinContent(globalBinNum);
         float denomVal = denom->GetBinContent(globalBinNum);
 
+        // calculating effiency
         float effVal = 0;
-
         effVal = denomVal ? numerVal / denomVal : 0;
 
+        // calculating error
         float errVal = 0;
         errVal = (denomVal && (effVal <= 1)) ? sqrt(effVal * (1 - effVal) / denomVal) : 0;
 
-        LogDebug("HLTGenValClient") << "(iBinX, iBinY, iBinZ)  = " << iBinX << ", " << iBinY << ", " << iBinZ
-                                     << "), global bin =  " << globalBinNum << "eff = " << numerVal << "  /  "
-                                     << denomVal << " =  " << effVal << " ... setting the error for that bin ... "
-                                     << endl
-                                     << endl;
-
+        // inserting value into the efficiency histogram
         efficiencyHist->setBinContent(globalBinNum, effVal);
         efficiencyHist->setBinError(globalBinNum, errVal);
         efficiencyHist->setEfficiencyFlag();

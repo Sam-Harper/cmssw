@@ -1,5 +1,6 @@
 #include "Validation/HLTrigger/interface/HLTGenValHistCollPath.h"
 
+// constructor
 HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, HLTConfigProvider& hltConfig) :
   hltConfig_(hltConfig) {
 
@@ -7,7 +8,7 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
   doOnlyLastFilter_ = pathCollConfig.getParameter<bool>("doOnlyLastFilter");
 
   // before creating the collections for each filter, we'll store the needed configurations in a pset
-  // we'll copy this basis multiple times and add the paths later
+  // we'll copy this basis multiple times and add the respective path later
   edm::ParameterSet filterCollConfig;
   filterCollConfig.addParameter<std::string>("objType", pathCollConfig.getParameter<std::string>("objType"));
   filterCollConfig.addParameter<std::string>("hltProcessName", pathCollConfig.getParameter<std::string>("hltProcessName"));
@@ -37,7 +38,6 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
   }
 }
 
-
 edm::ParameterSetDescription HLTGenValHistCollPath::makePSetDescription() {
   edm::ParameterSetDescription desc;
   desc.add<std::string>("objType", "");
@@ -48,15 +48,14 @@ edm::ParameterSetDescription HLTGenValHistCollPath::makePSetDescription() {
   return desc;
 }
 
-
 // hist booking function
-// this just calls the booking for each object in the collection_filter
+// this just calls the booking for each object in the the filter collection
 void HLTGenValHistCollPath::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {
   for (auto& collection_filter : collectionFilter_) collection_filter.bookHists(iBooker, histConfigs, histConfigs2D);
 }
 
 // hist filling function
-// this just calls the filling for each object in the collection_filter
+// this just calls the filling for each object in the filter collection
 void HLTGenValHistCollPath::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
   for (auto& collection_filter : collectionFilter_) collection_filter.fillHists(obj, triggerEvent);
 }

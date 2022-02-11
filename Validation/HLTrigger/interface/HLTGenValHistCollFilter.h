@@ -4,9 +4,9 @@
 //********************************************************************************
 //
 // Description:
-//   This contains a collection of HLTGenvalHists used to measure the efficiency of a
+//   This class contains a collection of HLTGenvalHists used to measure the efficiency of a
 //   specified filter. It is resonsible for booking and filling the histograms of all vsVars
-//   histograms are desired for a specific filter.
+//   histograms that are created for a specific filter.
 //
 // Author : Finn Labe, UHH, Oct. 2021
 // (Heavily borrowed from Sam Harpers HLTDQMFilterEffHists)
@@ -31,9 +31,7 @@
 #include <utility>
 
 // class containing a collection of HLTGenValHist for a specific filter
-// at object creation time, the object type (used for systematically naming the histogram),
-// path and dR2limit (for deltaR matching) need to be specified
-// functions for initial booking of hists, and filling of hists for a single object, are available
+// functions for initial booking of hists, and filling of hists for a single object are available
 class HLTGenValHistCollFilter {
 public:
   typedef dqm::legacy::MonitorElement MonitorElement;

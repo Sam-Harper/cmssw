@@ -4,10 +4,9 @@
 //********************************************************************************
 //
 // Description:
-//   Histogram "holder" class.
-//   Stolen from Sam Harpers HLTDQMHist
-//
-// Implimentation:
+//   Histogram holder class for the Generator level HLT validation
+//   Handling and filling of 1D and 2D histograms is done by this class.
+//   Strongly inspired by Sam Harpers HLTDQMHist
 //
 //
 // Author : Finn Labe, UHH, Oct. 2021
