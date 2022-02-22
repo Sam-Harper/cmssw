@@ -83,13 +83,18 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, edm::ParameterS
   for (double lowEdge : binLowEdgesDouble) binLowEdges.push_back(lowEdge);
 
   // name and title are systematically constructed
+
+  // remove potential leading "-" (which denotes that that trigger is ignored)
+  std::string filtername = filter_;
+  if(filtername.rfind("-", 0) == 0) filtername.erase(0, 1);
+
   std::string histname, histtitle;
   if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
     histname = objType_ + "_GEN_vs" + vsVar ;
     histtitle = objType_ + " GEN vs " + vsVar;
   } else { // naming of all regular hists
-    histname = objType_ + "_" + filter_ + "_vs" + vsVar;
-    histtitle = objType_ + "_" + filter_ + "_vs" + vsVar;
+    histname = objType_ + "_" + filtername + "_vs" + vsVar;
+    histtitle = objType_ + "_" + filtername + "_vs" + vsVar;
   }
 
   auto me = iBooker.book1D(histname.c_str(), histtitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);   // booking MonitorElement
@@ -124,13 +129,18 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, edm::ParameterS
   for (double lowEdge : binLowEdgesDoubleY) binLowEdgesY.push_back(lowEdge);
 
   // name and title are systematically constructed
+
+  // remove potential leading "-" (which denotes that that trigger is ignored)
+  std::string filtername = filter_;
+  if(filtername.rfind("-", 0) == 0) filtername.erase(0, 1);
+
   std::string histname, histtitle;
   if(filter_ == "beforeAnyFilter") {
     histname = objType_ + "_GEN_2Dvs" + vsVarX_ + "_" + vsVarY_;
     histtitle = objType_ + " GEN 2D vs " + vsVarX_ + " " + vsVarY_;
   } else {
-    histname = objType_ + "_" + filter_ + "_2Dvs" + vsVarX_ + vsVarY_;
-    histtitle = objType_ + " " + filter_ + " 2D vs" + vsVarX_ + " " + vsVarY_;
+    histname = objType_ + "_" + filtername + "_2Dvs" + vsVarX_ + vsVarY_;
+    histtitle = objType_ + " " + filtername + " 2D vs" + vsVarX_ + " " + vsVarY_;
   }
 
   auto me = iBooker.book2D(histname.c_str(), histtitle.c_str(), binLowEdgesX.size() - 1, &binLowEdgesX[0], binLowEdgesY.size() - 1, &binLowEdgesY[0]);
