@@ -41,17 +41,17 @@ public:
 
   static edm::ParameterSetDescription makePSetDescription();
 
-  void bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D);
+  void bookHists(DQMStore::IBooker& iBooker, const std::vector<edm::ParameterSet>& histConfigs, const std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
 private:
-  void book1D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig);
-  void book2D(DQMStore::IBooker& iBooker, edm::ParameterSet& histConfig2D);
+  void book1D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig);
+  void book2D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig2D);
 
   std::vector<std::unique_ptr<HLTGenValHist>> hists_; // the collection of histograms
   std::string objType_;
   std::string filter_;
-  std::string hltprocessname_;
+  std::string hltProcessName_;
   double dR2limit_;
 };
 

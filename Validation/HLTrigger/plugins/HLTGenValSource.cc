@@ -138,20 +138,20 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
 
   // Get the set of trigger paths we want to make plots for
   std::vector<std::string> notFoundPaths;
-  for (auto const &i : hltPathsToCheck_) {
+  for (auto const &pathToCheck : hltPathsToCheck_) {
     bool pathfound = false;
-    for (auto const &j : hltConfig_.triggerNames()) {
-      if (j.find(i) != std::string::npos) {
-        hltPaths.insert(j);
+    for (auto const &pathFromConfig : hltConfig_.triggerNames()) {
+      if (pathFromConfig.find(pathToCheck) != std::string::npos) {
+        hltPaths.insert(pathFromConfig);
         pathfound = true;
       }
     }
-    if(!pathfound) notFoundPaths.push_back(i);
+    if(!pathfound) notFoundPaths.push_back(pathToCheck);
   }
   if(notFoundPaths.size() > 0) {
     // error handling in case some paths do not exist
     std::string notFoundPathsMessage = "";
-    for (auto & path : notFoundPaths) notFoundPathsMessage += "- " + path + "\n";
+    for (const auto & path : notFoundPaths) notFoundPathsMessage += "- " + path + "\n";
     edm::LogError("HLTGenValSource") << "The following paths could not be found and will not be used: " << std::endl << notFoundPathsMessage << std::endl;
   }
 
@@ -170,10 +170,9 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   collectionPath_.emplace_back(HLTGenValHistCollPath(pathCollConfigBefore, hltConfig_));
 
   // creating a histogram collection for each path
-  std::set<std::string>::iterator iPath;
-  for (iPath = hltPaths.begin(); iPath != hltPaths.end(); iPath++) {
+  for (const auto & path : hltPaths) {
     edm::ParameterSet pathCollConfigStep = pathCollConfig;
-    pathCollConfigStep.addParameter<std::string>("triggerPath", *iPath);
+    pathCollConfigStep.addParameter<std::string>("triggerPath", path);
     collectionPath_.emplace_back(HLTGenValHistCollPath(pathCollConfigStep, hltConfig_));
   }
 
@@ -183,14 +182,14 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
 void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   // creating the collection of HLTGenValObjects
-  std::vector<HLTGenValObject> objects = getObjectCollection(iEvent);
+  const std::vector<HLTGenValObject> objects = getObjectCollection(iEvent);
 
   // init triggerEvent, which is always needed
   edm::Handle<trigger::TriggerEvent> triggerEvent;
   iEvent.getByToken(trigEventToken_, triggerEvent);
 
   // loop over all objects and fill hists
-  for (auto & object : objects) {
+  for (const auto & object : objects) {
     for (auto& collection_path : collectionPath_) {
       collection_path.fillHists(object, triggerEvent);
     }
@@ -286,8 +285,8 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
   std::vector<HLTGenValObject> objects; // the vector of objects to be filled
 
   // handle object type
-  std::vector<std::string> implemented_GenParticles = {"ele", "pho", "mu", "tau"};
-  if(std::find(implemented_GenParticles.begin(), implemented_GenParticles.end(), objType_) != implemented_GenParticles.end()) {
+  std::vector<std::string> implementedGenParticles = {"ele", "pho", "mu", "tau"};
+  if(std::find(implementedGenParticles.begin(), implementedGenParticles.end(), objType_) != implementedGenParticles.end()) {
     objects = getGenParticles(iEvent);
   }
   else if(objType_ == "AK4jet") { // ak4 jets, using the ak4GenJets collection

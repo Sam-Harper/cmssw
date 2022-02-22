@@ -131,8 +131,6 @@ void HLTGenValClient::dqmEndRun(DQMStore::IBooker& ibooker,
   // correct results. Also, all operations should be idempotent; running them
   // more than once does no harm.
 
-  // needed to access the DQMStore::save method
-  theDQM = nullptr;
   theDQM = edm::Service<DQMStore>().operator->();
 
   if (runOnEndJob_) {
@@ -148,8 +146,7 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
 
   // Process wildcard in the sub-directory
   std::set<std::string> subDirSet;
-  for (std::vector<std::string>::const_iterator iSubDir = subDirs_.begin(); iSubDir != subDirs_.end(); ++iSubDir) {
-    std::string subDir = *iSubDir;
+  for (auto & subDir : subDirs_) {
 
     if (subDir[subDir.size() - 1] == '/')
       subDir.erase(subDir.size() - 1);
@@ -160,7 +157,6 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
       const std::string::size_type shiftPos = subDir.rfind('/');
       const std::string searchPath = subDir.substr(0, shiftPos);
       const std::string pattern = subDir.substr(shiftPos + 1, subDir.length());
-      //std::cout << "\n\n\n\nLooking for all subdirs of " << subDir << std::endl;
 
       findAllSubdirectories(ibooker, igetter, searchPath, &subDirSet, pattern);
 
@@ -176,8 +172,8 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
     const std::string& dirName = *iSubDir;
 
     // construct efficiency options automatically from systematically names histograms^
-    auto contents = igetter.getAllContents(dirName);
-    for (auto & content : contents) {
+    const auto contents = igetter.getAllContents(dirName);
+    for (const auto & content : contents) {
 
       // splitting the input string
       std::stringstream namestream(content->getName());
@@ -219,8 +215,8 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
     }
 
     // now that we have all EfficOptions, we create the histograms
-    for (std::vector<EfficOption>::const_iterator efficOption = efficOptions_.begin(); efficOption != efficOptions_.end(); ++efficOption) {
-      computeEfficiency(ibooker, igetter, dirName, efficOption->name, efficOption->title, efficOption->numerator, efficOption->denominator);
+    for (const auto& efficOption : efficOptions_){
+      computeEfficiency(ibooker, igetter, dirName, efficOption.name, efficOption.title, efficOption.numerator, efficOption.denominator);
     }
 
   }
@@ -292,7 +288,7 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
   // We need to know what kind of TH1 we have
   // That information is obtained from the class name of the hDenominator
   // Then we use the appropriate booking function
-  TH1* efficHist = (TH1*) hDenominator->Clone(newEfficMEName.c_str());
+  TH1* efficHist = static_cast<TH1*>(hDenominator->Clone(newEfficMEName.c_str()));
   efficHist->SetTitle(efficMETitle.c_str());
   TClass* myHistClass = efficHist->IsA();
   TString histClassName = myHistClass->GetName();
@@ -359,7 +355,7 @@ void HLTGenValClient::findAllSubdirectories(DQMStore::IBooker& ibooker,
                                              std::string dir,
                                              std::set<std::string>* myList,
                                              const TString& _pattern = TString("")) {
-  TString pattern = _pattern;
+  TString patternTmp = _pattern;
 
   // checking if directory exists
   if (!igetter.dirExists(dir)) {
@@ -368,14 +364,14 @@ void HLTGenValClient::findAllSubdirectories(DQMStore::IBooker& ibooker,
   }
 
   // replacing wildcards
-  if (pattern != "") {
-    if (pattern.Contains(nonPerlWildcard_)) pattern.ReplaceAll("*", ".*");
-    TPRegexp regexp(pattern);
+  if (patternTmp != "") {
+    if (patternTmp.Contains(nonPerlWildcard_)) patternTmp.ReplaceAll("*", ".*");
+    TPRegexp regexp(patternTmp);
     ibooker.cd(dir);
     std::vector<std::string> foundDirs = igetter.getSubdirs();
-    for (std::vector<std::string>::const_iterator iDir = foundDirs.begin(); iDir != foundDirs.end(); ++iDir) {
-      TString dirName = iDir->substr(iDir->rfind('/') + 1, iDir->length());
-      if (dirName.Contains(regexp)) findAllSubdirectories(ibooker, igetter, *iDir, myList);
+    for (const auto & iDir : foundDirs) {
+      TString dirName = iDir.substr(iDir.rfind('/') + 1, iDir.length());
+      if (dirName.Contains(regexp)) findAllSubdirectories(ibooker, igetter, iDir, myList);
     }
   }
   else if (igetter.dirExists(dir)) {

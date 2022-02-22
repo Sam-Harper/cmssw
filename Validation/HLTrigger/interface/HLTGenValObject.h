@@ -36,9 +36,6 @@ public:
   HLTGenValObject(const reco::Candidate::PolarLorentzVector& p)
       : p4Polar_(p), p4Cartesian_(p) {}
 
-  // destructor
-  ~HLTGenValObject() {}
-
   // object functions, for usage of HLTGenValObjects by other modules
   double pt() const { return p4Polar_.pt(); }
   double eta() const { return p4Polar_.eta(); }
