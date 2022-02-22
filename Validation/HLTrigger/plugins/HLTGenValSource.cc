@@ -350,8 +350,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& 
   for(size_t i = 0; i < genParticles->size(); ++ i) {
     const reco::GenParticle p = (*genParticles)[i];
 
-    // only select status 1 with correct ID
-    if (p.status() != 1) continue;
+    // only GenParticles with correct ID
     if (abs(p.pdgId()) != pdgID) continue;
 
     // checking if particle comes from "hard process"
