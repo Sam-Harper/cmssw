@@ -289,9 +289,10 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
   // That information is obtained from the class name of the hDenominator
   // Then we use the appropriate booking function
   TH1* efficHist = static_cast<TH1*>(hDenominator->Clone(newEfficMEName.c_str()));
+  efficHist->SetDirectory(0);
   efficHist->SetTitle(efficMETitle.c_str());
   TClass* myHistClass = efficHist->IsA();
-  TString histClassName = myHistClass->GetName();
+  std::string histClassName = myHistClass->GetName();
   if (histClassName == "TH1F") {
     efficME = ibooker.book1D(newEfficMEName, (TH1F*)efficHist);
   } else if (histClassName == "TH2F") {
