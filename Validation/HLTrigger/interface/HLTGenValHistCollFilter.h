@@ -50,6 +50,7 @@ private:
 
   std::vector<std::unique_ptr<HLTGenValHist>> hists_; // the collection of histograms
   std::string objType_;
+  std::string tag_;
   std::string filter_;
   std::string hltProcessName_;
   double dR2limit_;

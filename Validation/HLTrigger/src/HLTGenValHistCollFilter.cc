@@ -3,6 +3,7 @@
 // constructor
 HLTGenValHistCollFilter::HLTGenValHistCollFilter(edm::ParameterSet filterCollConfig) {
   objType_ = filterCollConfig.getParameter<std::string>("objType");
+  tag_ = filterCollConfig.getParameter<std::string>("tag");
   filter_ = filterCollConfig.getParameter<std::string>("filterName");
   hltProcessName_ = filterCollConfig.getParameter<std::string>("hltProcessName");
   dR2limit_ = filterCollConfig.getParameter<double>("dR2limit");
@@ -11,6 +12,7 @@ HLTGenValHistCollFilter::HLTGenValHistCollFilter(edm::ParameterSet filterCollCon
 edm::ParameterSetDescription HLTGenValHistCollFilter::makePSetDescription() {
   edm::ParameterSetDescription desc;
   desc.add<std::string>("objType", "");
+  desc.add<std::string>("tag", "");
   desc.add<std::string>("hltProcessName", "HLT");
   desc.add<double>("dR2limit", 0.1);
   desc.add<std::string>("filterName", "");
@@ -49,8 +51,8 @@ void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<
     }
 
     // differentiate between event level and particle level variables
-    std::vector<std::string> event_level_variables = {"AK4HT", "AK8HT", "MET"};
-    if(std::find(event_level_variables.begin(), event_level_variables.end(), objType_) != event_level_variables.end()) {
+    std::vector<std::string> eventLevelVariables = {"AK4HT", "AK8HT", "MET"};
+    if(std::find(eventLevelVariables.begin(), eventLevelVariables.end(), objType_) != eventLevelVariables.end()) {
       // for these event level variables we only require the existence of a trigger object, but no matching
       if(selectedObjects.size() > 0) for (auto& hist : hists_) hist->fill(obj);
     } else {
@@ -88,13 +90,17 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   std::string filterName = filter_;
   if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
 
+  // if a label is set, we add it after the objType_
+  std::string objTypeString = objType_;
+  if(tag_ != "") objTypeString += "_"+tag_;
+
   std::string histName, histTitle;
   if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
-    histName = objType_ + "_GEN_vs" + vsVar ;
-    histTitle = objType_ + " GEN vs " + vsVar;
+    histName = objTypeString + "_GEN_vs" + vsVar ;
+    histTitle = objTypeString + " GEN vs " + vsVar;
   } else { // naming of all regular hists
-    histName = objType_ + "_" + filterName + "_vs" + vsVar;
-    histTitle = objType_ + "_" + filterName + "_vs" + vsVar;
+    histName = objTypeString + "_" + filterName + "_vs" + vsVar;
+    histTitle = objTypeString + "_" + filterName + "_vs" + vsVar;
   }
 
   auto me = iBooker.book1D(histName.c_str(), histTitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);   // booking MonitorElement
@@ -134,13 +140,17 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, const edm::Para
   std::string filterName = filter_;
   if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
 
+  // if a label is set, we add it after the objType_
+  std::string objTypeString = objType_;
+  if(tag_ != "") objTypeString += "_"+tag_;
+
   std::string histName, histTitle;
   if(filter_ == "beforeAnyFilter") {
-    histName = objType_ + "_GEN_2Dvs" + vsVarX + "_" + vsVarY;
-    histTitle = objType_ + " GEN 2D vs " + vsVarX + " " + vsVarY;
+    histName = objTypeString + "_GEN_2Dvs" + vsVarX + "_" + vsVarY;
+    histTitle = objTypeString + " GEN 2D vs " + vsVarX + " " + vsVarY;
   } else {
-    histName = objType_ + "_" + filterName + "_2Dvs" + vsVarX + vsVarY;
-    histTitle = objType_ + " " + filterName + " 2D vs" + vsVarX + " " + vsVarY;
+    histName = objTypeString + "_" + filterName + "_2Dvs" + vsVarX + vsVarY;
+    histTitle = objTypeString + " " + filterName + " 2D vs" + vsVarX + " " + vsVarY;
   }
 
   auto me = iBooker.book2D(histName.c_str(), histTitle.c_str(), binLowEdgesX.size() - 1, &binLowEdgesX[0], binLowEdgesY.size() - 1, &binLowEdgesY[0]);

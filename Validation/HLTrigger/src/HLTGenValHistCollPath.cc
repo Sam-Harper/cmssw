@@ -11,6 +11,7 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
   // we'll copy this basis multiple times and add the respective path later
   edm::ParameterSet filterCollConfig;
   filterCollConfig.addParameter<std::string>("objType", pathCollConfig.getParameter<std::string>("objType"));
+  filterCollConfig.addParameter<std::string>("tag", pathCollConfig.getParameter<std::string>("tag"));
   filterCollConfig.addParameter<std::string>("hltProcessName", pathCollConfig.getParameter<std::string>("hltProcessName"));
   filterCollConfig.addParameter<double>("dR2limit", pathCollConfig.getParameter<double>("dR2limit"));
 
@@ -41,6 +42,7 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
 edm::ParameterSetDescription HLTGenValHistCollPath::makePSetDescription() {
   edm::ParameterSetDescription desc;
   desc.add<std::string>("objType", "");
+  desc.add<std::string>("tag", "");
   desc.add<double>("dR2limit", 0.1);
   desc.add<bool>("doOnlyLastFilter", false);
   desc.add<std::string>("hltProcessName", "HLT");

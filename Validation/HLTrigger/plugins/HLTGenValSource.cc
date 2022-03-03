@@ -87,6 +87,7 @@ private:
 
   // config strings/Psets
   std::string objType_;
+  std::string tag_;
   std::string dirName_;
   std::vector<edm::ParameterSet> histConfigs_;
   std::vector<edm::ParameterSet> histConfigs2D_;
@@ -120,6 +121,7 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
       // getting all other configurations
       dirName_ = iConfig.getParameter<std::string>("DQMDirName");
       objType_ = iConfig.getParameter<std::string>("objType");
+      tag_ = iConfig.getParameter<std::string>("tag");
       dR2limit_ = iConfig.getParameter<double>("dR2limit");
       doOnlyLastFilter_ = iConfig.getParameter<bool>("doOnlyLastFilter");
       hltProcessName_ = iConfig.getParameter<std::string>("hltProcessName");
@@ -160,6 +162,7 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   // most of these options are not needed in the pathColl, but in the filterColls created in the pathColl
   edm::ParameterSet pathCollConfig;
   pathCollConfig.addParameter<std::string>("objType", objType_);
+  pathCollConfig.addParameter<std::string>("tag", tag_);
   pathCollConfig.addParameter<double>("dR2limit", dR2limit_);
   pathCollConfig.addParameter<bool>("doOnlyLastFilter", doOnlyLastFilter_);
   pathCollConfig.addParameter<std::string>("hltProcessName", hltProcessName_);
@@ -217,6 +220,7 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   // basic parameter strings
   desc.add<std::string>("objType"); // this deliberately has no default, as this is the main thing the user needs to chose
   desc.add<std::vector<std::string>>("hltPathsToCheck"); // this for the moment also has no default: maybe there can be some way to handle this later?
+  desc.add<std::string>("tag", "");
   desc.add<std::string>("DQMDirName", "HLTGenVal");
   desc.add<std::string>("hltProcessName", "HLT");
   desc.add<double>("dR2limit", 0.1);
