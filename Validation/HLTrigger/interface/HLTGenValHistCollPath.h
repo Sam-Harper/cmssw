@@ -49,6 +49,10 @@ private:
   std::vector<std::string> filters_;
   HLTConfigProvider hltConfig_;
   bool doOnlyLastFilter_;
+
+  // we will add a string to the root file that is named after the path
+  // it will contain the filters of that path divided by semicola
+  std::string pathString_;
 };
 
 #endif
