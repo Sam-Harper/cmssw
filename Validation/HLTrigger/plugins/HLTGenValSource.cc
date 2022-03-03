@@ -311,7 +311,9 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
     const auto& genJets = iEvent.getHandle(AK4genJetToken_);
     if(genJets->size() > 0){
       auto HTsum = (*genJets)[0].pt();
-      for(size_t i = 1; i < genJets->size(); i++) HTsum += (*genJets)[i].pt();
+      for(size_t i = 1; i < genJets->size(); i++) {
+        if(((*genJets)[i].pt() > 30) && (abs((*genJets)[i].eta()) < 2.5)) HTsum += (*genJets)[i].pt();
+      }
       objects.emplace_back(reco::Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
     }
   }
@@ -319,7 +321,9 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
     const auto& genJets = iEvent.getHandle(AK8genJetToken_);
     if(genJets->size() > 0){
       auto HTsum = (*genJets)[0].pt();
-      for(size_t i = 1; i < genJets->size(); i++) HTsum += (*genJets)[i].pt();
+      for(size_t i = 1; i < genJets->size(); i++) {
+        if(((*genJets)[i].pt() > 200) && (abs((*genJets)[i].eta()) < 2.5)) HTsum += (*genJets)[i].pt();
+      }
       objects.emplace_back(reco::Candidate::PolarLorentzVector(HTsum, 0, 0, 0));
     }
   }
