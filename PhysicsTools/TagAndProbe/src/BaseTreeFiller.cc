@@ -46,10 +46,7 @@ namespace {
     if(lepP4s.size()>=2){
       return lepP4s[0]+lepP4s[1];
     }else{
-      std::cout<<"two leptons not found"<<std::endl;
-      for(int partNr=0;partNr<nrParts;partNr++){
-        std::cout <<partNr<<" "<<hepeup.IDUP[partNr]<<std::endl;
-      }
+      
       return math::XYZTLorentzVector();
     }
   }
