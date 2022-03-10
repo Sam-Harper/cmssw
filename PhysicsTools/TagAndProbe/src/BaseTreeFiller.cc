@@ -2,7 +2,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
-
+#include "DataFormats/Math/interface/LorentzVector.h"
 #include "PhysicsTools/TagAndProbe/interface/ColinsSoperVariables.h"
 
 #include <TList.h>
@@ -10,6 +10,50 @@
 
 #include <iostream>
 using namespace std;
+
+namespace {
+  float calHT(const LHEEventProduct& lheEvent){
+    float ht=0;
+    const lhef::HEPEUP& hepeup = lheEvent.hepeup();
+    int nrParts  = hepeup.NUP;
+    for(int partNr=0;partNr<nrParts;partNr++){
+      int partId = hepeup.IDUP[partNr];
+      int status = hepeup.ISTUP[partNr];
+      if(std::abs(partId)==21 || std::abs(partId)<=6){
+        if(status==1){
+          math::XYZTLorentzVector p4;
+          p4.SetXYZT(hepeup.PUP[partNr][0],hepeup.PUP[partNr][1],hepeup.PUP[partNr][2],
+	                  hepeup.PUP[partNr][3]);
+          ht+=p4.pt();
+        }
+      }
+    }
+    return ht;
+  }
+  math::XYZTLorentzVector getLHEDiLeptonP4(const LHEEventProduct& lheEvent){
+    const lhef::HEPEUP& hepeup = lheEvent.hepeup();
+    int nrParts  = hepeup.NUP;
+    std::vector<math::XYZTLorentzVector> lepP4s;
+    for(int partNr=0;partNr<nrParts;partNr++){
+      int partIdAbs = std::abs(hepeup.IDUP[partNr]);
+      if(partIdAbs==11 || partIdAbs==13 || partIdAbs==15){
+        math::XYZTLorentzVector p4;
+        p4.SetXYZT(hepeup.PUP[partNr][0],hepeup.PUP[partNr][1],hepeup.PUP[partNr][2],
+	                hepeup.PUP[partNr][3]);
+        lepP4s.push_back(p4);
+      }  
+    }
+    if(lepP4s.size()>=2){
+      return lepP4s[0]+lepP4s[1];
+    }else{
+      std::cout<<"two leptons not found"<<std::endl;
+      for(int partNr=0;partNr<nrParts;partNr++){
+        std::cout <<partNr<<" "<<hepeup.IDUP[partNr]<<std::endl;
+      }
+      return math::XYZTLorentzVector();
+    }
+  }
+}
 
 tnp::ProbeVariable::~ProbeVariable() {}
 
@@ -48,6 +92,7 @@ tnp::BaseTreeFiller::BaseTreeFiller(const char *name, const edm::ParameterSet& i
     } else if (iConfig.existsAs<edm::InputTag>("eventWeight")) {
         weightMode_ = External;
         weightSrcToken_ = iC.consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("eventWeight"));
+        tree_->Branch("gen_qScale",&genQScale_,"gen_qScale");
     } else {
         weightMode_ = None;
     }
@@ -56,12 +101,21 @@ tnp::BaseTreeFiller::BaseTreeFiller(const char *name, const edm::ParameterSet& i
 	tree_->Branch("totWeight", &totWeight_, "totWeight/F");
     }
 
+    
+
     storePUweight_ = iConfig.existsAs<edm::InputTag>("PUWeightSrc") ? true: false;
     if(storePUweight_) {      
       PUweightSrcToken_   = iC.consumes<double>(iConfig.getParameter<edm::InputTag>("PUWeightSrc"));
       tree_->Branch("PUweight", &PUweight_, "PUweight/F");
     }    
     
+    if(iConfig.existsAs<edm::InputTag>("lheEvent")){
+      lheEventToken_ = iC.consumes<LHEEventProduct>(iConfig.getParameter<edm::InputTag>("lheEvent"));
+      tree_->Branch("lhe_ht",&lheHT_,"lhe_ht/F");
+      tree_->Branch("lhe_pt",&lhePT_,"lhe_pt/F");
+      tree_->Branch("lhe_mass",&lheMass_,"lhe_mass/F");
+    }
+
     if( iConfig.existsAs<edm::InputTag>("pileupInfoTag") )  
       pileupInfoToken_= iC.consumes<std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("pileupInfoTag"));
 
@@ -70,7 +124,7 @@ tnp::BaseTreeFiller::BaseTreeFiller(const char *name, const edm::ParameterSet& i
          tree_->Branch("run",  &run_,  "run/i");
          tree_->Branch("lumi", &lumi_, "lumi/i");
          tree_->Branch("event", &event_, "event/l");
-	 tree_->Branch("truePU", &truePU_, "truePU/I");
+	       tree_->Branch("truePU", &truePU_, "truePU/I");
     }
     addEventVariablesInfo_ = iConfig.existsAs<bool>("addEventVariablesInfo") ? iConfig.getParameter<bool>("addEventVariablesInfo") : false;
     if (addEventVariablesInfo_) {
@@ -190,10 +244,13 @@ void tnp::BaseTreeFiller::init(const edm::Event &iEvent) const {
       // edm::Handle<double> weight;
       //        iEvent.getByToken(weightSrcToken_, weight);
       //        weight_ = *weight;
-	edm::Handle<GenEventInfoProduct> weight;
-	iEvent.getByToken(weightSrcToken_, weight);
-	weight_ = weight->weight();
-	totWeight_ *= weight_;
+  	  edm::Handle<GenEventInfoProduct> weight;
+	    iEvent.getByToken(weightSrcToken_, weight);
+	    weight_ = weight->weight();
+	    totWeight_ *= weight_;
+      genQScale_ = weight->qScale();
+    }else{
+      genQScale_ = -1;
     }
 
     ///// ********** Pileup weight: needed for MC re-weighting for PU ************* 
@@ -204,6 +261,19 @@ void tnp::BaseTreeFiller::init(const edm::Event &iEvent) const {
       if(isPresent) PUweight_ = float(*weightPU);
       totWeight_ *= PUweight_;
      }
+
+    lheHT_ = -1;
+    lhePT_ = -1;
+    lheMass_ = -1;
+    if (!lheEventToken_.isUninitialized()){
+      auto lheEventHandle = iEvent.getHandle(lheEventToken_);
+      if(lheEventHandle.isValid()){
+        lheHT_ = calHT(*lheEventHandle);
+        auto lheDiLeptonP4 = getLHEDiLeptonP4(*lheEventHandle);
+        lhePT_ = lheDiLeptonP4.pt();
+        lheMass_ = lheDiLeptonP4.mass();
+      }
+    }
      
     if (addEventVariablesInfo_) {
         /// *********** store some event variables: MET, SumET ******

@@ -28,6 +28,7 @@
 
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h" 
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 
 #include <TTree.h>
 #include <boost/utility.hpp>
@@ -175,6 +176,7 @@ class BaseTreeFiller : boost::noncopyable {
         enum WeightMode { None, Fixed, External };
         WeightMode weightMode_;
         edm::EDGetTokenT<GenEventInfoProduct> weightSrcToken_;
+        edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
 	edm::EDGetTokenT<double> PUweightSrcToken_;
 	edm::EDGetTokenT<double> rhoToken_;
         edm::EDGetTokenT<reco::VertexCollection> recVtxsToken_;
@@ -204,6 +206,8 @@ class BaseTreeFiller : boost::noncopyable {
         mutable uint32_t run_, lumi_, mNPV_;
         mutable uint64_t event_;
         mutable int truePU_;
+        mutable float genQScale_;
+        mutable float lheHT_,lhePT_,lheMass_;
 
         mutable float mPVx_,mPVy_,mPVz_,mBSx_,mBSy_,mBSz_;
 	mutable float rho_;
