@@ -36,7 +36,7 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
         edm::ParameterSet filterCollConfigStep = filterCollConfig;
         filterCollConfigStep.addParameter<std::string>("filterName", filter);
         collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigStep));
-        pathString_ += filters_.back();
+        pathString_ += filter;
         if(filter != filters_.back()) pathString_ += ";";
       }
     }
