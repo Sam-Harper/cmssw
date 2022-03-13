@@ -30,13 +30,23 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
       edm::ParameterSet filterCollConfigOnlyLastFilter = filterCollConfig;
       filterCollConfigOnlyLastFilter.addParameter<std::string>("filterName", filters_.back());
       collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigOnlyLastFilter));
-      pathString_ += filters_.back();
+
+      // remove potential leading "-" for printing
+      std::string filterName = filters_.back();
+      if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
+
+      pathString_ += filterName;
     } else {
       for (auto & filter : filters_) {
         edm::ParameterSet filterCollConfigStep = filterCollConfig;
         filterCollConfigStep.addParameter<std::string>("filterName", filter);
         collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigStep));
-        pathString_ += filter;
+
+        // remove potential leading "-" for printing
+        std::string filterName = filter;
+        if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
+
+        pathString_ += filterName;
         if(filter != filters_.back()) pathString_ += ";";
       }
     }
