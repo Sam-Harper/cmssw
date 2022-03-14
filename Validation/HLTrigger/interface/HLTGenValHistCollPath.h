@@ -52,6 +52,7 @@ private:
 
   // we will add a string to the root file that is named after the path
   // it will contain the filters of that path divided by semicola
+  std::string pathStringName_;
   std::string pathString_;
 };
 

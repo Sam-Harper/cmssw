@@ -15,8 +15,10 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
   filterCollConfig.addParameter<std::string>("hltProcessName", pathCollConfig.getParameter<std::string>("hltProcessName"));
   filterCollConfig.addParameter<double>("dR2limit", pathCollConfig.getParameter<double>("dR2limit"));
 
-  pathString_ = "";
+  pathStringName_ = triggerPath_ + "-" + pathCollConfig.getParameter<std::string>("objType");
+  if(pathCollConfig.getParameter<std::string>("tag") != "") pathString_ += "-"+pathCollConfig.getParameter<std::string>("tag");
 
+  pathString_ = "";
   // as we want a "before" hist before any filter is applied, this dummy is added to the collection
   if(triggerPath_ == "beforeAnyPath") {
     edm::ParameterSet filterCollConfigBeforeAnyPath = filterCollConfig;
@@ -70,7 +72,7 @@ edm::ParameterSetDescription HLTGenValHistCollPath::makePSetDescription() {
 // this just calls the booking for each object in the the filter collection
 void HLTGenValHistCollPath::bookHists(DQMStore::IBooker& iBooker, std::vector<edm::ParameterSet>& histConfigs, std::vector<edm::ParameterSet>& histConfigs2D) {
 
-  if(pathString_ != "") iBooker.bookString("path_"+triggerPath_, pathString_);
+  if(pathString_ != "") iBooker.bookString("path-"+pathStringName_, pathString_);
 
   for (auto& collection_filter : collectionFilter_) collection_filter.bookHists(iBooker, histConfigs, histConfigs2D);
 }
