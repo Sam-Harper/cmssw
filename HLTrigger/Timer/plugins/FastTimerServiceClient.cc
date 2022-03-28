@@ -92,7 +92,7 @@ void FastTimerServiceClient::dqmEndLuminosityBlock(DQMStore::IBooker& booker,
                                                    DQMStore::IGetter& getter,
                                                    edm::LuminosityBlock const& lumi,
                                                    edm::EventSetup const& setup) {
-  fillSummaryPlots(booker, getter);
+  //fillSummaryPlots(booker, getter);
 }
 
 void FastTimerServiceClient::fillSummaryPlots(DQMStore::IBooker& booker, DQMStore::IGetter& getter) {
