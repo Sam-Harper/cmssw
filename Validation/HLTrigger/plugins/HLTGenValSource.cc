@@ -154,7 +154,8 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
     // error handling in case some paths do not exist
     std::string notFoundPathsMessage = "";
     for (const auto & path : notFoundPaths) notFoundPathsMessage += "- " + path + "\n";
-    edm::LogError("HLTGenValSource") << "The following paths could not be found and will not be used: " << std::endl << notFoundPathsMessage << std::endl;
+    edm::LogError("HLTGenValSource") << "The following paths could not be found and will not be used: \n" << notFoundPathsMessage << std::endl;
+
   }
 
   // before creating the collections for each path, we'll store the needed configurations in a pset

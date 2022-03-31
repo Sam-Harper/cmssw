@@ -9,7 +9,7 @@ process.load("DQMServices.Components.DQMEnvironment_cfi")
 process.load("DQMServices.Components.MEtoEDMConverter_cff")
 from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
@@ -31,7 +31,9 @@ process.source = cms.Source("PoolSource",
     )
 )
 
-ptBins=cms.vdouble(0, 10,  20,  30,  40,  50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 275, 300)
+ptBins=cms.vdouble(0, 10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85,90,95 , 100,105,110,115 ,120,125, 130, 135,140,145, 150)
+ptBinsHT=cms.vdouble(0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 1000, 1050, 1100, 1150, 1200, 1300)
+ptBinsJet=cms.vdouble(0, 100, 200, 300, 350, 375, 400, 425, 450, 475, 500, 550, 600, 700, 800, 900, 1000)
 etaBins=cms.vdouble(-4,-3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 4)
 
 etaCut=cms.PSet(
@@ -43,24 +45,22 @@ ptCut=cms.PSet(
     allowedRanges=cms.vstring("40:9999")
 )
 
-process.HLTGenValSourceMET = cms.EDProducer('HLTGenValSource',
+process.HLTGenValSourceHT = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
-    objType = cms.string("MET"),
+    objType = cms.string("AK4HT"),
     hltPathsToCheck = cms.vstring(
-      "HLT_PFMET120_PFMHT120_IDTight_v",
-      "HLT_PFMET110_PFMHT110_IDTight_v",
+      "HLT_PFHT1050_v",
+      "HLT_AK8PFHT800_TrimMass50"
     ),
     doOnlyLastFilter = cms.bool(False),
     histConfigs = cms.VPSet(
         cms.PSet(
             vsVar = cms.string("pt"),
-            binLowEdges = ptBins,
-            rangeCuts = cms.VPSet(etaCut)
+            binLowEdges = ptBinsHT,
         ),
         cms.PSet(
             vsVar = cms.string("eta"),
             binLowEdges = etaBins,
-            rangeCuts = cms.VPSet(ptCut)
         ),
     ),
 )
@@ -70,6 +70,7 @@ process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
     objType = cms.string("mu"),
     hltPathsToCheck = cms.vstring(
       "HLT_Mu50_v",
+      "HLT_IsoMu24_v"
     ),
     doOnlyLastFilter = cms.bool(False),
     histConfigs = cms.VPSet(
@@ -81,17 +82,17 @@ process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
         cms.PSet(
             vsVar = cms.string("eta"),
             binLowEdges = etaBins,
-            rangeCuts = cms.VPSet(ptCut)
         ),
     ),
 )
 
-process.HLTGenValSourceMU2 = cms.EDProducer('HLTGenValSource',
+process.HLTGenValSourceELE = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
-    objType = cms.string("mu"),
-    tag = cms.string("test"),
+    objType = cms.string("ele"),
     hltPathsToCheck = cms.vstring(
-      "HLT_Mu50_v",
+      "HLT_Ele35_WPTight_Gsf_v",
+      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v"
+      "HLT_Photon200_v"
     ),
     doOnlyLastFilter = cms.bool(False),
     histConfigs = cms.VPSet(
@@ -103,16 +104,83 @@ process.HLTGenValSourceMU2 = cms.EDProducer('HLTGenValSource',
         cms.PSet(
             vsVar = cms.string("eta"),
             binLowEdges = etaBins,
-            rangeCuts = cms.VPSet(ptCut)
         ),
     ),
 )
 
-process.p = cms.Path(process.HLTGenValSourceMU*process.HLTGenValSourceMU2)
+process.HLTGenValSourceAK4 = cms.EDProducer('HLTGenValSource',
+    # these are the only one the user needs to specify
+    objType = cms.string("AK4"),
+    hltPathsToCheck = cms.vstring(
+      "HLT_PFJet500",
+    ),
+    doOnlyLastFilter = cms.bool(False),
+    histConfigs = cms.VPSet(
+        cms.PSet(
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBinsJet,
+            rangeCuts = cms.VPSet(etaCut)
+        ),
+        cms.PSet(
+            vsVar = cms.string("eta"),
+            binLowEdges = etaBins,
+        ),
+    ),
+)
+
+process.HLTGenValSourceAK8 = cms.EDProducer('HLTGenValSource',
+    # these are the only one the user needs to specify
+    objType = cms.string("AK8"),
+    hltPathsToCheck = cms.vstring(
+      "HLT_AK8PFJet500",
+      "HLT_AK8PFJet400_TrimMass30",
+    ),
+    doOnlyLastFilter = cms.bool(False),
+    histConfigs = cms.VPSet(
+        cms.PSet(
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBinsJet,
+            rangeCuts = cms.VPSet(etaCut)
+        ),
+        cms.PSet(
+            vsVar = cms.string("eta"),
+            binLowEdges = etaBins,
+        ),
+    ),
+)
+
+process.HLTGenValSourceMET = cms.EDProducer('HLTGenValSource',
+    # these are the only one the user needs to specify
+    objType = cms.string("MET"),
+    hltPathsToCheck = cms.vstring(
+      "HLT_PFMET120_PFMHT120_IDTight",
+    ),
+    doOnlyLastFilter = cms.bool(False),
+    histConfigs = cms.VPSet(
+        cms.PSet(
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBins,
+            rangeCuts = cms.VPSet(etaCut)
+        ),
+        cms.PSet(
+            vsVar = cms.string("eta"),
+            binLowEdges = etaBins,
+        ),
+    ),
+)
+
+process.p = cms.Path(
+        process.HLTGenValSourceMU *
+        process.HLTGenValSourceELE *
+        process.HLTGenValSourceHT *
+        process.HLTGenValSourceAK4 *
+        process.HLTGenValSourceAK8 *
+        process.HLTGenValSourceMET
+        )
 
 # the harvester
 process.harvester = DQMEDHarvester("HLTGenValClient",
-    outputFileName = cms.untracked.string('sourceoutput_harvest.root'),
+    outputFileName = cms.untracked.string('output.root'),
     subDirs        = cms.untracked.vstring("HLTGenVal"),
 )
 
