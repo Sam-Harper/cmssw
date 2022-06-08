@@ -50,6 +50,24 @@ process.HLTGenValSourceHT = cms.EDProducer('HLTGenValSource',
     objType = cms.string("AK4HT"),
     hltPathsToCheck = cms.vstring(
       "HLT_PFHT1050_v",
+    ),
+    doOnlyLastFilter = cms.bool(False),
+    histConfigs = cms.VPSet(
+        cms.PSet(
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBinsHT,
+        ),
+        cms.PSet(
+            vsVar = cms.string("eta"),
+            binLowEdges = etaBins,
+        ),
+    ),
+)
+
+process.HLTGenValSourceHT = cms.EDProducer('HLTGenValSource',
+    # these are the only one the user needs to specify
+    objType = cms.string("AK8HT"),
+    hltPathsToCheck = cms.vstring(
       "HLT_AK8PFHT800_TrimMass50"
     ),
     doOnlyLastFilter = cms.bool(False),
@@ -64,6 +82,7 @@ process.HLTGenValSourceHT = cms.EDProducer('HLTGenValSource',
         ),
     ),
 )
+
 
 process.HLTGenValSourceMU = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
@@ -91,7 +110,29 @@ process.HLTGenValSourceELE = cms.EDProducer('HLTGenValSource',
     objType = cms.string("ele"),
     hltPathsToCheck = cms.vstring(
       "HLT_Ele35_WPTight_Gsf_v",
-      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v"
+      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v",
+      "HLT_Photon200_v"
+    ),
+    doOnlyLastFilter = cms.bool(False),
+    histConfigs = cms.VPSet(
+        cms.PSet(
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBins,
+            rangeCuts = cms.VPSet(etaCut)
+        ),
+        cms.PSet(
+            vsVar = cms.string("eta"),
+            binLowEdges = etaBins,
+        ),
+    ),
+)
+
+process.HLTGenValSourceELECopy = cms.EDProducer('HLTGenValSource',
+    # these are the only one the user needs to specify
+    objType = cms.string("ele"),
+    hltPathsToCheck = cms.vstring(
+      "HLT_Ele35_WPTight_Gsf_v",
+      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v",
       "HLT_Photon200_v"
     ),
     doOnlyLastFilter = cms.bool(False),
@@ -110,7 +151,7 @@ process.HLTGenValSourceELE = cms.EDProducer('HLTGenValSource',
 
 process.HLTGenValSourceAK4 = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
-    objType = cms.string("AK4"),
+    objType = cms.string("AK4jet"),
     hltPathsToCheck = cms.vstring(
       "HLT_PFJet500",
     ),
@@ -130,7 +171,7 @@ process.HLTGenValSourceAK4 = cms.EDProducer('HLTGenValSource',
 
 process.HLTGenValSourceAK8 = cms.EDProducer('HLTGenValSource',
     # these are the only one the user needs to specify
-    objType = cms.string("AK8"),
+    objType = cms.string("AK8jet"),
     hltPathsToCheck = cms.vstring(
       "HLT_AK8PFJet500",
       "HLT_AK8PFJet400_TrimMass30",
@@ -170,12 +211,12 @@ process.HLTGenValSourceMET = cms.EDProducer('HLTGenValSource',
 )
 
 process.p = cms.Path(
-        process.HLTGenValSourceMU *
-        process.HLTGenValSourceELE *
-        process.HLTGenValSourceHT *
-        process.HLTGenValSourceAK4 *
-        process.HLTGenValSourceAK8 *
-        process.HLTGenValSourceMET
+        #process.HLTGenValSourceMU *
+        process.HLTGenValSourceELE 
+        #process.HLTGenValSourceHT *
+        #process.HLTGenValSourceAK4 *
+        #process.HLTGenValSourceAK8 *
+        #process.HLTGenValSourceMET
         )
 
 # the harvester

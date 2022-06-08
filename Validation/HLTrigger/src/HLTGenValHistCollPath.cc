@@ -79,6 +79,6 @@ void HLTGenValHistCollPath::bookHists(DQMStore::IBooker& iBooker, std::vector<ed
 
 // hist filling function
 // this just calls the filling for each object in the filter collection
-void HLTGenValHistCollPath::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
-  for (auto& collection_filter : collectionFilter_) collection_filter.fillHists(obj, triggerEvent);
+void HLTGenValHistCollPath::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent, std::vector<std::string>& filledFilters) {
+  for (auto& collection_filter : collectionFilter_) collection_filter.fillHists(obj, triggerEvent, filledFilters);
 }
