@@ -26,15 +26,14 @@ void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, const std::v
 }
 
 // histogram filling routine
-void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent, std::vector<std::string> &filledFilters) {
+void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent) {
 
   // this handles the "before" step, denoted by a "dummy" filter called "beforeAnyFilter"
   // the histogram is filled without any additional requirements for all objects
   if(filter_ == "beforeAnyFilter") {
     for (auto& hist : hists_) hist->fill(obj);
-  } else if (std::find(filledFilters.begin(), filledFilters.end(), filter_) == filledFilters.end()) {
+  } else {
     // main filling code
-    filledFilters.push_back(filter_);
 
     // get filter object from filter name
     edm::InputTag filterTag(filter_, "", hltProcessName_);

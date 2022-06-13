@@ -194,11 +194,8 @@ void HLTGenValSource::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   // loop over all objects and fill hists
   for (const auto & object : objects) {
-
-    std::vector<std::string> filledFilters;
-
     for (auto& collection_path : collectionPath_) {
-      collection_path.fillHists(object, triggerEvent, filledFilters);
+      collection_path.fillHists(object, triggerEvent);
     }
   }
 
