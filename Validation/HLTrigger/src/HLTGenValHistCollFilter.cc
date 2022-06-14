@@ -103,13 +103,18 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
     histTitle = objTypeString + "_" + filterName + "_vs" + vsVar;
   }
 
-  auto me = iBooker.book1D(histName.c_str(), histTitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0]);   // booking MonitorElement
+  Called called = Called();
+  auto me = iBooker.book1D(histName.c_str(), histTitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0], called );   // booking MonitorElement
 
-  std::unique_ptr<HLTGenValHist> hist; // creating the hist object
+  // only creating the histograms in case it is new
+  if(called.called()) {
+    std::unique_ptr<HLTGenValHist> hist; // creating the hist object
 
-  hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc, rangeCuts);
+    hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc, rangeCuts);
 
-  hists_.emplace_back(std::move(hist));
+    hists_.emplace_back(std::move(hist));
+  }
+
 }
 
 // booker function for 2D hists

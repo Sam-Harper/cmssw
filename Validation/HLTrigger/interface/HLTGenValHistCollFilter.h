@@ -56,5 +56,14 @@ private:
   double dR2limit_;
 };
 
+class Called {
+private:
+  mutable std::shared_ptr<bool> called_;
+public:
+  Called():called_(std::make_shared<bool>(false)){}
+  void operator()(TH1*)const{*called_ = true;}
+  bool called(){return *called_;}
+};
+
 
 #endif
