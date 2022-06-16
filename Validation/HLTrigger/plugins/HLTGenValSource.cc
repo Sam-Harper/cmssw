@@ -101,7 +101,8 @@ private:
 
   // some miscellaneous member variables
   std::vector<std::string> hltPathsToCheck_;
-  std::set<std::string> hltPaths;
+  std::vector<std::string> hltPaths;
+  std::vector<std::string> hltPathSpecificCuts = {""};
   double dR2limit_;
   bool doOnlyLastFilter_;
 
@@ -141,14 +142,44 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   // Get the set of trigger paths we want to make plots for
   std::vector<std::string> notFoundPaths;
   for (auto const &pathToCheck : hltPathsToCheck_) {
+
+    // It is possible to add additional requirements to each path, seperated by a colon from the path name
+    // these additional requirements are split from the path name here
+    std::string cleanedPathToCheck;
+    std::string pathSpecificCuts = "";
+    if (pathToCheck.find(":") != std::string::npos) {
+
+      // splitting the string
+      std::stringstream hltPathToCheckInputStream(pathToCheck);
+      std::string hltPathToCheckInputSegment;
+      std::vector<std::string> hltPathToCheckInputSeglist;
+      while(std::getline(hltPathToCheckInputStream, hltPathToCheckInputSegment, ':'))
+      {
+         hltPathToCheckInputSeglist.push_back(hltPathToCheckInputSegment);
+      }
+
+      // here, exactly two parts are expected
+      if(hltPathToCheckInputSeglist.size() != 2) throw cms::Exception("InputError") << "Path string can not be properly split into path and cuts: please use exactly one colon!.\n";
+
+      // the first part is the name of the path
+      cleanedPathToCheck = hltPathToCheckInputSeglist.at(0);
+
+      // second part are the cuts, to be parsed later
+      pathSpecificCuts = hltPathToCheckInputSeglist.at(1);
+
+    } else {
+      cleanedPathToCheck = pathToCheck;
+    }
+
     bool pathfound = false;
     for (auto const &pathFromConfig : hltConfig_.triggerNames()) {
-      if (pathFromConfig.find(pathToCheck) != std::string::npos) {
-        hltPaths.insert(pathFromConfig);
+      if (pathFromConfig.find(cleanedPathToCheck) != std::string::npos) {
+        hltPaths.push_back(pathFromConfig);
+        hltPathSpecificCuts.push_back(pathSpecificCuts);
         pathfound = true;
       }
     }
-    if(!pathfound) notFoundPaths.push_back(pathToCheck);
+    if(!pathfound) notFoundPaths.push_back(cleanedPathToCheck);
   }
   if(notFoundPaths.size() > 0) {
     // error handling in case some paths do not exist
@@ -207,8 +238,8 @@ void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run&
   iBooker.setCurrentFolder(dirName_);
 
   // booking all histograms
-  for (auto& collection_path : collectionPath_) {
-    collection_path.bookHists(iBooker, histConfigs_, histConfigs2D_);
+  for (long unsigned int i = 0; i < collectionPath_.size(); i++) {
+    collectionPath_.at(i).bookHists(iBooker, histConfigs_, histConfigs2D_, hltPathSpecificCuts.at(i));
   }
 
 }

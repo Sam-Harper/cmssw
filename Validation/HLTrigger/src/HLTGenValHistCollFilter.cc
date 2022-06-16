@@ -20,8 +20,8 @@ edm::ParameterSetDescription HLTGenValHistCollFilter::makePSetDescription() {
 }
 
 // general hist booking function, receiving configurations for 1D and 2D hists and calling the respective functions
-void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, const std::vector<edm::ParameterSet>& histConfigs, const std::vector<edm::ParameterSet>& histConfigs2D) {
-  for (const auto& histConfig : histConfigs) book1D(iBooker, histConfig);
+void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, const std::vector<edm::ParameterSet>& histConfigs, const std::vector<edm::ParameterSet>& histConfigs2D, std::string pathSpecificCuts) {
+  for (const auto& histConfig : histConfigs) book1D(iBooker, histConfig, pathSpecificCuts);
   for (const auto& histConfig : histConfigs2D) book2D(iBooker, histConfig);
 }
 
@@ -69,12 +69,15 @@ void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<
 }
 
 // booker function for 1D hists
-void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig) {
+void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig, std::string pathSpecificCuts) {
   // extracting parameters from configuration
   auto vsVar = histConfig.getParameter<std::string>("vsVar");
   auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
   auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
   VarRangeCutColl<HLTGenValObject> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
+
+  // next, we'll add any cuts from the pathSpecificCuts
+  rangeCuts = parsePathSpecificCuts(rangeCuts, pathSpecificCuts);
 
   // checking validity of vsVar
   if (!vsVarFunc) { throw cms::Exception("ConfigError") << " vsVar " << vsVar << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
@@ -165,4 +168,46 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, const edm::Para
   hist = std::make_unique<HLTGenValHist2D>(me->getTH2F(), vsVarX, vsVarY, vsVarFuncX, vsVarFuncY);
 
   hists_.emplace_back(std::move(hist));
+}
+
+VarRangeCutColl<HLTGenValObject> HLTGenValHistCollFilter::parsePathSpecificCuts(VarRangeCutColl<HLTGenValObject> rangeCutColl, std::string pathSpecificCuts) {
+
+  // splitting the cutstring
+  std::stringstream pathSpecificCutsStream(pathSpecificCuts);
+  std::string pathSpecificCutsSegment;
+  std::vector<std::string> pathSpecificCutsSeglist;
+  while(std::getline(pathSpecificCutsStream, pathSpecificCutsSegment, ','))
+  {
+     pathSpecificCutsSeglist.push_back(pathSpecificCutsSegment);
+  }
+
+  // parsing the strings, creating VarRangeCut objects and appending them to the
+  for (auto pathSpecificCut : pathSpecificCutsSeglist) {
+
+    // each of these strings is expected to contain exactly one equal sign
+    std::stringstream pathSpecificCutStream(pathSpecificCut);
+    std::string pathSpecificCutSegment;
+    std::vector<std::string> pathSpecificCutSeglist;
+    while(std::getline(pathSpecificCutStream, pathSpecificCutSegment, '='))
+    {
+       pathSpecificCutSeglist.push_back(pathSpecificCutSegment);
+    }
+    if(pathSpecificCutSeglist.size() != 2) throw cms::Exception("InputError") << "Path-specific cuts could not be parsed. Make sure that each parameter contains exactly one equal sign!.\n";
+    const std::string cutVariable = pathSpecificCutSeglist.at(0);
+    const std::string cutParameter = pathSpecificCutSeglist.at(1);
+
+
+    if(cutVariable == "absEtaMax") {
+      edm::ParameterSet rangeCutConfig;
+      rangeCutConfig.addParameter<std::string>("rangeVar", "eta");
+      rangeCutConfig.addParameter<std::vector<std::string>>("allowedRanges", {"-"+cutParameter+":"+cutParameter} );
+      rangeCutColl.emplace_back( VarRangeCut<HLTGenValObject>(rangeCutConfig) );
+    } else {
+      throw cms::Exception("InputError") << "Path-specific cut "+cutVariable+" not recognized.\n";
+    }
+
+  }
+
+  return rangeCutColl;
+
 }
