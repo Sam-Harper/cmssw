@@ -47,7 +47,7 @@ public:
 private:
   void book1D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig);
   void book2D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig2D);
-  VarRangeCutColl<HLTGenValObject> parsePathSpecificCuts(VarRangeCutColl<HLTGenValObject> rangeCutColl, std::string pathSpecificCuts);
+  std::vector<edm::ParameterSet> parsePathSpecificCuts(std::string pathSpecificCuts);
 
   std::vector<std::unique_ptr<HLTGenValHist>> hists_; // the collection of histograms
   std::string objType_;

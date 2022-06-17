@@ -74,11 +74,12 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   auto vsVar = histConfig.getParameter<std::string>("vsVar");
   auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
   auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
-  VarRangeCutColl<HLTGenValObject> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
-  auto pathSpecificCuts = histConfig.getParameter<std::string>("pathSpecificCuts");
 
-  // next, we'll add any cuts from the pathSpecificCuts
-  rangeCuts = parsePathSpecificCuts(rangeCuts, pathSpecificCuts);
+  std::vector<edm::ParameterSet> allCutsVector = histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts");
+  std::vector<edm::ParameterSet> pathSpecificCutsVector = parsePathSpecificCuts( histConfig.getParameter<std::string>("pathSpecificCuts") );
+  allCutsVector.insert(allCutsVector.end(), pathSpecificCutsVector.begin(), pathSpecificCutsVector.end());
+
+  VarRangeCutColl<HLTGenValObject> rangeCuts(allCutsVector);
 
   // checking validity of vsVar
   if (!vsVarFunc) { throw cms::Exception("ConfigError") << " vsVar " << vsVar << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
@@ -172,7 +173,9 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, const edm::Para
 }
 
 
-VarRangeCutColl<HLTGenValObject> HLTGenValHistCollFilter::parsePathSpecificCuts(VarRangeCutColl<HLTGenValObject> rangeCutColl, std::string pathSpecificCuts) {
+std::vector<edm::ParameterSet> HLTGenValHistCollFilter::parsePathSpecificCuts(std::string pathSpecificCuts) {
+
+  std::vector<edm::ParameterSet> pathSpecificCutsVector;
 
   // splitting the cutstring
   std::stringstream pathSpecificCutsStream(pathSpecificCuts);
@@ -203,13 +206,13 @@ VarRangeCutColl<HLTGenValObject> HLTGenValHistCollFilter::parsePathSpecificCuts(
       edm::ParameterSet rangeCutConfig;
       rangeCutConfig.addParameter<std::string>("rangeVar", "eta");
       rangeCutConfig.addParameter<std::vector<std::string>>("allowedRanges", {"-"+cutParameter+":"+cutParameter} );
-      rangeCutColl.emplace_back( VarRangeCut<HLTGenValObject>(rangeCutConfig) );
+      pathSpecificCutsVector.push_back( rangeCutConfig );
     } else {
       throw cms::Exception("InputError") << "Path-specific cut "+cutVariable+" not recognized.\n";
     }
 
   }
 
-  return rangeCutColl;
+  return pathSpecificCutsVector;
 
 }
