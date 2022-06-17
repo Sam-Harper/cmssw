@@ -239,7 +239,10 @@ void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run&
 
   // booking all histograms
   for (long unsigned int i = 0; i < collectionPath_.size(); i++) {
-    collectionPath_.at(i).bookHists(iBooker, histConfigs_, histConfigs2D_, hltPathSpecificCuts.at(i));
+    std::vector<edm::ParameterSet> histConfigs = histConfigs_;
+    for (auto & histConfig : histConfigs) histConfig.addParameter<std::string>("pathSpecificCuts", hltPathSpecificCuts.at(i));
+
+    collectionPath_.at(i).bookHists(iBooker, histConfigs, histConfigs2D_);
   }
 
 }

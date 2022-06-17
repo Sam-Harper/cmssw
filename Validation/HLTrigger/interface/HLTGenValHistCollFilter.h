@@ -41,11 +41,11 @@ public:
 
   static edm::ParameterSetDescription makePSetDescription();
 
-  void bookHists(DQMStore::IBooker& iBooker, const std::vector<edm::ParameterSet>& histConfigs, const std::vector<edm::ParameterSet>& histConfigs2D, std::string pathSpecificCuts);
+  void bookHists(DQMStore::IBooker& iBooker, const std::vector<edm::ParameterSet>& histConfigs, const std::vector<edm::ParameterSet>& histConfigs2D);
   void fillHists(const HLTGenValObject& obj, edm::Handle<trigger::TriggerEvent>& triggerEvent);
 
 private:
-  void book1D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig, std::string pathSpecificCuts);
+  void book1D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig);
   void book2D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig2D);
   VarRangeCutColl<HLTGenValObject> parsePathSpecificCuts(VarRangeCutColl<HLTGenValObject> rangeCutColl, std::string pathSpecificCuts);
 

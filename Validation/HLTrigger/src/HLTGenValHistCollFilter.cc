@@ -20,8 +20,8 @@ edm::ParameterSetDescription HLTGenValHistCollFilter::makePSetDescription() {
 }
 
 // general hist booking function, receiving configurations for 1D and 2D hists and calling the respective functions
-void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, const std::vector<edm::ParameterSet>& histConfigs, const std::vector<edm::ParameterSet>& histConfigs2D, std::string pathSpecificCuts) {
-  for (const auto& histConfig : histConfigs) book1D(iBooker, histConfig, pathSpecificCuts);
+void HLTGenValHistCollFilter::bookHists(DQMStore::IBooker& iBooker, const std::vector<edm::ParameterSet>& histConfigs, const std::vector<edm::ParameterSet>& histConfigs2D) {
+  for (const auto& histConfig : histConfigs) book1D(iBooker, histConfig);
   for (const auto& histConfig : histConfigs2D) book2D(iBooker, histConfig);
 }
 
@@ -69,12 +69,13 @@ void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<
 }
 
 // booker function for 1D hists
-void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig, std::string pathSpecificCuts) {
+void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::ParameterSet& histConfig) {
   // extracting parameters from configuration
   auto vsVar = histConfig.getParameter<std::string>("vsVar");
   auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
   auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
   VarRangeCutColl<HLTGenValObject> rangeCuts(histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts"));
+  auto pathSpecificCuts = histConfig.getParameter<std::string>("pathSpecificCuts");
 
   // next, we'll add any cuts from the pathSpecificCuts
   rangeCuts = parsePathSpecificCuts(rangeCuts, pathSpecificCuts);
@@ -169,6 +170,7 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, const edm::Para
 
   hists_.emplace_back(std::move(hist));
 }
+
 
 VarRangeCutColl<HLTGenValObject> HLTGenValHistCollFilter::parsePathSpecificCuts(VarRangeCutColl<HLTGenValObject> rangeCutColl, std::string pathSpecificCuts) {
 
