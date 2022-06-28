@@ -110,29 +110,7 @@ process.HLTGenValSourceELE = cms.EDProducer('HLTGenValSource',
     objType = cms.string("ele"),
     hltPathsToCheck = cms.vstring(
       "HLT_Ele35_WPTight_Gsf_v",
-      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v",
-      "HLT_Photon200_v"
-    ),
-    doOnlyLastFilter = cms.bool(False),
-    histConfigs = cms.VPSet(
-        cms.PSet(
-            vsVar = cms.string("pt"),
-            binLowEdges = ptBins,
-            rangeCuts = cms.VPSet(etaCut)
-        ),
-        cms.PSet(
-            vsVar = cms.string("eta"),
-            binLowEdges = etaBins,
-        ),
-    ),
-)
-
-process.HLTGenValSourceELECopy = cms.EDProducer('HLTGenValSource',
-    # these are the only one the user needs to specify
-    objType = cms.string("ele"),
-    hltPathsToCheck = cms.vstring(
-      "HLT_Ele35_WPTight_Gsf_v",
-      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v",
+      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v:absEtaMax=0.8",
       "HLT_Photon200_v"
     ),
     doOnlyLastFilter = cms.bool(False),
@@ -211,11 +189,11 @@ process.HLTGenValSourceMET = cms.EDProducer('HLTGenValSource',
 )
 
 process.p = cms.Path(
-        #process.HLTGenValSourceMU *
-        process.HLTGenValSourceELE 
-        #process.HLTGenValSourceHT *
-        #process.HLTGenValSourceAK4 *
-        #process.HLTGenValSourceAK8 *
+        process.HLTGenValSourceMU *
+        process.HLTGenValSourceELE *
+        process.HLTGenValSourceHT *
+        process.HLTGenValSourceAK4 *
+        process.HLTGenValSourceAK8
         #process.HLTGenValSourceMET
         )
 
