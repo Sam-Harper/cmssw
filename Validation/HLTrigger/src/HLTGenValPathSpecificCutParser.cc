@@ -67,6 +67,12 @@ HLTGenValPathSpecificCutParser::HLTGenValPathSpecificCutParser(std::string pathS
         }
       }
 
+    } else if (cutVariable == "bins") {
+
+      if(cutParameter == "somebinning") {
+        pathSpecificBins_ = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+      }
+
     } else {
       throw cms::Exception("InputError") << "Path-specific cut "+cutVariable+" not recognized.\n";
     }

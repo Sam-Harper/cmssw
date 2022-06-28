@@ -73,10 +73,16 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   // extracting parameters from configuration
   auto vsVar = histConfig.getParameter<std::string>("vsVar");
   auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
-  auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
 
-  std::vector<edm::ParameterSet> allCutsVector = histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts");
+  // this thing parses any potential additional cuts or changes in binning
   HLTGenValPathSpecificCutParser parser = HLTGenValPathSpecificCutParser( histConfig.getParameter<std::string>("pathSpecificCuts") );
+
+  // bin edges
+  auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
+  if(parser.havePathSpecificBins()) binLowEdgesDouble = parser.getPathSpecificBins();
+
+  // additional cuts applied to this histogram, combination of general ones and path-specific ones
+  std::vector<edm::ParameterSet> allCutsVector = histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts");
   std::vector<edm::ParameterSet> pathSpecificCutsVector = parser.getPathSpecificCuts();
   allCutsVector.insert(allCutsVector.end(), pathSpecificCutsVector.begin(), pathSpecificCutsVector.end());
 

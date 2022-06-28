@@ -24,11 +24,12 @@ public:
   HLTGenValPathSpecificCutParser(std::string pathSpecificCuts);
 
   std::vector<edm::ParameterSet> getPathSpecificCuts() {return pathSpecificCutsVector_;}
-  std::vector<edm::ParameterSet> getPathSpecificBins() {return pathSpecificBinsVector_;}
+  std::vector<double> getPathSpecificBins() {return pathSpecificBins_;}
+  bool havePathSpecificBins() { return (pathSpecificBins_.size() > 0); }
 
 private:
   std::vector<edm::ParameterSet> pathSpecificCutsVector_;
-  std::vector<edm::ParameterSet> pathSpecificBinsVector_;
+  std::vector<double> pathSpecificBins_;
 
 };
 
