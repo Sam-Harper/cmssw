@@ -5,6 +5,7 @@ HLTGenValHistCollFilter::HLTGenValHistCollFilter(edm::ParameterSet filterCollCon
   objType_ = filterCollConfig.getParameter<std::string>("objType");
   tag_ = filterCollConfig.getParameter<std::string>("tag");
   filter_ = filterCollConfig.getParameter<std::string>("filterName");
+  path_ = filterCollConfig.getParameter<std::string>("pathName");
   hltProcessName_ = filterCollConfig.getParameter<std::string>("hltProcessName");
   dR2limit_ = filterCollConfig.getParameter<double>("dR2limit");
 }
@@ -16,6 +17,7 @@ edm::ParameterSetDescription HLTGenValHistCollFilter::makePSetDescription() {
   desc.add<std::string>("hltProcessName", "HLT");
   desc.add<double>("dR2limit", 0.1);
   desc.add<std::string>("filterName", "");
+  desc.add<std::string>("pathName", "");
   return desc;
 }
 
@@ -104,15 +106,15 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
 
   // if a label is set, we add it after the objType_
   std::string objTypeString = objType_;
-  if(tag_ != "") objTypeString += "_"+tag_;
+  if(tag_ != "") objTypeString += ":"+tag_;
 
   std::string histName, histTitle;
   if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
-    histName = objTypeString + "_GEN_vs" + vsVar ;
-    histTitle = objTypeString + " GEN vs " + vsVar;
+    histName = objTypeString + ":" + path_ + ":GEN:vs" + vsVar ;
+    histTitle = objTypeString + ":" + path_ + " GEN vs " + vsVar;
   } else { // naming of all regular hists
-    histName = objTypeString + "_" + filterName + "_vs" + vsVar;
-    histTitle = objTypeString + "_" + filterName + "_vs" + vsVar;
+    histName = objTypeString + ":" + path_ + ":" + filterName + ":vs" + vsVar;
+    histTitle = objTypeString + ":" + path_ + ":" + filterName + ":vs" + vsVar;
   }
 
   Called called = Called();
@@ -159,15 +161,15 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, const edm::Para
 
   // if a label is set, we add it after the objType_
   std::string objTypeString = objType_;
-  if(tag_ != "") objTypeString += "_"+tag_;
+  if(tag_ != "") objTypeString += ":"+tag_;
 
   std::string histName, histTitle;
   if(filter_ == "beforeAnyFilter") {
-    histName = objTypeString + "_GEN_2Dvs" + vsVarX + "_" + vsVarY;
-    histTitle = objTypeString + " GEN 2D vs " + vsVarX + " " + vsVarY;
+    histName = objTypeString + ":" + path_ + ":GEN:2Dvs" + vsVarX + ":" + vsVarY;
+    histTitle = objTypeString + ":" + path_ + " GEN 2D vs " + vsVarX + " " + vsVarY;
   } else {
-    histName = objTypeString + "_" + filterName + "_2Dvs" + vsVarX + vsVarY;
-    histTitle = objTypeString + " " + filterName + " 2D vs" + vsVarX + " " + vsVarY;
+    histName = objTypeString + ":" + path_ + ":" + filterName + ":2Dvs" + vsVarX + vsVarY;
+    histTitle = objTypeString + ":" + path_ + " " + filterName + " 2D vs" + vsVarX + " " + vsVarY;
   }
 
   auto me = iBooker.book2D(histName.c_str(), histTitle.c_str(), binLowEdgesX.size() - 1, &binLowEdgesX[0], binLowEdgesY.size() - 1, &binLowEdgesY[0]);

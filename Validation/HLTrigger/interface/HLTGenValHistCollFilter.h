@@ -53,6 +53,7 @@ private:
   std::string objType_;
   std::string tag_;
   std::string filter_;
+  std::string path_;
   std::string hltProcessName_;
   double dR2limit_;
 };

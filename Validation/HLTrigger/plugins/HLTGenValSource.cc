@@ -102,7 +102,7 @@ private:
   // some miscellaneous member variables
   std::vector<std::string> hltPathsToCheck_;
   std::vector<std::string> hltPaths;
-  std::vector<std::string> hltPathSpecificCuts = {""};
+  std::vector<std::string> hltPathSpecificCuts;
   double dR2limit_;
   bool doOnlyLastFilter_;
 
@@ -198,11 +198,6 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   pathCollConfig.addParameter<double>("dR2limit", dR2limit_);
   pathCollConfig.addParameter<bool>("doOnlyLastFilter", doOnlyLastFilter_);
   pathCollConfig.addParameter<std::string>("hltProcessName", hltProcessName_);
-
-  // we want "before" histograms, which we will use this dummy path for
-  edm::ParameterSet pathCollConfigBefore = pathCollConfig;
-  pathCollConfigBefore.addParameter<std::string>("triggerPath", "beforeAnyPath");
-  collectionPath_.emplace_back(HLTGenValHistCollPath(pathCollConfigBefore, hltConfig_));
 
   // creating a histogram collection for each path
   for (const auto & path : hltPaths) {

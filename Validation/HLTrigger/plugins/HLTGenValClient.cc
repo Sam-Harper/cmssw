@@ -179,23 +179,23 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
       std::stringstream namestream(content->getName());
       std::string namesegment;
       std::vector<std::string> seglist;
-      while(std::getline(namestream, namesegment, '_'))
+      while(std::getline(namestream, namesegment, ':'))
       {
          seglist.push_back(namesegment);
       }
 
-      if(seglist.size() == 3) { // this should be the only "proper" files we want to look at
-        if(seglist.at(1) == "GEN") continue; // this is the "before" hist, we won't create an effiency from this
+      if(seglist.size() == 4) { // this should be the only "proper" files we want to look at
+        if(seglist.at(2) == "GEN") continue; // this is the "before" hist, we won't create an effiency from this
 
         // first we determing whether we have the 1D or 2D case
-        if(seglist.at(2).rfind("2D", 0) == 0) {
+        if(seglist.at(3).rfind("2D", 0) == 0) {
 
           // 2D case
           EfficOption opt;
-          opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff"; // efficiency histogram name
-          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency"; // efficiency histogram title
+          opt.name = seglist.at(0) + ":" + seglist.at(1) + ":" + seglist.at(2) + ":" + seglist.at(3) + ":eff"; // efficiency histogram name
+          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " " + seglist.at(3) + " efficiency"; // efficiency histogram title
           opt.numerator = content->getName(); // numerator histogram (after a filter)
-          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2); // denominator histogram (before all filters)
+          opt.denominator = seglist.at(0) + ":" + seglist.at(1) + ":GEN:" + seglist.at(3); // denominator histogram (before all filters)
 
           efficOptions_.push_back(opt);
 
@@ -203,10 +203,10 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
 
           // 1D case
           EfficOption opt;
-          opt.name = seglist.at(0) + "_" + seglist.at(1) + "_" + seglist.at(2) + "_eff"; // efficiency histogram name
-          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " efficiency"; // efficiency histogram title
+          opt.name = seglist.at(0) + ":" + seglist.at(1) + ":" + seglist.at(2) + ":" + seglist.at(3) + ":eff"; // efficiency histogram name
+          opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " " + seglist.at(3) + " efficiency"; // efficiency histogram title
           opt.numerator = content->getName(); // numerator histogram (after a filter)
-          opt.denominator = seglist.at(0) + "_GEN_" + seglist.at(2); // denominator histogram (before all filters)
+          opt.denominator = seglist.at(0) + ":" + seglist.at(1) + ":GEN:" + seglist.at(3); // denominator histogram (before all filters)
 
           efficOptions_.push_back(opt);
 

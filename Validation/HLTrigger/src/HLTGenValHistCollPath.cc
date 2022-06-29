@@ -14,46 +14,47 @@ HLTGenValHistCollPath::HLTGenValHistCollPath(edm::ParameterSet pathCollConfig, H
   filterCollConfig.addParameter<std::string>("tag", pathCollConfig.getParameter<std::string>("tag"));
   filterCollConfig.addParameter<std::string>("hltProcessName", pathCollConfig.getParameter<std::string>("hltProcessName"));
   filterCollConfig.addParameter<double>("dR2limit", pathCollConfig.getParameter<double>("dR2limit"));
+  filterCollConfig.addParameter<std::string>("pathName", triggerPath_);
 
   pathStringName_ = triggerPath_ + "-" + pathCollConfig.getParameter<std::string>("objType");
   if(pathCollConfig.getParameter<std::string>("tag") != "") pathString_ += "-"+pathCollConfig.getParameter<std::string>("tag");
 
+  // this filter will be the denominator
+  edm::ParameterSet filterCollConfigStepBeforeAny = filterCollConfig;
+  filterCollConfigStepBeforeAny.addParameter<std::string>("filterName", "beforeAnyFilter");
+  collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigStepBeforeAny));
+
+  // we'll use this to construct the string to find which filters belong to which histogram later
   pathString_ = "";
-  // as we want a "before" hist before any filter is applied, this dummy is added to the collection
-  if(triggerPath_ == "beforeAnyPath") {
-    edm::ParameterSet filterCollConfigBeforeAnyPath = filterCollConfig;
-    filterCollConfigBeforeAnyPath.addParameter<std::string>("filterName", "beforeAnyFilter");
-    collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigBeforeAnyPath));
+
+  // getting all filters from path
+  filters_ = hltConfig_.saveTagsModules(triggerPath_);
+  if(doOnlyLastFilter_) {
+    edm::ParameterSet filterCollConfigOnlyLastFilter = filterCollConfig;
+    filterCollConfigOnlyLastFilter.addParameter<std::string>("filterName", filters_.back());
+    collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigOnlyLastFilter));
+
+    // remove potential leading "-" for printing
+    std::string filterName = filters_.back();
+    if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
+
+    pathString_ += filterName;
   } else {
 
-    // getting all filters from path
-    filters_ = hltConfig_.saveTagsModules(triggerPath_);
-    if(doOnlyLastFilter_) {
-      edm::ParameterSet filterCollConfigOnlyLastFilter = filterCollConfig;
-      filterCollConfigOnlyLastFilter.addParameter<std::string>("filterName", filters_.back());
-      collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigOnlyLastFilter));
+    for (auto & filter : filters_) {
+      edm::ParameterSet filterCollConfigStep = filterCollConfig;
+      filterCollConfigStep.addParameter<std::string>("filterName", filter);
+      collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigStep));
 
       // remove potential leading "-" for printing
-      std::string filterName = filters_.back();
+      std::string filterName = filter;
       if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
 
       pathString_ += filterName;
-    } else {
-      for (auto & filter : filters_) {
-        edm::ParameterSet filterCollConfigStep = filterCollConfig;
-        filterCollConfigStep.addParameter<std::string>("filterName", filter);
-        collectionFilter_.emplace_back(HLTGenValHistCollFilter(filterCollConfigStep));
-
-        // remove potential leading "-" for printing
-        std::string filterName = filter;
-        if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
-
-        pathString_ += filterName;
-        if(filter != filters_.back()) pathString_ += ";";
-      }
+      if(filter != filters_.back()) pathString_ += ";";
     }
-
   }
+
 
 }
 
