@@ -69,8 +69,10 @@ HLTGenValPathSpecificCutParser::HLTGenValPathSpecificCutParser(std::string pathS
 
     } else if (cutVariable == "bins") {
 
+      // TODO add more binnings
       if(cutParameter == "somebinning") {
-        pathSpecificBins_ = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+        if(pathSpecificBins_.size() > 0) throw cms::Exception("InputError") << "Multiple different binnings set for a path!.\n";
+        else pathSpecificBins_ = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
       }
 
     } else {
