@@ -6,10 +6,9 @@
 // Implementation:
 //   Histograms for objects of a certain type are created for multiple paths chosen by the user: for all objects,
 //   and for objects passing filters in the path, determined by deltaR matching.
-//   Each HLTGenValSource can handle a single object type and any number of paths (and filters in them).
+//   Each HLTGenValSource can handle a single object type and any number of paths (and filters in them)
 //
-// Author:  Finn Jonathan Labe
-//         Created:  Thu, 21 Oct 2021 11:51:30 GMT
+//  Author: Finn Labe, UHH, Jul. 2022
 //
 //********************************************************************************
 
@@ -212,8 +211,7 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
         // in case the path was added twice, we'll add a tag automatically
         int count = std::count(hltPaths.begin(), hltPaths.end(), pathFromConfig);
         if (count > 1) {
-          std::cout << "Found duplicate path " << pathFromConfig << std::endl;
-          pathSpecificCuts += std::string(",autotag=")+std::to_string( count );
+          pathSpecificCuts += std::string(",autotag=v")+std::to_string( count );
         }
         hltPathSpecificCuts.push_back(pathSpecificCuts);
         pathfound = true;

@@ -8,8 +8,8 @@
 //   specified filter. It is resonsible for booking and filling the histograms of all vsVars
 //   histograms that are created for a specific filter.
 //
-// Author : Finn Labe, UHH, Oct. 2021
-// (Heavily borrowed from Sam Harpers HLTDQMFilterEffHists)
+// Author : Finn Labe, UHH, Jul. 2022
+//          (Strongly inspired by Sam Harpers HLTDQMFilterEffHists class)
 //
 //***********************************************************************************
 
@@ -25,7 +25,7 @@
 #include "DQMOffline/Trigger/interface/UtilFuncs.h"
 
 #include "Validation/HLTrigger/interface/HLTGenValObject.h"
-#include "Validation/HLTrigger/interface/HLTGenValPathSpecificCutParser.h"
+#include "Validation/HLTrigger/interface/HLTGenValPathSpecificSettingParser.h"
 
 #include "DataFormats/Math/interface/deltaR.h"
 
@@ -57,15 +57,5 @@ private:
   std::string hltProcessName_;
   double dR2limit_;
 };
-
-class Called {
-private:
-  mutable std::shared_ptr<bool> called_;
-public:
-  Called():called_(std::make_shared<bool>(false)){}
-  void operator()(TH1*)const{*called_ = true;}
-  bool called(){return *called_;}
-};
-
 
 #endif

@@ -74,10 +74,10 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   auto vsVar = histConfig.getParameter<std::string>("vsVar");
   auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
 
-  // this thing parses any potential additional cuts or changes in binning
-  HLTGenValPathSpecificCutParser parser = HLTGenValPathSpecificCutParser( histConfig.getParameter<std::string>("pathSpecificCuts"), histConfig.getParameter<std::vector<edm::ParameterSet>>("binnings"), vsVar );
+  // this class parses any potential additional cuts, changes in binning or tags
+  HLTGenValPathSpecificSettingParser parser = HLTGenValPathSpecificSettingParser( histConfig.getParameter<std::string>("pathSpecificCuts"), histConfig.getParameter<std::vector<edm::ParameterSet>>("binnings"), vsVar );
 
-  // bin edges
+  // getting the bin edges, path-specific overwrites general if present
   auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
   if(parser.havePathSpecificBins()) binLowEdgesDouble = parser.getPathSpecificBins();
 
@@ -87,7 +87,7 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   allCutsVector.insert(allCutsVector.end(), pathSpecificCutsVector.begin(), pathSpecificCutsVector.end());
   VarRangeCutColl<HLTGenValObject> rangeCuts(allCutsVector);
 
-  // getting tag from parser
+  // getting the custom tag
   std::string tag = parser.getTag();
 
   // checking validity of vsVar
@@ -104,38 +104,32 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   std::string filterName = filter_;
   if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
 
-  // if a label is set, we add it after the objType_
-  std::string objTypeString = objType_;
-
   std::string histName, histTitle;
   if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
-    histName = objTypeString + ":" + path_ + ":GEN:vs" + vsVar ;
-    histTitle = objTypeString + ":" + path_ + " GEN vs " + vsVar;
+    histName = objType_ + ":" + path_ + ":GEN:vs" + vsVar ;
+    histTitle = objType_ + ":" + path_ + " GEN vs " + vsVar;
     if(tag != "") {
       histName += ":"+tag;
       histTitle += " "+tag;
     }
   } else { // naming of all regular hists
-    histName = objTypeString + ":" + path_ + ":" + filterName + ":vs" + vsVar;
-    histTitle = objTypeString + ":" + path_ + ":" + filterName + ":vs" + vsVar;
+    histName = objType_ + ":" + path_ + ":" + filterName + ":vs" + vsVar;
+    histTitle = objType_ + ":" + path_ + ":" + filterName + ":vs" + vsVar;
+
+    // appending the tag, in case it is filled
     if(tag != "") {
       histName += ":"+tag;
       histTitle += " "+tag;
     }
   }
 
-  Called called = Called();
-  auto me = iBooker.book1D(histName.c_str(), histTitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0], called );   // booking MonitorElement
+  auto me = iBooker.book1D(histName.c_str(), histTitle.c_str(), binLowEdges.size() - 1, &binLowEdges[0] );   // booking MonitorElement
 
-  // only creating the histograms in case it is new
-  if(called.called()) {
-    std::unique_ptr<HLTGenValHist> hist; // creating the hist object
+  std::unique_ptr<HLTGenValHist> hist; // creating the hist object
 
-    hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc, rangeCuts);
+  hist = std::make_unique<HLTGenValHist1D>(me->getTH1(), vsVar, vsVarFunc, rangeCuts);
 
-    hists_.emplace_back(std::move(hist));
-  }
-
+  hists_.emplace_back(std::move(hist));
 }
 
 // booker function for 2D hists
@@ -166,16 +160,13 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, const edm::Para
   std::string filterName = filter_;
   if(filterName.rfind("-", 0) == 0) filterName.erase(0, 1);
 
-  // if a label is set, we add it after the objType_
-  std::string objTypeString = objType_;
-
   std::string histName, histTitle;
   if(filter_ == "beforeAnyFilter") {
-    histName = objTypeString + ":" + path_ + ":GEN:2Dvs" + vsVarX + ":" + vsVarY;
-    histTitle = objTypeString + ":" + path_ + " GEN 2D vs " + vsVarX + " " + vsVarY;
+    histName = objType_ + ":" + path_ + ":GEN:2Dvs" + vsVarX + ":" + vsVarY;
+    histTitle = objType_ + ":" + path_ + " GEN 2D vs " + vsVarX + " " + vsVarY;
   } else {
-    histName = objTypeString + ":" + path_ + ":" + filterName + ":2Dvs" + vsVarX + vsVarY;
-    histTitle = objTypeString + ":" + path_ + " " + filterName + " 2D vs" + vsVarX + " " + vsVarY;
+    histName = objType_ + ":" + path_ + ":" + filterName + ":2Dvs" + vsVarX + vsVarY;
+    histTitle = objType_ + ":" + path_ + " " + filterName + " 2D vs" + vsVarX + " " + vsVarY;
   }
 
   auto me = iBooker.book2D(histName.c_str(), histTitle.c_str(), binLowEdgesX.size() - 1, &binLowEdgesX[0], binLowEdgesY.size() - 1, &binLowEdgesY[0]);

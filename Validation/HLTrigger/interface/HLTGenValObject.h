@@ -4,7 +4,7 @@
 //********************************************************************************
 //
 // Description:
-//   This class is a "wrapper" for the Generator level validation code, which unifies various object types.
+//   This class is an object wrapper for the Generator level validation code.
 //   It handles the different type of objects the code needs to run on: GenParticles, GenJets and event-level energy sums
 //
 // Author : Finn Labe, UHH, Nov. 2021

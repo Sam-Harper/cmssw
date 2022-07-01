@@ -7,8 +7,8 @@
 //    The structure of this model is strongly inspired by the DQMGenericClient,
 //    replacing most user input parameters by the automatic parsing of the given directory.
 //
-//  Author: Finn Labe, UHH, Nov. 2021
-//  DQMGenericClient by Junghwan Goh - SungKyunKwan University
+//  Author: Finn Labe, UHH, Jul. 2022
+//          Inspired by DQMGenericClient from Junghwan Goh - SungKyunKwan University
 //********************************************************************************
 
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -117,8 +117,6 @@ void HLTGenValClient::dqmEndRun(DQMStore::IBooker& ibooker,
                                  edm::Run const&,
                                  edm::EventSetup const&) {
 
-  // so I am not sure what the following really means, but I jost wont touch it for the moment :D
-
   // Create new MEs in endRun, even though we are requested to do it in endJob.
   // This gives the QTests a chance to run, before summaries are created in
   // endJob. The negative side effect is that we cannot run the GenericClient
@@ -184,9 +182,10 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
          seglist.push_back(namesegment);
       }
 
-      if(seglist.size() == 4 || seglist.size() == 5) { // this should be the only "proper" files we want to look at. 5 means that a tag was set!
-        if(seglist.at(2) == "GEN") continue; // this is the "before" hist, we won't create an effiency from this
+      if(seglist.size() == 4 || seglist.size() == 5) { // this should be the only "proper" files we want to look at. 5 means that a custom tag was set!
+        if(seglist.at(2) == "GEN") continue; // this is the "before" hist, we won't create an effiency from this alone
 
+        // if a fifth entry exists, it is expected to be the custom tag
         std::string tag = "";
         if(seglist.size() == 5) tag = seglist.at(4);
 
@@ -211,10 +210,11 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
           opt.numerator = content->getName(); // numerator histogram (after a filter)
           opt.denominator = seglist.at(0) + ":" + seglist.at(1) + ":GEN:" + seglist.at(3); // denominator histogram (before all filters)
 
+          // propagating the custom tag to the efficiency
           if(tag != "") {
-            opt.name += ":"+tag;
-            opt.title += " "+tag;
-            opt.denominator += ":"+tag;
+            opt.name += ":" + tag;
+            opt.title += " " + tag;
+            opt.denominator += ":" + tag;
           }
 
           efficOptions_.push_back(opt);

@@ -4,12 +4,12 @@
 //********************************************************************************
 //
 // Description:
-//   Histogram holder class for the Generator level HLT validation
+//   Histogram holder class for the GEN-level HLT validation
 //   Handling and filling of 1D and 2D histograms is done by this class.
-//   Strongly inspired by Sam Harpers HLTDQMHist
 //
 //
-// Author : Finn Labe, UHH, Oct. 2021
+// Author : Finn Labe, UHH, Jul. 2022
+//          (Strongly inspired by Sam Harpers HLTDQMHist class)
 //
 //***********************************************************************************
 
