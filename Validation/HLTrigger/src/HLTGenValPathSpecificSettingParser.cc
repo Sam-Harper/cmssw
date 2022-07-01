@@ -11,7 +11,7 @@ HLTGenValPathSpecificSettingParser::HLTGenValPathSpecificSettingParser(std::stri
      pathSpecificSettingsSeglist.push_back(pathSpecificSettingsSegment);
   }
 
-  for (auto pathSpecificSetting : pathSpecificSettingsSeglist) {
+  for (const auto pathSpecificSetting : pathSpecificSettingsSeglist) {
 
     // each of these strings is expected to contain exactly one equal sign
     std::stringstream pathSpecificSettingStream(pathSpecificSetting);
@@ -73,7 +73,7 @@ HLTGenValPathSpecificSettingParser::HLTGenValPathSpecificSettingParser(std::stri
 
       bool binningFound = false;
       bool binningUsed = false;
-      for (auto binning : binnings) {
+      for (const auto binning : binnings) {
         if (binning.getParameter<std::string>("name") == cutParameter) {
           if (binning.getParameter<std::string>("vsVar") == vsVar) {
             if (binningUsed) throw cms::Exception("InputError") << "Multiple different binnings set for a path, this does not make sense!.\n";
@@ -89,7 +89,7 @@ HLTGenValPathSpecificSettingParser::HLTGenValPathSpecificSettingParser(std::stri
       tag_ = cutParameter;
     } else if (cutVariable == "autotag") {
       // autotag is only used if no manual tag is set
-      if(tag_ == "") tag_ = cutParameter;
+      if(tag_.empty()) tag_ = cutParameter;
     } else {
       throw cms::Exception("InputError") << "Path-specific cut "+cutVariable+" not recognized. The following options can be user: absEtaMax, absEtaCut, absEtaMin, ptMax, ptMin, ptCut, etMax, etMin, etCut, region, bins and tag.\n";
     }

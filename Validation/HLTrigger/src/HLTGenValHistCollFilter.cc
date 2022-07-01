@@ -54,7 +54,7 @@ void HLTGenValHistCollFilter::fillHists(const HLTGenValObject& obj, edm::Handle<
     std::vector<std::string> eventLevelVariables = {"AK4HT", "AK8HT", "MET"};
     if(std::find(eventLevelVariables.begin(), eventLevelVariables.end(), objType_) != eventLevelVariables.end()) {
       // for these event level variables we only require the existence of a trigger object, but no matching
-      if(selectedObjects.size() > 0) for (auto& hist : hists_) hist->fill(obj);
+      if(!selectedObjects.empty()) for (auto& hist : hists_) hist->fill(obj);
     } else {
       // do a deltaR matching between trigger object and GEN object
       double mindR2 = 99999;
@@ -108,7 +108,7 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
     histName = objType_ + ":" + path_ + ":GEN:vs" + vsVar ;
     histTitle = objType_ + ":" + path_ + " GEN vs " + vsVar;
-    if(tag != "") {
+    if(!tag.empty()) {
       histName += ":"+tag;
       histTitle += " "+tag;
     }
@@ -117,7 +117,7 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
     histTitle = objType_ + ":" + path_ + ":" + filterName + ":vs" + vsVar;
 
     // appending the tag, in case it is filled
-    if(tag != "") {
+    if(!tag.empty()) {
       histName += ":"+tag;
       histTitle += " "+tag;
     }
