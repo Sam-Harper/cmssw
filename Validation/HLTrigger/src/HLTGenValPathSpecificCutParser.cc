@@ -1,6 +1,6 @@
 #include "Validation/HLTrigger/interface/HLTGenValPathSpecificCutParser.h"
 
-HLTGenValPathSpecificCutParser::HLTGenValPathSpecificCutParser(std::string pathSpecificCuts) {
+HLTGenValPathSpecificCutParser::HLTGenValPathSpecificCutParser(std::string pathSpecificCuts, std::vector<edm::ParameterSet> binnings, std::string vsVar) {
 
   // splitting the cutstring
   std::stringstream pathSpecificCutsStream(pathSpecificCuts);
@@ -24,6 +24,9 @@ HLTGenValPathSpecificCutParser::HLTGenValPathSpecificCutParser(std::string pathS
     if(pathSpecificCutSeglist.size() != 2) throw cms::Exception("InputError") << "Path-specific cuts could not be parsed. Make sure that each parameter contains exactly one equal sign!.\n";
     const std::string cutVariable = pathSpecificCutSeglist.at(0);
     const std::string cutParameter = pathSpecificCutSeglist.at(1);
+
+    // ideas
+    // jet flavour?
 
     edm::ParameterSet rangeCutConfig;
     if (cutVariable == "absEtaMax" || cutVariable == "absEtaCut") {
@@ -69,17 +72,30 @@ HLTGenValPathSpecificCutParser::HLTGenValPathSpecificCutParser(std::string pathS
 
     } else if (cutVariable == "bins") {
 
-      // TODO add more binnings
-      if(cutParameter == "somebinning") {
-        if(pathSpecificBins_.size() > 0) throw cms::Exception("InputError") << "Multiple different binnings set for a path!.\n";
-        else pathSpecificBins_ = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+      bool binningFound = false;
+      bool binningUsed = false;
+      for (auto binning : binnings) {
+        if (binning.getParameter<std::string>("name") == cutParameter) {
+          if (binning.getParameter<std::string>("vsVar") == vsVar) {
+            if (binningUsed) throw cms::Exception("InputError") << "Multiple different binnings set for a path, this does not make sense!.\n";
+            pathSpecificBins_ = binning.getParameter<std::vector<double>>("binLowEdges");
+            binningUsed = true;
+          }
+          binningFound = true;
+        }
       }
+      if (!binningFound) throw cms::Exception("InputError") << "Binning " << cutParameter << " not recognized! Please pass the definition to the module.\n";
 
+    } else if (cutVariable == "tag") {
+      tag_ = cutParameter;
+    } else if (cutVariable == "autotag") {
+      // autotag is only used if no manual tag is set
+      if(tag_ == "") tag_ = cutParameter;
     } else {
       throw cms::Exception("InputError") << "Path-specific cut "+cutVariable+" not recognized.\n";
     }
 
-    pathSpecificCutsVector_.push_back( rangeCutConfig );
+    if(!rangeCutConfig.empty()) pathSpecificCutsVector_.push_back( rangeCutConfig );
 
   }
 

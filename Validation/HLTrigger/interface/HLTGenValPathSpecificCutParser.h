@@ -21,15 +21,17 @@ class HLTGenValPathSpecificCutParser {
 public:
 
   // constructor
-  HLTGenValPathSpecificCutParser(std::string pathSpecificCuts);
+  HLTGenValPathSpecificCutParser(std::string pathSpecificCuts, std::vector<edm::ParameterSet> binnings, std::string vsVar);
 
   std::vector<edm::ParameterSet> getPathSpecificCuts() {return pathSpecificCutsVector_;}
   std::vector<double> getPathSpecificBins() {return pathSpecificBins_;}
   bool havePathSpecificBins() { return (pathSpecificBins_.size() > 0); }
+  std::string getTag() {return tag_;}
 
 private:
   std::vector<edm::ParameterSet> pathSpecificCutsVector_;
   std::vector<double> pathSpecificBins_;
+  std::string tag_ = "";
 
 };
 

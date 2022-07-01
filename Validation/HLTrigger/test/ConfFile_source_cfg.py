@@ -110,8 +110,17 @@ process.HLTGenValSourceELE = cms.EDProducer('HLTGenValSource',
     objType = cms.string("ele"),
     hltPathsToCheck = cms.vstring(
       "HLT_Ele35_WPTight_Gsf_v",
-      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v:absEtaMax=0.8",
+      "HLT_Ele35_WPTight_Gsf_v:bins=ptBinsJet",
+      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v:region=EB",
+      "HLT_Ele115_CaloIdVT_GsfTrkIdT_v:region=EE",
       "HLT_Photon200_v"
+    ),
+    binnings = cms.VPSet(
+        cms.PSet(
+            name = cms.string("ptBinsJet"),
+            vsVar = cms.string("pt"),
+            binLowEdges = ptBinsJet
+        )
     ),
     doOnlyLastFilter = cms.bool(False),
     histConfigs = cms.VPSet(

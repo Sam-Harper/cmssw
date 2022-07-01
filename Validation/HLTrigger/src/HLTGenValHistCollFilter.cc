@@ -3,7 +3,6 @@
 // constructor
 HLTGenValHistCollFilter::HLTGenValHistCollFilter(edm::ParameterSet filterCollConfig) {
   objType_ = filterCollConfig.getParameter<std::string>("objType");
-  tag_ = filterCollConfig.getParameter<std::string>("tag");
   filter_ = filterCollConfig.getParameter<std::string>("filterName");
   path_ = filterCollConfig.getParameter<std::string>("pathName");
   hltProcessName_ = filterCollConfig.getParameter<std::string>("hltProcessName");
@@ -13,7 +12,6 @@ HLTGenValHistCollFilter::HLTGenValHistCollFilter(edm::ParameterSet filterCollCon
 edm::ParameterSetDescription HLTGenValHistCollFilter::makePSetDescription() {
   edm::ParameterSetDescription desc;
   desc.add<std::string>("objType", "");
-  desc.add<std::string>("tag", "");
   desc.add<std::string>("hltProcessName", "HLT");
   desc.add<double>("dR2limit", 0.1);
   desc.add<std::string>("filterName", "");
@@ -77,7 +75,7 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   auto vsVarFunc = hltdqm::getUnaryFuncFloat<HLTGenValObject>(vsVar);
 
   // this thing parses any potential additional cuts or changes in binning
-  HLTGenValPathSpecificCutParser parser = HLTGenValPathSpecificCutParser( histConfig.getParameter<std::string>("pathSpecificCuts") );
+  HLTGenValPathSpecificCutParser parser = HLTGenValPathSpecificCutParser( histConfig.getParameter<std::string>("pathSpecificCuts"), histConfig.getParameter<std::vector<edm::ParameterSet>>("binnings"), vsVar );
 
   // bin edges
   auto binLowEdgesDouble = histConfig.getParameter<std::vector<double> >("binLowEdges");
@@ -87,8 +85,10 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
   std::vector<edm::ParameterSet> allCutsVector = histConfig.getParameter<std::vector<edm::ParameterSet> >("rangeCuts");
   std::vector<edm::ParameterSet> pathSpecificCutsVector = parser.getPathSpecificCuts();
   allCutsVector.insert(allCutsVector.end(), pathSpecificCutsVector.begin(), pathSpecificCutsVector.end());
-
   VarRangeCutColl<HLTGenValObject> rangeCuts(allCutsVector);
+
+  // getting tag from parser
+  std::string tag = parser.getTag();
 
   // checking validity of vsVar
   if (!vsVarFunc) { throw cms::Exception("ConfigError") << " vsVar " << vsVar << " is giving null ptr (likely empty) in " << __FILE__ << "," << __LINE__ << std::endl;}
@@ -106,15 +106,22 @@ void HLTGenValHistCollFilter::book1D(DQMStore::IBooker& iBooker, const edm::Para
 
   // if a label is set, we add it after the objType_
   std::string objTypeString = objType_;
-  if(tag_ != "") objTypeString += ":"+tag_;
 
   std::string histName, histTitle;
   if(filter_ == "beforeAnyFilter") { // this handles the naming of the "before" hist
     histName = objTypeString + ":" + path_ + ":GEN:vs" + vsVar ;
     histTitle = objTypeString + ":" + path_ + " GEN vs " + vsVar;
+    if(tag != "") {
+      histName += ":"+tag;
+      histTitle += " "+tag;
+    }
   } else { // naming of all regular hists
     histName = objTypeString + ":" + path_ + ":" + filterName + ":vs" + vsVar;
     histTitle = objTypeString + ":" + path_ + ":" + filterName + ":vs" + vsVar;
+    if(tag != "") {
+      histName += ":"+tag;
+      histTitle += " "+tag;
+    }
   }
 
   Called called = Called();
@@ -161,7 +168,6 @@ void HLTGenValHistCollFilter::book2D(DQMStore::IBooker& iBooker, const edm::Para
 
   // if a label is set, we add it after the objType_
   std::string objTypeString = objType_;
-  if(tag_ != "") objTypeString += ":"+tag_;
 
   std::string histName, histTitle;
   if(filter_ == "beforeAnyFilter") {

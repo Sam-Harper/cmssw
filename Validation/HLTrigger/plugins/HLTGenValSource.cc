@@ -16,6 +16,8 @@
 
 // system include files
 #include <memory>
+#include <chrono>
+#include <ctime>
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -87,11 +89,15 @@ private:
 
   // config strings/Psets
   std::string objType_;
-  std::string tag_;
   std::string dirName_;
   std::vector<edm::ParameterSet> histConfigs_;
   std::vector<edm::ParameterSet> histConfigs2D_;
+  std::vector<edm::ParameterSet> binnings_;
   std::string hltProcessName_;
+
+  // constructing the info string, which will be written to the output file for display of information in the GUI
+  // the string will have a JSON formating, thus starting here with the opening bracket, which will be close directly before saving to the root file
+  std::string infoString_ = "{";
 
   // histogram collection per path
   std::vector<HLTGenValHistCollPath> collectionPath_;
@@ -118,11 +124,11 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
       // getting the histogram configurations
       histConfigs_ = iConfig.getParameterSetVector("histConfigs");
       histConfigs2D_ = iConfig.getParameterSetVector("histConfigs2D");
+      binnings_ = iConfig.getParameterSetVector("binnings");
 
       // getting all other configurations
       dirName_ = iConfig.getParameter<std::string>("DQMDirName");
       objType_ = iConfig.getParameter<std::string>("objType");
-      tag_ = iConfig.getParameter<std::string>("tag");
       dR2limit_ = iConfig.getParameter<double>("dR2limit");
       doOnlyLastFilter_ = iConfig.getParameter<bool>("doOnlyLastFilter");
       hltProcessName_ = iConfig.getParameter<std::string>("hltProcessName");
@@ -132,12 +138,38 @@ HLTGenValSource::HLTGenValSource(const edm::ParameterSet& iConfig)
 
 void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &iSetup) {
 
+  // writing general information to info JSON
+  auto t = std::time(nullptr);
+  auto tm = *std::localtime(&t);
+
+  // date and time of running this
+  std::ostringstream timeStringStream;
+  timeStringStream << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
+  auto timeString = timeStringStream.str();
+  infoString_ += "\"date & time\":\""+timeString+"\",";
+
+  // CMSSW version
+  std::stringstream CMSSWversionStream(std::getenv("CMSSW_BASE"));
+  std::string CMSSWversionSegment;
+  std::string CMSSWversion;
+  while(std::getline(CMSSWversionStream, CMSSWversionSegment, '/'))
+  {
+     CMSSWversion = CMSSWversionSegment;
+  }
+  infoString_ += std::string("\"CMSSW release\":\"")+CMSSWversion+"\",";
+
   // Initialize hltConfig, for cross-checking whether chosen paths exist
   bool changedConfig;
   if (!hltConfig_.init(iRun, iSetup, hltProcessName_, changedConfig)) {
     edm::LogError("HLTGenValSource") << "Initialization of HLTConfigProvider failed!";
     return;
   }
+
+  // global tag
+  infoString_ += std::string("\"global tag\":\"")+hltConfig_.globalTag()+"\",";
+
+  // confDB table name
+  infoString_ += std::string("\"HLT ConfDB table\":\"")+hltConfig_.tableName()+"\",";
 
   // Get the set of trigger paths we want to make plots for
   std::vector<std::string> notFoundPaths;
@@ -174,7 +206,15 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
     bool pathfound = false;
     for (auto const &pathFromConfig : hltConfig_.triggerNames()) {
       if (pathFromConfig.find(cleanedPathToCheck) != std::string::npos) {
+
         hltPaths.push_back(pathFromConfig);
+
+        // in case the path was added twice, we'll add a tag automatically
+        int count = std::count(hltPaths.begin(), hltPaths.end(), pathFromConfig);
+        if (count > 1) {
+          std::cout << "Found duplicate path " << pathFromConfig << std::endl;
+          pathSpecificCuts += std::string(",autotag=")+std::to_string( count );
+        }
         hltPathSpecificCuts.push_back(pathSpecificCuts);
         pathfound = true;
       }
@@ -194,7 +234,6 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
   // most of these options are not needed in the pathColl, but in the filterColls created in the pathColl
   edm::ParameterSet pathCollConfig;
   pathCollConfig.addParameter<std::string>("objType", objType_);
-  pathCollConfig.addParameter<std::string>("tag", tag_);
   pathCollConfig.addParameter<double>("dR2limit", dR2limit_);
   pathCollConfig.addParameter<bool>("doOnlyLastFilter", doOnlyLastFilter_);
   pathCollConfig.addParameter<std::string>("hltProcessName", hltProcessName_);
@@ -232,10 +271,17 @@ void HLTGenValSource::bookHistograms(DQMStore::IBooker& iBooker, const edm::Run&
 
   iBooker.setCurrentFolder(dirName_);
 
+  if(infoString_.back() == ',') infoString_.pop_back();
+  infoString_ += "}"; // adding the closing bracked to the JSON string
+  iBooker.bookString("HLTGenValInfo", infoString_);
+
   // booking all histograms
   for (long unsigned int i = 0; i < collectionPath_.size(); i++) {
     std::vector<edm::ParameterSet> histConfigs = histConfigs_;
-    for (auto & histConfig : histConfigs) histConfig.addParameter<std::string>("pathSpecificCuts", hltPathSpecificCuts.at(i));
+    for (auto & histConfig : histConfigs) {
+      histConfig.addParameter<std::string>("pathSpecificCuts", hltPathSpecificCuts.at(i));
+      histConfig.addParameter<std::vector<edm::ParameterSet>>("binnings", binnings_); // passing along the user-defined binnings
+    }
 
     collectionPath_.at(i).bookHists(iBooker, histConfigs, histConfigs2D_);
   }
@@ -250,7 +296,6 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   // basic parameter strings
   desc.add<std::string>("objType"); // this deliberately has no default, as this is the main thing the user needs to chose
   desc.add<std::vector<std::string>>("hltPathsToCheck"); // this for the moment also has no default: maybe there can be some way to handle this later?
-  desc.add<std::string>("tag", "");
   desc.add<std::string>("DQMDirName", "HLTGenVal");
   desc.add<std::string>("hltProcessName", "HLT");
   desc.add<double>("dR2limit", 0.1);
@@ -309,6 +354,18 @@ void HLTGenValSource::fillDescriptions(edm::ConfigurationDescriptions& descripti
   histConfigDefaults2D.push_back(histConfigDefault2D0);
 
   desc.addVPSet("histConfigs2D", histConfig2D, histConfigDefaults2D);
+
+  // binnings, which are vectors of PSets
+  // there are no default for this
+  edm::ParameterSetDescription binningConfig;
+  binningConfig.add<std::string>("name");
+  binningConfig.add<std::string>("vsVar");
+  binningConfig.add<std::vector<double>>("binLowEdges");
+
+  // this by default is empty
+  std::vector<edm::ParameterSet> binningConfigDefaults;
+
+  desc.addVPSet("binnings", binningConfig, binningConfigDefaults);
 
   descriptions.addDefault(desc);
 }

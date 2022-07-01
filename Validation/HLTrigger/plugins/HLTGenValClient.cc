@@ -184,8 +184,11 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
          seglist.push_back(namesegment);
       }
 
-      if(seglist.size() == 4) { // this should be the only "proper" files we want to look at
+      if(seglist.size() == 4 || seglist.size() == 5) { // this should be the only "proper" files we want to look at. 5 means that a tag was set!
         if(seglist.at(2) == "GEN") continue; // this is the "before" hist, we won't create an effiency from this
+
+        std::string tag = "";
+        if(seglist.size() == 5) tag = seglist.at(4);
 
         // first we determing whether we have the 1D or 2D case
         if(seglist.at(3).rfind("2D", 0) == 0) {
@@ -207,6 +210,12 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
           opt.title = seglist.at(0) + " " + seglist.at(1) + " " + seglist.at(2) + " " + seglist.at(3) + " efficiency"; // efficiency histogram title
           opt.numerator = content->getName(); // numerator histogram (after a filter)
           opt.denominator = seglist.at(0) + ":" + seglist.at(1) + ":GEN:" + seglist.at(3); // denominator histogram (before all filters)
+
+          if(tag != "") {
+            opt.name += ":"+tag;
+            opt.title += " "+tag;
+            opt.denominator += ":"+tag;
+          }
 
           efficOptions_.push_back(opt);
 
