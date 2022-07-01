@@ -59,9 +59,9 @@ HLTGenValPathSpecificSettingParser::HLTGenValPathSpecificSettingParser(std::stri
 
       for (const auto region : cutParameterSeglist) {
         if(region == "EB") {
-          rangeCutConfig.addParameter<std::vector<std::string>>("allowedRanges", {"-1.2:1.2"} );
+          rangeCutConfig.addParameter<std::vector<std::string>>("allowedRanges", {"-1.4442:1.4442"} );
         } else if (region == "EE") {
-          rangeCutConfig.addParameter<std::vector<std::string>>("allowedRanges", {"-999:-1.2", "1.2:999"} );
+          rangeCutConfig.addParameter<std::vector<std::string>>("allowedRanges", {"-999:-1.5660", "1.5660:999"} );
         } else {
           throw cms::Exception("InputError") << "Region "+region+" not recognized.\n";
         }
