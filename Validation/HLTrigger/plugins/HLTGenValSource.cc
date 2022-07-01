@@ -219,7 +219,7 @@ void HLTGenValSource::dqmBeginRun(const edm::Run &iRun, const edm::EventSetup &i
     }
     if(!pathfound) notFoundPaths.push_back(cleanedPathToCheck);
   }
-  if(notFoundPaths.size() > 0) {
+  if(!notFoundPaths.empty()) {
     // error handling in case some paths do not exist
     std::string notFoundPathsMessage = "";
     for (const auto & path : notFoundPaths) notFoundPathsMessage += "- " + path + "\n";
@@ -394,7 +394,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
   }
   else if(objType_ == "AK4HT") { // ak4-based HT, using the ak4GenJets collection
     const auto& genJets = iEvent.getHandle(AK4genJetToken_);
-    if(genJets->size() > 0){
+    if(!genJets->empty()){
       auto HTsum = (*genJets)[0].pt();
       for(size_t i = 1; i < genJets->size(); i++) {
         if(((*genJets)[i].pt() > 30) && (abs((*genJets)[i].eta()) < 2.5)) HTsum += (*genJets)[i].pt();
@@ -404,7 +404,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
   }
   else if(objType_ == "AK8HT") { // ak8-based HT, using the ak8GenJets collection
     const auto& genJets = iEvent.getHandle(AK8genJetToken_);
-    if(genJets->size() > 0){
+    if(!genJets->empty()){
       auto HTsum = (*genJets)[0].pt();
       for(size_t i = 1; i < genJets->size(); i++) {
         if(((*genJets)[i].pt() > 200) && (abs((*genJets)[i].eta()) < 2.5)) HTsum += (*genJets)[i].pt();
@@ -414,7 +414,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getObjectCollection(const edm::Eve
   }
   else if(objType_ == "MET") { // MET, using genMET
     const auto& genMET = iEvent.getHandle(genMETToken_);
-    if(genMET->size() > 0){
+    if(!genMET->empty()){
       auto genMETpt = (*genMET)[0].pt();
       objects.emplace_back(reco::Candidate::PolarLorentzVector(genMETpt, 0, 0, 0));
     }
@@ -462,7 +462,7 @@ std::vector<HLTGenValObject> HLTGenValSource::getGenParticles(const edm::Event& 
 
 // function returning the last GenParticle in a decay chain before FSR
 reco::GenParticle HLTGenValSource::getLastCopyPreFSR(reco::GenParticle part) {
-    auto daughters = part.daughterRefVector();
+    const auto daughters = part.daughterRefVector();
     if (daughters.size() == 1 && daughters.at(0)->pdgId() == part.pdgId()) return getLastCopyPreFSR(*daughters.at(0).get()); // recursion, whooo
     else return part;
 }

@@ -211,7 +211,7 @@ void HLTGenValClient::makeAllPlots(DQMStore::IBooker& ibooker, DQMStore::IGetter
           opt.denominator = seglist.at(0) + ":" + seglist.at(1) + ":GEN:" + seglist.at(3); // denominator histogram (before all filters)
 
           // propagating the custom tag to the efficiency
-          if(tag != "") {
+          if(!tag.empty()) {
             opt.name += ":" + tag;
             opt.title += " " + tag;
             opt.denominator += ":" + tag;
@@ -298,7 +298,7 @@ void HLTGenValClient::computeEfficiency(DQMStore::IBooker& ibooker,
   // That information is obtained from the class name of the hDenominator
   // Then we use the appropriate booking function
   TH1* efficHist = static_cast<TH1*>(hDenominator->Clone(newEfficMEName.c_str()));
-  efficHist->SetDirectory(0);
+  efficHist->SetDirectory(nullptr);
   efficHist->SetTitle(efficMETitle.c_str());
   TClass* myHistClass = efficHist->IsA();
   std::string histClassName = myHistClass->GetName();
