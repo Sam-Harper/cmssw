@@ -11735,6 +11735,11 @@ process = customiseHCALFor2018Input(process)
 process = customiseEGammaRecoFor2018Input(process)
 #process = customiseBeamSpotFor2018Input(process)
 
+from HLTrigger.Configuration.common import producers_by_type
+for prod in producers_by_type(process,'EgammaHLTHcalVarProducerFromRecHit'):
+    prod.eThresHB = [0.7,0.7,0.7,0.7]    
+    
+
 from HLTrigger.Configuration.customizeHLTforEGamma import customiseEGammaMenuDev
 process = customiseEGammaMenuDev(process)
 
