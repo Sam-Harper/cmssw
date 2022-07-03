@@ -50,6 +50,7 @@ EgammaHLTGsfTrackVarProducer::EgammaHLTGsfTrackVarProducer(const edm::ParameterS
   produces < reco::RecoEcalCandidateIsolationMap >( "MissingHits" ).setBranchAlias( "missinghits" );
   produces < reco::RecoEcalCandidateIsolationMap >( "Chi2" ).setBranchAlias( "chi2" );
   produces < reco::RecoEcalCandidateIsolationMap >( "ValidHits" ).setBranchAlias( "validhits" );
+  produces < reco::RecoEcalCandidateIsolationMap >( "NLayerIT" ).setBranchAlias( "nlayerit" );
 }
 
 EgammaHLTGsfTrackVarProducer::~EgammaHLTGsfTrackVarProducer()
@@ -98,6 +99,7 @@ void EgammaHLTGsfTrackVarProducer::produce(edm::Event& iEvent, const edm::EventS
   reco::RecoEcalCandidateIsolationMap missingHitsMap(recoEcalCandHandle);
   reco::RecoEcalCandidateIsolationMap validHitsMap(recoEcalCandHandle);
   reco::RecoEcalCandidateIsolationMap chi2Map(recoEcalCandHandle);
+  reco::RecoEcalCandidateIsolationMap nLayerITMap(recoEcalCandHandle);
 
   for(reco::RecoEcalCandidateCollection::const_iterator iRecoEcalCand = recoEcalCandHandle->begin(); iRecoEcalCand != recoEcalCandHandle->end(); iRecoEcalCand++){
     reco::RecoEcalCandidateRef recoEcalCandRef(recoEcalCandHandle,iRecoEcalCand-recoEcalCandHandle->begin());
@@ -125,6 +127,7 @@ void EgammaHLTGsfTrackVarProducer::produce(edm::Event& iEvent, const edm::EventS
       
     }
 
+    int nLayerITValue = -1;
     int validHitsValue = 0;
     float chi2Value = 9999999.;
     float missingHitsValue = 9999999;
@@ -146,6 +149,7 @@ void EgammaHLTGsfTrackVarProducer::produce(edm::Event& iEvent, const edm::EventS
       dPhiInValue=0;
       missingHitsValue = 0;
       validHitsValue = 100;
+      nLayerITValue = 100;
       chi2Value = 0;
       oneOverESuperMinusOneOverPValue = 0;
       oneOverESeedMinusOneOverPValue = 0;
@@ -168,10 +172,14 @@ void EgammaHLTGsfTrackVarProducer::produce(edm::Event& iEvent, const edm::EventS
 	if (gsfTracks[trkNr]->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS) < missingHitsValue) 
 	  missingHitsValue = gsfTracks[trkNr]->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
 	
-	if (gsfTracks[trkNr]->numberOfValidHits() < validHitsValue)
+	if (gsfTracks[trkNr]->numberOfValidHits() > validHitsValue)
 	  validHitsValue = gsfTracks[trkNr]->numberOfValidHits();
 
-	if (gsfTracks[trkNr]->numberOfValidHits() < chi2Value)
+	if (gsfTracks[trkNr]->hitPattern().pixelLayersWithMeasurement()  > nLayerITValue) {
+          nLayerITValue = gsfTracks[trkNr]->hitPattern().pixelLayersWithMeasurement();
+        }
+
+	if (gsfTracks[trkNr]->normalizedChi2() < chi2Value)
 	  chi2Value = gsfTracks[trkNr]->normalizedChi2();
 
 	if (fabs(scAtVtx.dEta())<dEtaInValue) 
@@ -193,6 +201,7 @@ void EgammaHLTGsfTrackVarProducer::produce(edm::Event& iEvent, const edm::EventS
     missingHitsMap.insert(recoEcalCandRef, missingHitsValue);
     validHitsMap.insert(recoEcalCandRef, validHitsValue);
     chi2Map.insert(recoEcalCandRef, chi2Value);
+    nLayerITMap.insert(recoEcalCandRef, nLayerITValue);
   }
 
   auto dEtaMapForEvent = std::make_unique<reco::RecoEcalCandidateIsolationMap>(dEtaMap);
@@ -203,6 +212,7 @@ void EgammaHLTGsfTrackVarProducer::produce(edm::Event& iEvent, const edm::EventS
   auto missingHitsForEvent = std::make_unique<reco::RecoEcalCandidateIsolationMap>(missingHitsMap);
   auto validHitsForEvent = std::make_unique<reco::RecoEcalCandidateIsolationMap>(validHitsMap);
   auto chi2ForEvent = std::make_unique<reco::RecoEcalCandidateIsolationMap>(chi2Map);
+  auto nLayerITForEvent = std::make_unique<reco::RecoEcalCandidateIsolationMap>(nLayerITMap);
 
   iEvent.put(std::move(dEtaMapForEvent), "Deta" );
   iEvent.put(std::move(dEtaSeedMapForEvent), "DetaSeed" );
@@ -212,6 +222,7 @@ void EgammaHLTGsfTrackVarProducer::produce(edm::Event& iEvent, const edm::EventS
   iEvent.put(std::move(missingHitsForEvent), "MissingHits");
   iEvent.put(std::move(validHitsForEvent), "ValidHits");
   iEvent.put(std::move(chi2ForEvent), "Chi2");
+  iEvent.put(std::move(nLayerITForEvent), "NLayerIT");
 }
 
 
