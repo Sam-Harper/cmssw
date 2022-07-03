@@ -11779,8 +11779,9 @@ process.source.inputCommands.append('keep *_rawDataCollector_*_HLT')
 process.source.inputCommands.append('keep *_mix_*_HLT')
 
 
-process.hltL1sDoubleEGXer1p2dRMaxY.L1SeedsLogicalExpression = "L1_SingleEG8er2p5"
-process.hltL1sSingleEGor.L1SeedsLogicalExpression = "L1_SingleEG8er2p5"
+#needed to be uncommented to compare with 10_2_14
+#process.hltL1sDoubleEGXer1p2dRMaxY.L1SeedsLogicalExpression = "L1_SingleEG8er2p5"
+#process.hltL1sSingleEGor.L1SeedsLogicalExpression = "L1_SingleEG8er2p5"
 
 #process.HLT_Ele5_Open_v1 = cms.Path() 
 #process.HLT_Ele5_Open_Unseeded_v1 = cms.Path()
