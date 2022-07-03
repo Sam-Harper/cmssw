@@ -20,3 +20,12 @@ std::function<float(const reco::Photon&)> hltdqm::getUnaryFuncExtraFloat<reco::P
     varFunc = [](const reco::Photon& pho) -> float { return pho.hadTowOverEm(); };
   return varFunc;
 }
+
+//hack to put the function definitions in the non-plugin libary
+//so they can be used by other packages
+#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+#include "DataFormats/EgammaCandidates/interface/Photon.h"
+#include "DataFormats/MuonReco/interface/Muon.h"
+auto testPho = hltdqm::getUnaryFuncFloat<reco::Photon>("et");
+auto testEle = hltdqm::getUnaryFuncFloat<reco::GsfElectron>("et");
+auto testMu = hltdqm::getUnaryFuncFloat<reco::Muon>("et");
