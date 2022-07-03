@@ -6,6 +6,8 @@
 #include "DataFormats/HLTReco/interface/TriggerEvent.h"
 #include "DataFormats/HLTReco/interface/TriggerEventWithRefs.h"
 #include "DataFormats/HLTReco/interface/HLTPrescaleTable.h"
+#include "DataFormats/HLTReco/interface/EgammaObject.h"
+
 #include "DataFormats/Common/interface/Wrapper.h"
 
 #include "DataFormats/Candidate/interface/CompositeCandidate.h"
@@ -53,6 +55,12 @@ namespace DataFormats_HLTReco {
     std::map<std::string,std::vector<unsigned int> > msu;
     trigger::HLTPrescaleTable hpt;
     edm::Wrapper<trigger::HLTPrescaleTable> whpt;
+
+    trigger::EgammaObject erew;
+    std::vector<trigger::EgammaObject> erew1;
+    edm::Wrapper<std::vector<trigger::EgammaObject> > egewr3;
+    edm::Ref<std::vector<trigger::EgammaObject> > egewr5;
+    
 
   };
 }
