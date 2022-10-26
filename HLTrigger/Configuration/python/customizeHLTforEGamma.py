@@ -138,7 +138,7 @@ def customiseEGammaMenuDev(process):
         "keep *_hltOnlineBeamsSpot_*_*",
         "keep *_hltParticleFlowClusterECALForMuonsMF_*_*",
         "keep *_hltParticleFlowClusterECALForMuonsMF_*_*",
-        "keep *_hltParticleFlowClusterHCAL_*_*",
+      #  "keep *_hltParticleFlowClusterHCAL_*_*", (very space heavy)
     
     ]
 
