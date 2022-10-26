@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-def customiseEGammaEventContent(process):
+def customiseEGammaEventContent(process,extraContent=[]):
     """
     this loads the hltEgammaHLTExtra module and adds it to all
     EndPaths containing a PoolOutputModule and adds the Egamma event 
@@ -25,6 +25,8 @@ def customiseEGammaEventContent(process):
         'keep *_hltNrInputEvents_*_*',
         'keep *_hltGtStage2Digis_*_*'
     ]
+    
+    egammaEvtContent.extend(extraContent)
     addedEvtContent = False
     for outmodname in process.outputModules_():
         outmod = process.outputModules_()[outmodname]
@@ -126,7 +128,21 @@ def customiseEGammaMenuDev(process):
         if hasattr(process,attrToDel):
             delattr(process,attrToDel)
 
-    process = customiseEGammaEventContent(process)
+    extraContent = [
+        "keep *_hltAK4PFJets*_*_*",
+        "keep *_hltAK8PFJets*_*_*",
+        "keep *_hltPFHTForMC*_*_*",
+        "keep *_hltIterL3MuonCandidates_*_*",
+        "keep *_hltIter0L3MuonTrackSelectionHighPurity_*_*",
+        "keep *_hltIter0L3MuonTrackSelectionHighPurity_*_*",
+        "keep *_hltOnlineBeamsSpot_*_*",
+        "keep *_hltParticleFlowClusterECALForMuonsMF_*_*",
+        "keep *_hltParticleFlowClusterECALForMuonsMF_*_*",
+        "keep *_hltParticleFlowClusterHCAL_*_*",
+    
+    ]
+
+    process = customiseEGammaEventContent(process,extraContent)
     
    
     return process
