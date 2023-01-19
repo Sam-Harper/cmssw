@@ -131,3 +131,32 @@ def customiseEGammaMenuDev(process):
    
     return process
 
+def customiseEGammaMenuBPark(process):
+    """
+    Customise the HLT for E/gamma menu development
+    It adds the E/gamma event content and deletes the DQM output
+    """
+
+    process.load( "DQMServices.Core.DQMStore_cfi" ) 
+    for attrToDel in ["dqmOutput","DQMOutput"]:
+        if hasattr(process,attrToDel):
+            delattr(process,attrToDel)
+
+    process = customiseEGammaEventContent(process)
+    
+
+   
+    process.hltEgammaHLTExtra.egCands.extend([
+        cms.PSet(
+            pixelSeeds = cms.InputTag("hltEgammaElectronPixelSeedsForBParking"),
+            ecalCands = cms.InputTag("hltEgammaCandidates"),
+            gsfTracks = cms.InputTag("hltEgammaGsfTracksForBParking"),
+            label = cms.string('LowPt')
+        ),
+        cms.PSet(
+            pixelSeeds = cms.InputTag("hltEgammaElectronPixelSeedsForBParkingUnseeded"),
+            ecalCands = cms.InputTag("hltEgammaCandidatesUnseeded"),
+            gsfTracks = cms.InputTag("hltEgammaGsfTracksForBParkingUnseeded"),
+            label = cms.string('LowPtUnseeded')
+        )])
+    return process
