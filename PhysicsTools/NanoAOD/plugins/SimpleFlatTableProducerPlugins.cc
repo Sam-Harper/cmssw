@@ -24,6 +24,9 @@ typedef EventSingletonSimpleFlatTableProducer<math::XYZPointF> SimpleXYZPointFla
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 typedef EventSingletonSimpleFlatTableProducer<reco::BeamSpot> SimpleBeamspotFlatTableProducer;
 
+#include "DataFormats/HLTReco/interface/EgammaObject.h"
+typedef SimpleFlatTableProducer<trigger::EgammaObject> SimpleTriggerEgammaObjectFlatTableProducer;
+
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(SimpleCandidateFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleGenEventFlatTableProducer);
@@ -33,3 +36,4 @@ DEFINE_FWK_MODULE(SimpleProtonTrackFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleLocalTrackFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleXYZPointFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleBeamspotFlatTableProducer);
+DEFINE_FWK_MODULE(SimpleTriggerEgammaObjectFlatTableProducer);
