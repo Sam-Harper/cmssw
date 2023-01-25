@@ -39,6 +39,9 @@ typedef BXVectorSimpleFlatTableProducer<l1t::Muon> SimpleTriggerL1MuonFlatTableP
 #include "DataFormats/L1Trigger/interface/EtSum.h"
 typedef BXVectorSimpleFlatTableProducer<l1t::EtSum> SimpleTriggerL1EtSumFlatTableProducer;
 
+#include "DataFormats/HLTReco/interface/EgammaObject.h"
+typedef SimpleFlatTableProducer<trigger::EgammaObject> SimpleTriggerEgammaObjectFlatTableProducer;
+
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(SimpleCandidateFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleGenEventFlatTableProducer);
@@ -53,3 +56,5 @@ DEFINE_FWK_MODULE(SimpleTriggerL1JetFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleTriggerL1MuonFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleTriggerL1TauFlatTableProducer);
 DEFINE_FWK_MODULE(SimpleTriggerL1EtSumFlatTableProducer);
+DEFINE_FWK_MODULE(SimpleTriggerEgammaObjectFlatTableProducer);
+
