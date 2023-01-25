@@ -32,6 +32,7 @@ namespace trigger {
 
     bool hasVar(const std::string& varName) const;
     float var(const std::string& varName, bool raiseExcept = true) const;
+    float varNoExcept(const std::string& varName) const {return var(varName,false);}
     const std::vector<std::pair<std::string, float>>& vars() const { return vars_; }
     //varNames and varNamesStr are reasonably expensive functions and are more
     //intended for debugging than normal use
