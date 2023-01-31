@@ -29,6 +29,7 @@ from PhysicsTools.NanoAOD.NanoAODEDMEventContent_cff import *
 from PhysicsTools.NanoAOD.fsrPhotons_cff import *
 from PhysicsTools.NanoAOD.softActivity_cff import *
 from PhysicsTools.NanoAOD.eghlt_cff import *
+from PhysicsTools.NanoAOD.l1trig_cff import *
 
 nanoMetadata = cms.EDProducer("UniqueStringProducer",
     strings = cms.PSet(
@@ -86,7 +87,8 @@ nanoTableTaskCommon = cms.Task(
     electronTablesTask, lowPtElectronTablesTask, photonTablesTask,
     globalTablesTask, vertexTablesTask, metTablesTask, simpleCleanerTable, extraFlagsTableTask,
     isoTrackTablesTask,softActivityTablesTask,
-    egHLTTablesTask
+    egHLTTablesTask,
+    l1TablesTask
 )
 
 # Replace AK4 Puppi with AK4 CHS for Run-2
