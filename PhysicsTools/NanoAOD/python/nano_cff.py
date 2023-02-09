@@ -394,5 +394,10 @@ for modifier in run2_nanoAOD_94XMiniAODv1, run2_nanoAOD_94XMiniAODv2, run2_nanoA
 
 def nanoL1TrigObjCustomize(process):
     process.nanoTableTaskCommon.add(process.l1TablesTask)
+    process = setL1NanoToReduced(process)
+    return process
+
+def nanoL1TrigObjCustomizeFull(process):
+    process.nanoTableTaskCommon.add(process.l1TablesTask)
     return process
 
