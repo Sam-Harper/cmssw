@@ -392,12 +392,18 @@ _102x_sequence.insert(_102x_sequence.index(simpleCleanerTable)+1,extraFlagsTable
 for modifier in run2_nanoAOD_94XMiniAODv1, run2_nanoAOD_94XMiniAODv2, run2_nanoAOD_102Xv1:
     modifier.toReplaceWith(nanoSequenceCommon, _102x_sequence)
 
-def nanoL1TrigObjCustomize(process):
-    process.nanoTableTaskCommon.add(process.l1TablesTask)
-    process = setL1NanoToReduced(process)
-    return process
 
 def nanoL1TrigObjCustomizeFull(process):
-    process.nanoTableTaskCommon.add(process.l1TablesTask)
+    process.nanoSequenceCommon.insert(process.nanoSequenceCommon.index(process.globalTables),process.l1TablesSeq)
+    process.nanoSequenceMC.insert(process.nanoSequenceMC.index(process.globalTables),process.l1TablesSeq)
+    
+    _102x_sequence.insert(_102x_sequence.index(process.globalTables),process.l1TablesSeq)
+    _80x_sequence.insert(_80x_sequence.index(process.globalTables),process.l1TablesSeq)
+
     return process
 
+def nanoL1TrigObjCustomize(process):
+    process = nanoL1TrigObjCustomizeFull(process)    
+    process = setL1NanoToReduced(process)
+
+    return process

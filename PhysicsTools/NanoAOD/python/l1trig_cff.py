@@ -1,5 +1,4 @@
 import FWCore.ParameterSet.Config as cms
-from PhysicsTools.NanoAOD.nano_eras_cff import *
 from PhysicsTools.NanoAOD.common_cff import *
 
 l1PtVars = cms.PSet(
@@ -42,8 +41,6 @@ l1MuonReducedVars = cms.PSet(
     hwCharge = Var("hwCharge()",int,doc=""), 
     etaAtVtx = Var("etaAtVtx()",float,doc=""),
     phiAtVtx = Var("phiAtVtx()",float,doc=""),
-    ptUnconstrained = Var("ptUnconstrained()",float,doc=""),
-    hwDXY = Var("hwDXY()",int,doc=""),
 )
 
 l1MuTable = cms.EDProducer("SimpleTriggerL1MuonFlatTableProducer",
@@ -67,9 +64,6 @@ l1MuTable = cms.EDProducer("SimpleTriggerL1MuonFlatTableProducer",
                          hwDPhiExtra = Var("hwDPhiExtra()",int,doc=""),
                          hwDEtaExtra = Var("hwDEtaExtra()",int,doc=""),
                          hwRank = Var("hwRank()",int,doc=""),
-                         hwPtUnconstrained = Var("hwPtUnconstrained()",int,doc=""),
-                         ptUnconstrained = Var("ptUnconstrained()",float,doc=""),
-                         hwDXY = Var("hwDXY()",int,doc=""),
                      )
 )
 
@@ -150,7 +144,7 @@ l1EGTable = cms.EDProducer("SimpleTriggerL1EGFlatTableProducer",
                      )
 )
 
-l1TablesTask = cms.Task(l1EGTable,l1EtSumTable,l1TauTable,l1JetTable,l1MuTable)
+l1TablesSeq = cms.Sequence(l1EGTable + l1EtSumTable + l1TauTable + l1JetTable + l1MuTable)
 
 def setL1NanoToReduced(process):
     """

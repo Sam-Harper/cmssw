@@ -215,23 +215,13 @@ public:
     }
   }
 
-  static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
-    edm::ParameterSetDescription desc = SimpleFlatTableProducerBase<T, BXVector<T>>::baseDescriptions();
-    desc.add<std::string>("cut", "")->setComment("selection on the main input collection (but selection can not be bx based)");
-    desc.addOptional<unsigned int>("maxLen")->setComment(
-							 "define the maximum length of the input collection to put in the branch");
-    desc.add<int>("minBX",-2)->setComment("min bx (inclusive) to include");
-    desc.add<int>("maxBX",2)->setComment("max bx (inclusive) to include");
-    descriptions.addWithDefaultLabel(desc);
-  }
-
   std::unique_ptr<nanoaod::FlatTable> fillTable(const edm::Event &iEvent,
                                                 const edm::Handle<BXVector<T>> &prod) const override {
 
     std::vector<const T *> selObjs;
     std::vector<int> selObjBXs;
 
-    if (prod.isValid() || !(this->skipNonExistingSrc_)) {
+    if (prod.isValid() ) {
       const int minBX = std::max(minBX_,prod->getFirstBX());
       const int maxBX = std::min(maxBX_,prod->getLastBX());
       for (int bx = minBX; bx <= maxBX; bx++) {
@@ -248,8 +238,8 @@ public:
     }
     auto out = std::make_unique<nanoaod::FlatTable>(selObjs.size(), this->name_, false, this->extension_);
     for (const auto &var : this->vars_)
-      var->fill(selObjs, *out);
-    out->template addColumn<int>(bxVarName_, selObjBXs, "BX of the L1 candidate");
+      var.fill(selObjs, *out);
+    out->template addColumn<int>(bxVarName_, selObjBXs, "BX of the L1 candidate",nanoaod::FlatTable::IntColumn);
     return out;
   }
 
