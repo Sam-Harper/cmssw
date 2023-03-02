@@ -318,8 +318,14 @@ def nanoWmassGenCustomize(process):
     return process
 
 def nanoL1TrigObjCustomize(process):
+    process.nanoTableTaskCommon.add(process.l1TablesTask) 
+    process = setL1NanoToReduced(process)
+    return process
+
+def nanoL1TrigObjCustomizeFull(process):
     process.nanoTableTaskCommon.add(process.l1TablesTask)
     return process
+
 
 # lowPtElectrons do not exsit for old nano campaigns (i.e. before v9)
 _modifiers = ( run2_miniAOD_80XLegacy |
