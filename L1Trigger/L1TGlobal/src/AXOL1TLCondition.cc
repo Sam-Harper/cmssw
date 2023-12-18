@@ -41,7 +41,7 @@
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/MessageLogger/interface/MessageDrop.h"
-
+#include "FWCore/Utilities/interface/FileInPath.h"
 // constructors
 //     default
 l1t::AXOL1TLCondition::AXOL1TLCondition() : ConditionEvaluation() {
@@ -90,11 +90,14 @@ const bool l1t::AXOL1TLCondition::evaluateCondition(const int bxEval) const {
   int useBx = bxEval + m_gtAXOL1TLTemplate->condRelativeBx();
 
   //HLS4ML stuff
-  std::string AXOL1TLmodelversion = m_AXOL1TLmodelversion;
-  hls4mlEmulator::ModelLoader loader(AXOL1TLmodelversion);
+  // std::string AXOL1TLmodelversion = m_AXOL1TLmodelversion; //config method
+  edm::FileInPath AXOL1TLmodelversion("L1Trigger/L1TGlobal/data/GTADModel_v3.so"); //for .so file located in test dir
+  std::string AXOL1TLmodelversionStr(AXOL1TLmodelversion.fullPath());
+  AXOL1TLmodelversionStr.erase(AXOL1TLmodelversionStr.size()-3);
+  hls4mlEmulator::ModelLoader loader(AXOL1TLmodelversionStr);
   std::shared_ptr<hls4mlEmulator::Model> model;
   model = loader.load_model();
-  cout << "loading model... " << AXOL1TLmodelversion << std::endl;
+  //cout << "loading model... " << AXOL1TLmodelversion << std::endl;
 
   // //pointers to objects
   const BXVector<const l1t::Muon*>* candMuVec = m_gtGTB->getCandL1Mu();
@@ -129,10 +132,9 @@ const bool l1t::AXOL1TLCondition::evaluateCondition(const int bxEval) const {
   ap_fixed<18, 13> EtSumInput[EtSumVecSize];
 
   //declare result vectors +score
-  std::array<ap_fixed<10, 7>, 13> result;
+  std::array<ap_fixed<10, 7, AP_RND_CONV,AP_SAT>, 8> result; //v1 was std::array<ap_fixed<10, 7>, 13> result
   ap_ufixed<18, 14> loss;
-  std::pair<std::array<ap_fixed<10, 7>, 13>, ap_ufixed<18, 14>>
-      ADModelResult;   //model outputs a pair of the (result vector, loss)
+  std::pair<std::array<ap_fixed<10, 7,AP_RND_CONV,AP_SAT>, 8>, ap_ufixed<18, 14>> ADModelResult;   //model outputs a pair of the (result vector, loss)
   float score = -1.0;  //not sure what the best default is hm??
 
   //check number of input objects we actually have (muons, jets etc)
@@ -212,7 +214,14 @@ const bool l1t::AXOL1TLCondition::evaluateCondition(const int bxEval) const {
   for (int idJ = 0; idJ < JVecSize; idJ++) {
     ADModelInput[index++] = JetInput[idJ];
   }
-
+  /*
+  cout << "------------------ Inputs (all elements)-----------------" << std::endl;
+  cout << "ADModelInput: [";
+  for (int i = 0; i < NInputs; i++) {
+    cout << ADModelInput[i] << ", ";
+  }
+  cout << "]" << std::endl;
+  */
   //now run the inference
   model->prepare_input(ADModelInput);  //scaling internal here
   model->predict();
@@ -222,6 +231,18 @@ const bool l1t::AXOL1TLCondition::evaluateCondition(const int bxEval) const {
   loss = ADModelResult.second;
   score = ((loss).to_float()) * 16.0;  //scaling to match threshold
 
+  //  cout << "------------------ outputs -----------------" << std::endl;
+  int NResults = sizeof(result) / sizeof(result[0]);
+  /*
+  cout << "ADModelResult: [";
+  for (int i = 0; i < NResults; i++) {
+    cout << result[i] << ", ";
+  }
+  cout << "]" << std::endl; 
+  cout << "loss: " << loss << std::endl;
+  cout << "score float(loss*16) :" << score << std::endl;
+  cout << "----------------------------------" << std::endl;
+  */
   //number of objects/thrsholds to check
   int iCondition = 0;  // number of conditions: there is only one
   int nObjInCond = m_gtAXOL1TLTemplate->nrObjects();
@@ -240,6 +261,18 @@ const bool l1t::AXOL1TLCondition::evaluateCondition(const int bxEval) const {
 
   condResult |= passCondition;  //condresult true if passCondition true else it is false
 
+
+  //trigger printouts
+  /*
+  cout << "\n objPar.minAXOL1TLThreshold: " << objPar.minAXOL1TLThreshold << std::endl;
+  if (passCondition) {
+    cout
+      << "===> AXOCondition::evaluateCondition, PASS! This event passed the condition." << std::endl;
+  } else
+    cout
+      << "===> AXOCondition::evaluateCondition, FAIL! This event failed the condition." << std::endl;
+  cout << "condResult: " << condResult << std::endl;
+  */
   //return result
   return condResult;
 }
