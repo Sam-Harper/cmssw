@@ -7,6 +7,7 @@
   <use name="CondFormats/DataRecord"/>
   <use name="CondFormats/GBRForest"/>
   <use name="DataFormats/EgammaCandidates"/>
+  <use name="DataFormats/L1TGlobal"/>
   <use name="RecoEgamma/EgammaTools"/>
   <use name="HeterogeneousCore/SonicTriton"/>
 </library>
