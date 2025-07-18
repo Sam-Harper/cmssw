@@ -90,10 +90,10 @@ public:
           keep = false;
         }
       }
-      
+
       rh.setTime(time);
       rh.setDepth(1);
-      
+
       if (!keep) {
         if (rcleaned)
           cleaned->push_back(std::move(out->back()));

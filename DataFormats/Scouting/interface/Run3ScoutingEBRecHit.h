@@ -9,7 +9,8 @@
 
 class Run3ScoutingEBRecHit {
 public:
-  Run3ScoutingEBRecHit(float energy, float time, unsigned int detId, uint32_t flags) : energy_{energy}, time_{time}, detId_{detId}, flags_{flags} {}
+  Run3ScoutingEBRecHit(float energy, float time, unsigned int detId, uint32_t flags)
+      : energy_{energy}, time_{time}, detId_{detId}, flags_{flags} {}
 
   Run3ScoutingEBRecHit() : energy_{0}, time_{0}, detId_{0}, flags_{0} {}
 
