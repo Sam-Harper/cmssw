@@ -16821,6 +16821,7 @@ process.hltOutputScoutingPF.outputCommands += [
     'keep *_hltScoutingRecHitPacker_EB_*',
     'keep *_hltScoutingRecHitPacker_EE_*',
     'keep *_hltScoutingRecHitPacker_HBHE_*',
+    'keep *_hltScoutingRecHitPacker_*_*',
 ]
 
 process.hltOutputScoutingPF.fileName = "out_reHLT_CaloRecHits_2025C.root"

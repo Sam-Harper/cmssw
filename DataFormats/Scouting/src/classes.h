@@ -16,6 +16,7 @@
 #include "DataFormats/Scouting/interface/Run3ScoutingMuon.h"
 #include "DataFormats/Scouting/interface/Run3ScoutingPhoton.h"
 #include "DataFormats/Scouting/interface/Run3ScoutingEBRecHit.h"
+#include "DataFormats/Scouting/interface/Run3ScoutingEBRecHitCompact.h"
 #include "DataFormats/Scouting/interface/Run3ScoutingEERecHit.h"
 #include "DataFormats/Scouting/interface/Run3ScoutingHBHERecHit.h"
 #include "DataFormats/Common/interface/Wrapper.h"
