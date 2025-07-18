@@ -40,7 +40,10 @@ private:
 
   template <typename T>
   void setToken(edm::EDGetTokenT<T>& token, const edm::ParameterSet& iConfig, std::string name) {
-    token = consumes(iConfig.getParameter<edm::InputTag>(name));
+    const auto inputTag = iConfig.getParameter<edm::InputTag>(name);
+    if (!inputTag.encode().empty()) {
+      token = consumes(iConfig.getParameter<edm::InputTag>(name));
+    }
   }
 
   edm::EDGetTokenT<reco::PFRecHitCollection> recoPFRecHitsTokenECAL_;
@@ -109,9 +112,9 @@ void HLTScoutingRecHitProducer::produceEcal(edm::Event& iEvent,
       edm::LogWarning("HLTScoutingRecHitProducer")
           << "Skipping PFRecHit because of unexpected PFLayer value (" << rh.layer() << ").";
     }
-    iEvent.put(std::move(run3ScoutEBRecHits), "EB" + tag);
-    iEvent.put(std::move(run3ScoutEERecHits), "EE" + tag);
   }
+  iEvent.put(std::move(run3ScoutEBRecHits), "EB" + tag);
+  iEvent.put(std::move(run3ScoutEERecHits), "EE" + tag);
 }
 
 void HLTScoutingRecHitProducer::produceHcal(edm::Event& iEvent,
