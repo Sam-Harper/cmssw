@@ -18,27 +18,36 @@ public:
       : npuTag_(consumes<std::vector<PileupSummaryInfo>>(params.getParameter<edm::InputTag>("src"))),
         pvTag_(consumes<std::vector<reco::Vertex>>(params.getParameter<edm::InputTag>("pvsrc"))),
         vz_(params.getParameter<std::vector<double>>("zbins")),
-        savePtHatMax_(params.getParameter<bool>("savePtHatMax")) {
+        savePtHatMax_(params.getParameter<bool>("savePtHatMax")),
+        saveInTimePUPtHats_(params.getParameter<bool>("saveInTimePUPtHats")) {
     produces<nanoaod::FlatTable>();
+    produces<nanoaod::FlatTable>("inTimePUPtHats");
   }
 
   ~NPUTablesProducer() override {}
 
   void produce(edm::StreamID id, edm::Event& iEvent, const edm::EventSetup& iSetup) const override {
     auto npuTab = std::make_unique<nanoaod::FlatTable>(1, "Pileup", true);
+    auto puPtHats = std::unique_ptr<nanoaod::FlatTable>();
 
     const auto& pvProd = iEvent.get(pvTag_);
     const double refpvz = pvProd.at(0).position().z();
 
     edm::Handle<std::vector<PileupSummaryInfo>> npuInfo;
     if (iEvent.getByToken(npuTag_, npuInfo)) {
-      fillNPUObjectTable(*npuInfo, *npuTab, refpvz);
+      fillNPUObjectTable(*npuInfo, *npuTab, puPtHats, refpvz);
     }
 
     iEvent.put(std::move(npuTab));
+    if (puPtHats) {
+      iEvent.put(std::move(puPtHats), "inTimePUPtHats");
+    }
   }
 
-  void fillNPUObjectTable(const std::vector<PileupSummaryInfo>& npuProd, nanoaod::FlatTable& out, double refpvz) const {
+  void fillNPUObjectTable(const std::vector<PileupSummaryInfo>& npuProd,
+                          nanoaod::FlatTable& out,
+                          std::unique_ptr<nanoaod::FlatTable>& puPtHatTblPtr,
+                          double refpvz) const {
     // Get BX 0
     unsigned int bx0 = 0;
     float nt = 0;
@@ -49,6 +58,8 @@ public:
     float gpudensity = 0;
 
     float pthatmax = 0;
+
+    std::vector<float> inTimePUPtHats;
 
     for (unsigned int ibx = 0; ibx < npuProd.size(); ibx++) {
       if (npuProd[ibx].getBunchCrossing() == 0) {
@@ -72,6 +83,9 @@ public:
           if (!npuProd[ibx].getPU_pT_hats().empty()) {
             pthatmax = *max_element(npuProd[ibx].getPU_pT_hats().begin(), npuProd[ibx].getPU_pT_hats().end());
           }
+        }
+        if (saveInTimePUPtHats_) {
+          inTimePUPtHats = npuProd[ibx].getPU_pT_hats();
         }
       }
     }
@@ -99,6 +113,12 @@ public:
     if (savePtHatMax_) {
       out.addColumnValue<float>("pthatmax", pthatmax, "Maximum pt-hat", 10);
     }
+
+    if (saveInTimePUPtHats_) {
+      puPtHatTblPtr = std::make_unique<nanoaod::FlatTable>(inTimePUPtHats.size(), "PileupPtHats", false);
+      puPtHatTblPtr->addColumn<float>(
+          "ptHats", inTimePUPtHats, "In-time pileup pT hats (pthat) for the current bunch crossing");
+    }
   }
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -109,6 +129,8 @@ public:
     desc.add<std::vector<double>>("zbins", {})
         ->setComment("Z bins to compute the generator-level number of PU vertices per mm");
     desc.add<bool>("savePtHatMax", false)->setComment("Store maximum pt-hat of PU");
+    desc.add<bool>("saveInTimePUPtHats", false)
+        ->setComment("Store in-time pileup pT hats (needed for QCD event weighting)");
     descriptions.add("puTable", desc);
   }
 
@@ -119,6 +141,7 @@ protected:
   const std::vector<double> vz_;
 
   bool savePtHatMax_;
+  bool saveInTimePUPtHats_;
 };
 
 #include "FWCore/Framework/interface/MakerMacros.h"

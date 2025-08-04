@@ -36,6 +36,7 @@ puTable = cms.EDProducer("NPUTablesProducer",
         pvsrc = cms.InputTag("offlineSlimmedPrimaryVertices"),
         zbins = cms.vdouble( [0.0,1.7,2.6,3.0,3.5,4.2,5.2,6.0,7.5,9.0,12.0] ),
         savePtHatMax = cms.bool(True),
+        saveInTimePUPtHats = cms.bool(True)
 )
 (run2_nanoAOD_ANY).toModify(
     puTable, savePtHatMax=False
@@ -55,6 +56,7 @@ genTable  = simpleGenEventFlatTableProducer.clone(
         scalePDF = Var( "?hasPDF?pdf().scalePDF:-1", float, doc="Q2 scale for PDF", precision=14 ),
         binvar = Var("?hasBinningValues()?binningValues()[0]:-1", float, doc="MC generation binning value", precision=14),
         weight = Var("weight()", float,doc="MC generator weight", precision=14),
+        qScale = Var("qScale()", float,doc="MC generator scale"),
     ),
 )
 
