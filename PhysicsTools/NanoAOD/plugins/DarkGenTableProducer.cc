@@ -17,15 +17,16 @@
 class DarkGenTableProducer : public edm::global::EDProducer<> {
 public:
   DarkGenTableProducer(edm::ParameterSet const& params)
-      : genPartTag_(consumes<reco::GenParticleCollection>(params.getParameter<edm::InputTag>("src"))) {
+      : genPartTag_(consumes<reco::GenParticleCollection>(params.getParameter<edm::InputTag>("src"))),
+        label_(params.getParameter<std::string>("label"))
+      {
     produces<nanoaod::FlatTable>();
   }
 
   ~DarkGenTableProducer() override {}
 
   void produce(edm::StreamID id, edm::Event& iEvent, const edm::EventSetup& iSetup) const override {
-    auto darkGenTable = std::make_unique<nanoaod::FlatTable>(1, "DarkGen", true);
-
+    auto darkGenTable = std::make_unique<nanoaod::FlatTable>(1, label_, true);    
     const auto& genParts = iEvent.get(genPartTag_);
     const auto [mediator, darkQuark1, darkQuark2] = getDarkParticles(genParts);
 
@@ -114,11 +115,13 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("src", edm::InputTag("genParticles"))->setComment("tag for the input gen particles");
+    desc.add<std::string>("label", "DarkGen")->setComment("label for the output table");
     descriptions.add("darkGenTable", desc);
   }
 
 protected:
   const edm::EDGetTokenT<reco::GenParticleCollection> genPartTag_;
+  const std::string label_;
   
 };
 
