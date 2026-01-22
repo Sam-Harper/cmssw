@@ -77,6 +77,8 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <utility>
+#include <cmath>
 
 //////////////
 // NAMESPACES
@@ -158,124 +160,129 @@ private:
   TTree* eventTree;
 
   // all L1 tracks
-  std::vector<float>* m_trk_pt;
-  std::vector<float>* m_trk_eta;
-  std::vector<float>* m_trk_phi;
-  std::vector<float>* m_trk_d0;  // (filled if L1Tk_nPar==5, else 999)
-  std::vector<float>* m_trk_z0;
-  std::vector<float>* m_trk_chi2;
-  std::vector<float>* m_trk_chi2_dof;
-  std::vector<float>* m_trk_chi2rphi;
-  std::vector<float>* m_trk_chi2rphi_dof;
-  std::vector<float>* m_trk_chi2rz;
-  std::vector<float>* m_trk_chi2rz_dof;
-  std::vector<float>* m_trk_bendchi2;
-  std::vector<int>* m_trk_nstub;
-  std::vector<int>* m_trk_lhits;
-  std::vector<int>* m_trk_dhits;
-  std::vector<int>* m_trk_seed;
-  std::vector<int>* m_trk_hitpattern;
-  std::vector<int>* m_trk_lhits_hitpattern;  // 6-digit hit mask (barrel layer only) dervied from hitpattern
-  std::vector<int>* m_trk_dhits_hitpattern;  // disk only
-  std::vector<int>* m_trk_nPSstub_hitpattern;
-  std::vector<int>* m_trk_n2Sstub_hitpattern;
-  std::vector<int>* m_trk_nLostPSstub_hitpattern;
-  std::vector<int>* m_trk_nLost2Sstub_hitpattern;
-  std::vector<int>* m_trk_nLoststub_V1_hitpattern;  // Same as the definiton of "nlaymiss_interior" in TrackQuality.cc
-  std::vector<int>* m_trk_nLoststub_V2_hitpattern;  // A tighter version of "nlaymiss_interior"
-  std::vector<int>* m_trk_charge;
-  std::vector<unsigned int>* m_trk_phiSector;
-  std::vector<int>* m_trk_etaSector;
-  std::vector<int>* m_trk_genuine;
-  std::vector<int>* m_trk_loose;
-  std::vector<int>* m_trk_unknown;
-  std::vector<int>* m_trk_combinatoric;
-  std::vector<int>* m_trk_fake;  //0 fake, 1 track from primary interaction, 2 secondary track
-  std::vector<float>* m_trk_MVA1;
-  std::vector<int>* m_trk_matchtp_pdgid;
-  std::vector<float>* m_trk_matchtp_pt;
-  std::vector<float>* m_trk_matchtp_eta;
-  std::vector<float>* m_trk_matchtp_phi;
-  std::vector<float>* m_trk_matchtp_z0;
-  std::vector<float>* m_trk_matchtp_lxy;
-  std::vector<float>* m_trk_matchtp_d0;
-  std::vector<int>* m_trk_injet;          //is the track within dR<0.4 of a genjet with pt > 30 GeV?
-  std::vector<int>* m_trk_injet_highpt;   //is the track within dR<0.4 of a genjet with pt > 100 GeV?
-  std::vector<int>* m_trk_injet_vhighpt;  //is the track within dR<0.4 of a genjet with pt > 200 GeV?
-  std::vector<std::vector<int>>* m_trk_layers;
+  std::vector<float> m_trk_pt;
+  std::vector<float> m_trk_eta;
+  std::vector<float> m_trk_phi;
+  std::vector<float> m_trk_d0;  // (filled if L1Tk_nPar==5, else 999)
+  std::vector<float> m_trk_z0;
+  std::vector<float> m_trk_chi2;
+  std::vector<float> m_trk_chi2_dof;
+  std::vector<float> m_trk_chi2rphi;
+  std::vector<float> m_trk_chi2rphi_dof;
+  std::vector<float> m_trk_chi2rz;
+  std::vector<float> m_trk_chi2rz_dof;
+  std::vector<float> m_trk_bendchi2;
+  std::vector<int> m_trk_nstub;
+  std::vector<int> m_trk_lhits;
+  std::vector<int> m_trk_dhits;
+  std::vector<int> m_trk_seed;
+  std::vector<int> m_trk_hitpattern;
+  std::vector<int> m_trk_lhits_hitpattern;  // 6-digit hit mask (barrel layer only) dervied from hitpattern
+  std::vector<int> m_trk_dhits_hitpattern;  // disk only
+  std::vector<int> m_trk_nPSstub_hitpattern;
+  std::vector<int> m_trk_n2Sstub_hitpattern;
+  std::vector<int> m_trk_nLostPSstub_hitpattern;
+  std::vector<int> m_trk_nLost2Sstub_hitpattern;
+  std::vector<int> m_trk_nLoststub_V1_hitpattern;  // Same as the definiton of "nlaymiss_interior" in TrackQuality.cc
+  std::vector<int> m_trk_nLoststub_V2_hitpattern;  // A tighter version of "nlaymiss_interior"
+  std::vector<int> m_trk_charge;
+  std::vector<unsigned int> m_trk_phiSector;
+  std::vector<int> m_trk_etaSector;
+  std::vector<int> m_trk_genuine;
+  std::vector<int> m_trk_loose;
+  std::vector<int> m_trk_unknown;
+  std::vector<int> m_trk_combinatoric;
+  std::vector<int> m_trk_fake;  //0 fake, 1 track from primary interaction, 2 secondary track
+  std::vector<float> m_trk_MVA1;
+  std::vector<int> m_trk_matchtp_pdgid;
+  std::vector<float> m_trk_matchtp_pt;
+  std::vector<float> m_trk_matchtp_eta;
+  std::vector<float> m_trk_matchtp_phi;
+  std::vector<float> m_trk_matchtp_z0;
+  std::vector<float> m_trk_matchtp_lxy;
+  std::vector<float> m_trk_matchtp_d0;
+  std::vector<int> m_trk_injet;          //is the track within dR<0.4 of a genjet with pt > 30 GeV?
+  std::vector<int> m_trk_injet_highpt;   //is the track within dR<0.4 of a genjet with pt > 100 GeV?
+  std::vector<int> m_trk_injet_vhighpt;  //is the track within dR<0.4 of a genjet with pt > 200 GeV?
+  std::vector<std::vector<int>> m_trk_layers;
 
   // all tracking particles
-  std::vector<float>* m_tp_pt;
-  std::vector<float>* m_tp_eta;
-  std::vector<float>* m_tp_phi;
-  std::vector<float>* m_tp_lxy;
-  std::vector<float>* m_tp_d0;
-  std::vector<float>* m_tp_z0;
-  std::vector<float>* m_tp_d0_prod;
-  std::vector<float>* m_tp_z0_prod;
-  std::vector<int>* m_tp_pdgid;
-  std::vector<int>* m_tp_nmatch;
-  std::vector<int>* m_tp_nstub;
-  std::vector<int>* m_tp_eventid;
-  std::vector<int>* m_tp_charge;
-  std::vector<int>* m_tp_injet;
-  std::vector<int>* m_tp_injet_highpt;
-  std::vector<int>* m_tp_injet_vhighpt;
+  std::vector<float> m_tp_pt;
+  std::vector<float> m_tp_eta;
+  std::vector<float> m_tp_phi;
+  std::vector<float> m_tp_lxy;
+  std::vector<float> m_tp_d0;
+  std::vector<float> m_tp_z0;
+  std::vector<float> m_tp_d0_prod;
+  std::vector<float> m_tp_z0_prod;
+  std::vector<int> m_tp_pdgid;
+  std::vector<int> m_tp_nmatch;
+  std::vector<int> m_tp_nstub;
+  std::vector<int> m_tp_eventid;
+  std::vector<int> m_tp_charge;
+  std::vector<int> m_tp_injet;
+  std::vector<int> m_tp_injet_highpt;
+  std::vector<int> m_tp_injet_vhighpt;
 
   // *L1 track* properties if m_tp_nmatch > 0
-  std::vector<float>* m_matchtrk_pt;
-  std::vector<float>* m_matchtrk_eta;
-  std::vector<float>* m_matchtrk_phi;
-  std::vector<float>* m_matchtrk_d0;  //this variable is only filled if L1Tk_nPar==5
-  std::vector<float>* m_matchtrk_z0;
-  std::vector<float>* m_matchtrk_chi2;
-  std::vector<float>* m_matchtrk_chi2_dof;
-  std::vector<float>* m_matchtrk_chi2rphi;
-  std::vector<float>* m_matchtrk_chi2rphi_dof;
-  std::vector<float>* m_matchtrk_chi2rz;
-  std::vector<float>* m_matchtrk_chi2rz_dof;
-  std::vector<float>* m_matchtrk_bendchi2;
-  std::vector<float>* m_matchtrk_MVA1;
-  std::vector<int>* m_matchtrk_nstub;
-  std::vector<int>* m_matchtrk_lhits;
-  std::vector<int>* m_matchtrk_dhits;
-  std::vector<int>* m_matchtrk_seed;
-  std::vector<int>* m_matchtrk_hitpattern;
-  std::vector<int>* m_matchtrk_charge;
-  std::vector<int>* m_matchtrk_injet;
-  std::vector<int>* m_matchtrk_injet_highpt;
-  std::vector<int>* m_matchtrk_injet_vhighpt;
+  std::vector<float> m_matchtrk_pt;
+  std::vector<float> m_matchtrk_eta;
+  std::vector<float> m_matchtrk_phi;
+  std::vector<float> m_matchtrk_d0;  //this variable is only filled if L1Tk_nPar==5
+  std::vector<float> m_matchtrk_z0;
+  std::vector<float> m_matchtrk_chi2;
+  std::vector<float> m_matchtrk_chi2_dof;
+  std::vector<float> m_matchtrk_chi2rphi;
+  std::vector<float> m_matchtrk_chi2rphi_dof;
+  std::vector<float> m_matchtrk_chi2rz;
+  std::vector<float> m_matchtrk_chi2rz_dof;
+  std::vector<float> m_matchtrk_bendchi2;
+  std::vector<float> m_matchtrk_MVA1;
+  std::vector<int> m_matchtrk_nstub;
+  std::vector<int> m_matchtrk_lhits;
+  std::vector<int> m_matchtrk_dhits;
+  std::vector<int> m_matchtrk_seed;
+  std::vector<int> m_matchtrk_hitpattern;
+  std::vector<int> m_matchtrk_charge;
+  std::vector<int> m_matchtrk_injet;
+  std::vector<int> m_matchtrk_injet_highpt;
+  std::vector<int> m_matchtrk_injet_vhighpt;
 
   // ALL stubs
-  std::vector<float>* m_allstub_x;
-  std::vector<float>* m_allstub_y;
-  std::vector<float>* m_allstub_z;
+  std::vector<float> m_allstub_x;
+  std::vector<float> m_allstub_y;
+  std::vector<float> m_allstub_z;
 
-  std::vector<int>* m_allstub_isBarrel;  // stub is in barrel (1) or in disk (0)
-  std::vector<int>* m_allstub_layer;
-  std::vector<int>* m_allstub_isPSmodule;
-  std::vector<int>* m_allstub_isTiltedBarrel;
+  std::vector<int> m_allstub_isBarrel;  // stub is in barrel (1) or in disk (0)
+  std::vector<int> m_allstub_layer;
+  std::vector<int> m_allstub_isPSmodule;
+  std::vector<int> m_allstub_isTiltedBarrel;
 
-  std::vector<float>* m_allstub_trigDisplace;
-  std::vector<float>* m_allstub_trigOffset;
-  std::vector<float>* m_allstub_trigPos;
-  std::vector<float>* m_allstub_trigBend;
+  std::vector<float> m_allstub_trigDisplace;
+  std::vector<float> m_allstub_trigOffset;
+  std::vector<float> m_allstub_trigPos;
+  std::vector<float> m_allstub_trigBend;
 
   // stub associated with tracking particle ?
-  std::vector<int>* m_allstub_matchTP_pdgid;  // -999 if not matched
-  std::vector<float>* m_allstub_matchTP_pt;   // -999 if not matched
-  std::vector<float>* m_allstub_matchTP_eta;  // -999 if not matched
-  std::vector<float>* m_allstub_matchTP_phi;  // -999 if not matched
+  std::vector<int> m_allstub_matchTP_pdgid;  // -999 if not matched
+  std::vector<float> m_allstub_matchTP_pt;   // -999 if not matched
+  std::vector<float> m_allstub_matchTP_eta;  // -999 if not matched
+  std::vector<float> m_allstub_matchTP_phi;  // -999 if not matched
 
-  std::vector<int>* m_allstub_genuine;
+  std::vector<int> m_allstub_genuine;
 
   // track jet variables (for each gen jet, store the sum of pt of TPs / tracks inside jet cone)
-  std::vector<float>* m_jet_eta;
-  std::vector<float>* m_jet_phi;
-  std::vector<float>* m_jet_pt;
-  std::vector<float>* m_jet_tp_sumpt;
-  std::vector<float>* m_jet_trk_sumpt;
-  std::vector<float>* m_jet_matchtrk_sumpt;
+  std::vector<float> m_jet_eta;
+  std::vector<float> m_jet_phi;
+  std::vector<float> m_jet_pt;
+  std::vector<float> m_jet_tp_sumpt;
+  std::vector<float> m_jet_trk_sumpt;
+  std::vector<float> m_jet_matchtrk_sumpt;
+
+  // Helper method declarations
+  std::pair<float, float> propagateToIP(float eta, float phi, float vx, float vy, float vz,
+                                        float charge, float pt, float bField) const;
+  void clearVectors();
 };
 
 //////////////////////////////////
@@ -333,120 +340,162 @@ L1TrackNtupleMaker::L1TrackNtupleMaker(edm::ParameterSet const& iConfig) : confi
 // DESTRUCTOR
 L1TrackNtupleMaker::~L1TrackNtupleMaker() {}
 
+//////////////
+// HELPER: Propagate d0/z0 back to the IP
+std::pair<float, float> L1TrackNtupleMaker::propagateToIP(float eta,
+                                                          float phi,
+                                                          float vx,
+                                                          float vy,
+                                                          float vz,
+                                                          float charge,
+                                                          float pt,
+                                                          float bField) const {
+  float t = 1.0 / tan(2.0 * atan(exp(-eta)));
+  float delx = -vx;
+  float dely = -vy;
+
+  float c_converted = CLHEP::c_light / 1.0E5;
+  float r2_inv = charge * c_converted * bField / pt / 2.0;
+
+  float x0p = delx - (1. / (2. * r2_inv) * sin(phi));
+  float y0p = dely + (1. / (2. * r2_inv) * cos(phi));
+  float rp = sqrt(x0p * x0p + y0p * y0p);
+  float d0 = charge * rp - (1. / (2. * r2_inv));
+
+  float delphi = phi - atan2(-r2_inv * x0p, r2_inv * y0p);
+  if (delphi < -M_PI)
+    delphi += 2.0 * M_PI;
+  if (delphi > M_PI)
+    delphi -= 2.0 * M_PI;
+  float z0 = vz + t * delphi / (2.0 * r2_inv);
+
+  return {d0, z0};
+}
+
+//////////////
+// HELPER: Clear all vectors at the start of each event
+void L1TrackNtupleMaker::clearVectors() {
+  if (SaveAllTracks) {
+    m_trk_pt.clear();
+    m_trk_eta.clear();
+    m_trk_phi.clear();
+    m_trk_d0.clear();
+    m_trk_z0.clear();
+    m_trk_chi2.clear();
+    m_trk_chi2_dof.clear();
+    m_trk_chi2rphi.clear();
+    m_trk_chi2rphi_dof.clear();
+    m_trk_chi2rz.clear();
+    m_trk_chi2rz_dof.clear();
+    m_trk_bendchi2.clear();
+    m_trk_nstub.clear();
+    m_trk_lhits.clear();
+    m_trk_dhits.clear();
+    m_trk_seed.clear();
+    m_trk_hitpattern.clear();
+    m_trk_lhits_hitpattern.clear();
+    m_trk_dhits_hitpattern.clear();
+    m_trk_nPSstub_hitpattern.clear();
+    m_trk_n2Sstub_hitpattern.clear();
+    m_trk_nLostPSstub_hitpattern.clear();
+    m_trk_nLost2Sstub_hitpattern.clear();
+    m_trk_nLoststub_V1_hitpattern.clear();
+    m_trk_nLoststub_V2_hitpattern.clear();
+    m_trk_charge.clear();
+    m_trk_phiSector.clear();
+    m_trk_etaSector.clear();
+    m_trk_genuine.clear();
+    m_trk_loose.clear();
+    m_trk_unknown.clear();
+    m_trk_combinatoric.clear();
+    m_trk_fake.clear();
+    m_trk_MVA1.clear();
+    m_trk_matchtp_pdgid.clear();
+    m_trk_matchtp_pt.clear();
+    m_trk_matchtp_eta.clear();
+    m_trk_matchtp_phi.clear();
+    m_trk_matchtp_z0.clear();
+    m_trk_matchtp_lxy.clear();
+    m_trk_matchtp_d0.clear();
+    m_trk_injet.clear();
+    m_trk_injet_highpt.clear();
+    m_trk_injet_vhighpt.clear();
+    m_trk_layers.clear();
+  }
+
+  m_tp_pt.clear();
+  m_tp_eta.clear();
+  m_tp_phi.clear();
+  m_tp_lxy.clear();
+  m_tp_d0.clear();
+  m_tp_z0.clear();
+  m_tp_d0_prod.clear();
+  m_tp_z0_prod.clear();
+  m_tp_pdgid.clear();
+  m_tp_nmatch.clear();
+  m_tp_nstub.clear();
+  m_tp_eventid.clear();
+  m_tp_charge.clear();
+  m_tp_injet.clear();
+  m_tp_injet_highpt.clear();
+  m_tp_injet_vhighpt.clear();
+
+  m_matchtrk_pt.clear();
+  m_matchtrk_eta.clear();
+  m_matchtrk_phi.clear();
+  m_matchtrk_z0.clear();
+  m_matchtrk_d0.clear();
+  m_matchtrk_chi2.clear();
+  m_matchtrk_chi2_dof.clear();
+  m_matchtrk_chi2rphi.clear();
+  m_matchtrk_chi2rphi_dof.clear();
+  m_matchtrk_chi2rz.clear();
+  m_matchtrk_chi2rz_dof.clear();
+  m_matchtrk_bendchi2.clear();
+  m_matchtrk_MVA1.clear();
+  m_matchtrk_nstub.clear();
+  m_matchtrk_lhits.clear();
+  m_matchtrk_dhits.clear();
+  m_matchtrk_seed.clear();
+  m_matchtrk_hitpattern.clear();
+  m_matchtrk_charge.clear();
+  m_matchtrk_injet.clear();
+  m_matchtrk_injet_highpt.clear();
+  m_matchtrk_injet_vhighpt.clear();
+
+  if (SaveStubs) {
+    m_allstub_x.clear();
+    m_allstub_y.clear();
+    m_allstub_z.clear();
+    m_allstub_isBarrel.clear();
+    m_allstub_layer.clear();
+    m_allstub_isPSmodule.clear();
+    m_allstub_isTiltedBarrel.clear();
+    m_allstub_trigDisplace.clear();
+    m_allstub_trigOffset.clear();
+    m_allstub_trigPos.clear();
+    m_allstub_trigBend.clear();
+    m_allstub_matchTP_pdgid.clear();
+    m_allstub_matchTP_pt.clear();
+    m_allstub_matchTP_eta.clear();
+    m_allstub_matchTP_phi.clear();
+    m_allstub_genuine.clear();
+  }
+
+  m_jet_eta.clear();
+  m_jet_phi.clear();
+  m_jet_pt.clear();
+  m_jet_tp_sumpt.clear();
+  m_jet_trk_sumpt.clear();
+  m_jet_matchtrk_sumpt.clear();
+}
+
 //////////
 // END JOB
 void L1TrackNtupleMaker::endJob() {
   // things to be done at the exit of the event Loop
   edm::LogVerbatim("Tracklet") << "L1TrackNtupleMaker::endJob";
-
-  // clean up
-  delete m_trk_pt;
-  delete m_trk_eta;
-  delete m_trk_phi;
-  delete m_trk_z0;
-  delete m_trk_d0;
-  delete m_trk_chi2;
-  delete m_trk_chi2_dof;
-  delete m_trk_chi2rphi;
-  delete m_trk_chi2rphi_dof;
-  delete m_trk_chi2rz;
-  delete m_trk_chi2rz_dof;
-  delete m_trk_bendchi2;
-  delete m_trk_nstub;
-  delete m_trk_lhits;
-  delete m_trk_dhits;
-  delete m_trk_seed;
-  delete m_trk_hitpattern;
-  delete m_trk_lhits_hitpattern;
-  delete m_trk_dhits_hitpattern;
-  delete m_trk_nPSstub_hitpattern;
-  delete m_trk_n2Sstub_hitpattern;
-  delete m_trk_nLostPSstub_hitpattern;
-  delete m_trk_nLost2Sstub_hitpattern;
-  delete m_trk_nLoststub_V1_hitpattern;
-  delete m_trk_nLoststub_V2_hitpattern;
-  delete m_trk_charge;
-  delete m_trk_phiSector;
-  delete m_trk_etaSector;
-  delete m_trk_genuine;
-  delete m_trk_loose;
-  delete m_trk_unknown;
-  delete m_trk_combinatoric;
-  delete m_trk_fake;
-  delete m_trk_MVA1;
-  delete m_trk_matchtp_pdgid;
-  delete m_trk_matchtp_pt;
-  delete m_trk_matchtp_eta;
-  delete m_trk_matchtp_phi;
-  delete m_trk_matchtp_z0;
-  delete m_trk_matchtp_lxy;
-  delete m_trk_matchtp_d0;
-  delete m_trk_injet;
-  delete m_trk_injet_highpt;
-  delete m_trk_injet_vhighpt;
-
-  delete m_tp_pt;
-  delete m_tp_eta;
-  delete m_tp_phi;
-  delete m_tp_lxy;
-  delete m_tp_d0;
-  delete m_tp_z0;
-  delete m_tp_d0_prod;
-  delete m_tp_z0_prod;
-  delete m_tp_pdgid;
-  delete m_tp_nmatch;
-  delete m_tp_nstub;
-  delete m_tp_eventid;
-  delete m_tp_charge;
-  delete m_tp_injet;
-  delete m_tp_injet_highpt;
-  delete m_tp_injet_vhighpt;
-
-  delete m_matchtrk_pt;
-  delete m_matchtrk_eta;
-  delete m_matchtrk_phi;
-  delete m_matchtrk_z0;
-  delete m_matchtrk_d0;
-  delete m_matchtrk_chi2;
-  delete m_matchtrk_chi2_dof;
-  delete m_matchtrk_chi2rphi;
-  delete m_matchtrk_chi2rphi_dof;
-  delete m_matchtrk_chi2rz;
-  delete m_matchtrk_chi2rz_dof;
-  delete m_matchtrk_bendchi2;
-  delete m_matchtrk_MVA1;
-  delete m_matchtrk_nstub;
-  delete m_matchtrk_dhits;
-  delete m_matchtrk_lhits;
-  delete m_matchtrk_seed;
-  delete m_matchtrk_hitpattern;
-  delete m_matchtrk_charge;
-  delete m_matchtrk_injet;
-  delete m_matchtrk_injet_highpt;
-  delete m_matchtrk_injet_vhighpt;
-
-  delete m_allstub_x;
-  delete m_allstub_y;
-  delete m_allstub_z;
-  delete m_allstub_isBarrel;
-  delete m_allstub_layer;
-  delete m_allstub_isPSmodule;
-  delete m_allstub_trigDisplace;
-  delete m_allstub_trigOffset;
-  delete m_allstub_trigPos;
-  delete m_allstub_trigBend;
-  delete m_allstub_matchTP_pdgid;
-  delete m_allstub_matchTP_pt;
-  delete m_allstub_matchTP_eta;
-  delete m_allstub_matchTP_phi;
-  delete m_allstub_genuine;
-
-  delete m_jet_eta;
-  delete m_jet_phi;
-  delete m_jet_pt;
-  delete m_jet_tp_sumpt;
-  delete m_jet_trk_sumpt;
-  delete m_jet_matchtrk_sumpt;
+  // No manual cleanup needed - vectors are automatic storage duration
 }
 
 ////////////
@@ -461,120 +510,6 @@ void L1TrackNtupleMaker::beginJob() {
   available_ = fs.isAvailable();
   if (not available_)
     return;  // No ROOT file open.
-
-  // initilize
-  m_trk_pt = new std::vector<float>;
-  m_trk_eta = new std::vector<float>;
-  m_trk_phi = new std::vector<float>;
-  m_trk_z0 = new std::vector<float>;
-  m_trk_d0 = new std::vector<float>;
-  m_trk_chi2 = new std::vector<float>;
-  m_trk_chi2_dof = new std::vector<float>;
-  m_trk_chi2rphi = new std::vector<float>;
-  m_trk_chi2rphi_dof = new std::vector<float>;
-  m_trk_chi2rz = new std::vector<float>;
-  m_trk_chi2rz_dof = new std::vector<float>;
-  m_trk_bendchi2 = new std::vector<float>;
-  m_trk_nstub = new std::vector<int>;
-  m_trk_lhits = new std::vector<int>;
-  m_trk_dhits = new std::vector<int>;
-  m_trk_seed = new std::vector<int>;
-  m_trk_hitpattern = new std::vector<int>;
-  m_trk_lhits_hitpattern = new std::vector<int>;
-  m_trk_dhits_hitpattern = new std::vector<int>;
-  m_trk_nPSstub_hitpattern = new std::vector<int>;
-  m_trk_n2Sstub_hitpattern = new std::vector<int>;
-  m_trk_nLostPSstub_hitpattern = new std::vector<int>;
-  m_trk_nLost2Sstub_hitpattern = new std::vector<int>;
-  m_trk_nLoststub_V1_hitpattern = new std::vector<int>;
-  m_trk_nLoststub_V2_hitpattern = new std::vector<int>;
-  m_trk_charge = new std::vector<int>;
-  m_trk_phiSector = new std::vector<unsigned int>;
-  m_trk_etaSector = new std::vector<int>;
-  m_trk_genuine = new std::vector<int>;
-  m_trk_loose = new std::vector<int>;
-  m_trk_unknown = new std::vector<int>;
-  m_trk_combinatoric = new std::vector<int>;
-  m_trk_fake = new std::vector<int>;
-  m_trk_MVA1 = new std::vector<float>;
-  m_trk_matchtp_pdgid = new std::vector<int>;
-  m_trk_matchtp_pt = new std::vector<float>;
-  m_trk_matchtp_eta = new std::vector<float>;
-  m_trk_matchtp_phi = new std::vector<float>;
-  m_trk_matchtp_z0 = new std::vector<float>;
-  m_trk_matchtp_lxy = new std::vector<float>;
-  m_trk_matchtp_d0 = new std::vector<float>;
-  m_trk_injet = new std::vector<int>;
-  m_trk_injet_highpt = new std::vector<int>;
-  m_trk_injet_vhighpt = new std::vector<int>;
-  m_trk_layers = new std::vector<std::vector<int>>;
-
-  m_tp_pt = new std::vector<float>;
-  m_tp_eta = new std::vector<float>;
-  m_tp_phi = new std::vector<float>;
-  m_tp_lxy = new std::vector<float>;
-  m_tp_d0 = new std::vector<float>;
-  m_tp_z0 = new std::vector<float>;
-  m_tp_d0_prod = new std::vector<float>;
-  m_tp_z0_prod = new std::vector<float>;
-  m_tp_pdgid = new std::vector<int>;
-  m_tp_nmatch = new std::vector<int>;
-  m_tp_nstub = new std::vector<int>;
-  m_tp_eventid = new std::vector<int>;
-  m_tp_charge = new std::vector<int>;
-  m_tp_injet = new std::vector<int>;
-  m_tp_injet_highpt = new std::vector<int>;
-  m_tp_injet_vhighpt = new std::vector<int>;
-
-  m_matchtrk_pt = new std::vector<float>;
-  m_matchtrk_eta = new std::vector<float>;
-  m_matchtrk_phi = new std::vector<float>;
-  m_matchtrk_z0 = new std::vector<float>;
-  m_matchtrk_d0 = new std::vector<float>;
-  m_matchtrk_chi2 = new std::vector<float>;
-  m_matchtrk_chi2_dof = new std::vector<float>;
-  m_matchtrk_chi2rphi = new std::vector<float>;
-  m_matchtrk_chi2rphi_dof = new std::vector<float>;
-  m_matchtrk_chi2rz = new std::vector<float>;
-  m_matchtrk_chi2rz_dof = new std::vector<float>;
-  m_matchtrk_bendchi2 = new std::vector<float>;
-  m_matchtrk_MVA1 = new std::vector<float>;
-  m_matchtrk_nstub = new std::vector<int>;
-  m_matchtrk_dhits = new std::vector<int>;
-  m_matchtrk_lhits = new std::vector<int>;
-  m_matchtrk_seed = new std::vector<int>;
-  m_matchtrk_hitpattern = new std::vector<int>;
-  m_matchtrk_charge = new std::vector<int>;
-  m_matchtrk_injet = new std::vector<int>;
-  m_matchtrk_injet_highpt = new std::vector<int>;
-  m_matchtrk_injet_vhighpt = new std::vector<int>;
-
-  m_allstub_x = new std::vector<float>;
-  m_allstub_y = new std::vector<float>;
-  m_allstub_z = new std::vector<float>;
-
-  m_allstub_isBarrel = new std::vector<int>;
-  m_allstub_layer = new std::vector<int>;
-  m_allstub_isPSmodule = new std::vector<int>;
-  m_allstub_isTiltedBarrel = new std::vector<int>;
-  m_allstub_trigDisplace = new std::vector<float>;
-  m_allstub_trigOffset = new std::vector<float>;
-  m_allstub_trigPos = new std::vector<float>;
-  m_allstub_trigBend = new std::vector<float>;
-
-  m_allstub_matchTP_pdgid = new std::vector<int>;
-  m_allstub_matchTP_pt = new std::vector<float>;
-  m_allstub_matchTP_eta = new std::vector<float>;
-  m_allstub_matchTP_phi = new std::vector<float>;
-
-  m_allstub_genuine = new std::vector<int>;
-
-  m_jet_eta = new std::vector<float>;
-  m_jet_phi = new std::vector<float>;
-  m_jet_pt = new std::vector<float>;
-  m_jet_tp_sumpt = new std::vector<float>;
-  m_jet_trk_sumpt = new std::vector<float>;
-  m_jet_matchtrk_sumpt = new std::vector<float>;
 
   // ntuple
   eventTree = fs->make<TTree>("eventTree", "Event tree");
@@ -724,124 +659,8 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
     return;
   }
 
-  // clear variables
-  if (SaveAllTracks) {
-    m_trk_pt->clear();
-    m_trk_eta->clear();
-    m_trk_phi->clear();
-    m_trk_d0->clear();
-    m_trk_z0->clear();
-    m_trk_chi2->clear();
-    m_trk_chi2_dof->clear();
-    m_trk_chi2rphi->clear();
-    m_trk_chi2rphi_dof->clear();
-    m_trk_chi2rz->clear();
-    m_trk_chi2rz_dof->clear();
-    m_trk_bendchi2->clear();
-    m_trk_nstub->clear();
-    m_trk_lhits->clear();
-    m_trk_dhits->clear();
-    m_trk_seed->clear();
-    m_trk_hitpattern->clear();
-    m_trk_lhits_hitpattern->clear();
-    m_trk_dhits_hitpattern->clear();
-    m_trk_nPSstub_hitpattern->clear();
-    m_trk_n2Sstub_hitpattern->clear();
-    m_trk_nLostPSstub_hitpattern->clear();
-    m_trk_nLost2Sstub_hitpattern->clear();
-    m_trk_nLoststub_V1_hitpattern->clear();
-    m_trk_nLoststub_V2_hitpattern->clear();
-    m_trk_charge->clear();
-    m_trk_phiSector->clear();
-    m_trk_etaSector->clear();
-    m_trk_genuine->clear();
-    m_trk_loose->clear();
-    m_trk_unknown->clear();
-    m_trk_combinatoric->clear();
-    m_trk_fake->clear();
-    m_trk_MVA1->clear();
-    m_trk_matchtp_pdgid->clear();
-    m_trk_matchtp_pt->clear();
-    m_trk_matchtp_eta->clear();
-    m_trk_matchtp_phi->clear();
-    m_trk_matchtp_z0->clear();
-    m_trk_matchtp_lxy->clear();
-    m_trk_matchtp_d0->clear();
-    m_trk_injet->clear();
-    m_trk_injet_highpt->clear();
-    m_trk_injet_vhighpt->clear();
-    m_trk_layers->clear();
-  }
-
-  m_tp_pt->clear();
-  m_tp_eta->clear();
-  m_tp_phi->clear();
-  m_tp_lxy->clear();
-  m_tp_d0->clear();
-  m_tp_z0->clear();
-  m_tp_d0_prod->clear();
-  m_tp_z0_prod->clear();
-  m_tp_pdgid->clear();
-  m_tp_nmatch->clear();
-  m_tp_nstub->clear();
-  m_tp_eventid->clear();
-  m_tp_charge->clear();
-  m_tp_injet->clear();
-  m_tp_injet_highpt->clear();
-  m_tp_injet_vhighpt->clear();
-
-  m_matchtrk_pt->clear();
-  m_matchtrk_eta->clear();
-  m_matchtrk_phi->clear();
-  m_matchtrk_z0->clear();
-  m_matchtrk_d0->clear();
-  m_matchtrk_chi2->clear();
-  m_matchtrk_chi2_dof->clear();
-  m_matchtrk_chi2rphi->clear();
-  m_matchtrk_chi2rphi_dof->clear();
-  m_matchtrk_chi2rz->clear();
-  m_matchtrk_chi2rz_dof->clear();
-  m_matchtrk_bendchi2->clear();
-  m_matchtrk_MVA1->clear();
-  m_matchtrk_nstub->clear();
-  m_matchtrk_lhits->clear();
-  m_matchtrk_dhits->clear();
-  m_matchtrk_seed->clear();
-  m_matchtrk_hitpattern->clear();
-  m_matchtrk_charge->clear();
-  m_matchtrk_injet->clear();
-  m_matchtrk_injet_highpt->clear();
-  m_matchtrk_injet_vhighpt->clear();
-
-  if (SaveStubs) {
-    m_allstub_x->clear();
-    m_allstub_y->clear();
-    m_allstub_z->clear();
-
-    m_allstub_isBarrel->clear();
-    m_allstub_layer->clear();
-    m_allstub_isPSmodule->clear();
-    m_allstub_isTiltedBarrel->clear();
-
-    m_allstub_trigDisplace->clear();
-    m_allstub_trigOffset->clear();
-    m_allstub_trigPos->clear();
-    m_allstub_trigBend->clear();
-
-    m_allstub_matchTP_pdgid->clear();
-    m_allstub_matchTP_pt->clear();
-    m_allstub_matchTP_eta->clear();
-    m_allstub_matchTP_phi->clear();
-
-    m_allstub_genuine->clear();
-  }
-
-  m_jet_eta->clear();
-  m_jet_phi->clear();
-  m_jet_pt->clear();
-  m_jet_tp_sumpt->clear();
-  m_jet_trk_sumpt->clear();
-  m_jet_matchtrk_sumpt->clear();
+  // clear all vectors for this event
+  clearVectors();
 
   // -----------------------------------------------------------------------------------------------
   // retrieve various containers
@@ -950,19 +769,19 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
         float trigPos = tempStubPtr->innerClusterPosition();
         float trigBend = tempStubPtr->bendFE();
 
-        m_allstub_x->push_back(tmp_stub_x);
-        m_allstub_y->push_back(tmp_stub_y);
-        m_allstub_z->push_back(tmp_stub_z);
+        m_allstub_x.push_back(tmp_stub_x);
+        m_allstub_y.push_back(tmp_stub_y);
+        m_allstub_z.push_back(tmp_stub_z);
 
-        m_allstub_isBarrel->push_back(isBarrel);
-        m_allstub_layer->push_back(layer);
-        m_allstub_isPSmodule->push_back(isPSmodule);
-        m_allstub_isTiltedBarrel->push_back(isTiltedBarrel);
+        m_allstub_isBarrel.push_back(isBarrel);
+        m_allstub_layer.push_back(layer);
+        m_allstub_isPSmodule.push_back(isPSmodule);
+        m_allstub_isTiltedBarrel.push_back(isTiltedBarrel);
 
-        m_allstub_trigDisplace->push_back(trigDisplace);
-        m_allstub_trigOffset->push_back(trigOffset);
-        m_allstub_trigPos->push_back(trigPos);
-        m_allstub_trigBend->push_back(trigBend);
+        m_allstub_trigDisplace.push_back(trigDisplace);
+        m_allstub_trigOffset.push_back(trigOffset);
+        m_allstub_trigPos.push_back(trigPos);
+        m_allstub_trigBend.push_back(trigBend);
 
         // matched to tracking particle?
         edm::Ptr<TrackingParticle> my_tp = MCTruthTTStubHandle->findTrackingParticlePtr(tempStubPtr);
@@ -984,16 +803,16 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
           myTP_phi = my_tp->p4().phi();
         }
 
-        m_allstub_matchTP_pdgid->push_back(myTP_pdgid);
-        m_allstub_matchTP_pt->push_back(myTP_pt);
-        m_allstub_matchTP_eta->push_back(myTP_eta);
-        m_allstub_matchTP_phi->push_back(myTP_phi);
+        m_allstub_matchTP_pdgid.push_back(myTP_pdgid);
+        m_allstub_matchTP_pt.push_back(myTP_pt);
+        m_allstub_matchTP_eta.push_back(myTP_eta);
+        m_allstub_matchTP_phi.push_back(myTP_phi);
 
         int tmp_stub_genuine = 0;
         if (MCTruthTTStubHandle->isGenuine(tempStubPtr))
           tmp_stub_genuine = 1;
 
-        m_allstub_genuine->push_back(tmp_stub_genuine);
+        m_allstub_genuine.push_back(tmp_stub_genuine);
       }
     }
   }
@@ -1204,42 +1023,42 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
           edm::LogVerbatim("Tracklet") << "    (is combinatoric)";
       }
 
-      m_trk_pt->push_back(tmp_trk_pt);
-      m_trk_eta->push_back(tmp_trk_eta);
-      m_trk_phi->push_back(tmp_trk_phi);
-      m_trk_z0->push_back(tmp_trk_z0);
+      m_trk_pt.push_back(tmp_trk_pt);
+      m_trk_eta.push_back(tmp_trk_eta);
+      m_trk_phi.push_back(tmp_trk_phi);
+      m_trk_z0.push_back(tmp_trk_z0);
       if (L1Tk_nPar == 5)
-        m_trk_d0->push_back(tmp_trk_d0);
+        m_trk_d0.push_back(tmp_trk_d0);
       else
-        m_trk_d0->push_back(999.);
-      m_trk_chi2->push_back(tmp_trk_chi2);
-      m_trk_chi2_dof->push_back(tmp_trk_chi2_dof);
-      m_trk_chi2rphi->push_back(tmp_trk_chi2rphi);
-      m_trk_chi2rphi_dof->push_back(tmp_trk_chi2rphi_dof);
-      m_trk_chi2rz->push_back(tmp_trk_chi2rz);
-      m_trk_chi2rz_dof->push_back(tmp_trk_chi2rz_dof);
-      m_trk_bendchi2->push_back(tmp_trk_bendchi2);
-      m_trk_MVA1->push_back(tmp_trk_MVA1);
-      m_trk_nstub->push_back(tmp_trk_nstub);
-      m_trk_dhits->push_back(tmp_trk_dhits);
-      m_trk_lhits->push_back(tmp_trk_lhits);
-      m_trk_seed->push_back(tmp_trk_seed);
-      m_trk_hitpattern->push_back(tmp_trk_hitpattern);
-      m_trk_lhits_hitpattern->push_back(tmp_trk_lhits_hitpattern);
-      m_trk_dhits_hitpattern->push_back(tmp_trk_dhits_hitpattern);
-      m_trk_nPSstub_hitpattern->push_back(tmp_trk_nPSstub_hitpattern);
-      m_trk_n2Sstub_hitpattern->push_back(tmp_trk_n2Sstub_hitpattern);
-      m_trk_nLostPSstub_hitpattern->push_back(tmp_trk_nLostPSstub_hitpattern);
-      m_trk_nLost2Sstub_hitpattern->push_back(tmp_trk_nLost2Sstub_hitpattern);
-      m_trk_nLoststub_V1_hitpattern->push_back(tmp_trk_nLoststub_V1_hitpattern);
-      m_trk_nLoststub_V2_hitpattern->push_back(tmp_trk_nLoststub_V2_hitpattern);
-      m_trk_charge->push_back(tmp_trk_charge);
-      m_trk_phiSector->push_back(tmp_trk_phiSector);
-      m_trk_etaSector->push_back(tmp_trk_etaSector);
-      m_trk_genuine->push_back(tmp_trk_genuine);
-      m_trk_loose->push_back(tmp_trk_loose);
-      m_trk_unknown->push_back(tmp_trk_unknown);
-      m_trk_combinatoric->push_back(tmp_trk_combinatoric);
+        m_trk_d0.push_back(999.);
+      m_trk_chi2.push_back(tmp_trk_chi2);
+      m_trk_chi2_dof.push_back(tmp_trk_chi2_dof);
+      m_trk_chi2rphi.push_back(tmp_trk_chi2rphi);
+      m_trk_chi2rphi_dof.push_back(tmp_trk_chi2rphi_dof);
+      m_trk_chi2rz.push_back(tmp_trk_chi2rz);
+      m_trk_chi2rz_dof.push_back(tmp_trk_chi2rz_dof);
+      m_trk_bendchi2.push_back(tmp_trk_bendchi2);
+      m_trk_MVA1.push_back(tmp_trk_MVA1);
+      m_trk_nstub.push_back(tmp_trk_nstub);
+      m_trk_dhits.push_back(tmp_trk_dhits);
+      m_trk_lhits.push_back(tmp_trk_lhits);
+      m_trk_seed.push_back(tmp_trk_seed);
+      m_trk_hitpattern.push_back(tmp_trk_hitpattern);
+      m_trk_lhits_hitpattern.push_back(tmp_trk_lhits_hitpattern);
+      m_trk_dhits_hitpattern.push_back(tmp_trk_dhits_hitpattern);
+      m_trk_nPSstub_hitpattern.push_back(tmp_trk_nPSstub_hitpattern);
+      m_trk_n2Sstub_hitpattern.push_back(tmp_trk_n2Sstub_hitpattern);
+      m_trk_nLostPSstub_hitpattern.push_back(tmp_trk_nLostPSstub_hitpattern);
+      m_trk_nLost2Sstub_hitpattern.push_back(tmp_trk_nLost2Sstub_hitpattern);
+      m_trk_nLoststub_V1_hitpattern.push_back(tmp_trk_nLoststub_V1_hitpattern);
+      m_trk_nLoststub_V2_hitpattern.push_back(tmp_trk_nLoststub_V2_hitpattern);
+      m_trk_charge.push_back(tmp_trk_charge);
+      m_trk_phiSector.push_back(tmp_trk_phiSector);
+      m_trk_etaSector.push_back(tmp_trk_etaSector);
+      m_trk_genuine.push_back(tmp_trk_genuine);
+      m_trk_loose.push_back(tmp_trk_loose);
+      m_trk_unknown.push_back(tmp_trk_unknown);
+      m_trk_combinatoric.push_back(tmp_trk_combinatoric);
 
       // ----------------------------------------------------------------------------------------------
       // for studying the fake rate
@@ -1277,31 +1096,12 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
         float tmp_matchtp_vy = my_tp->vy();
         tmp_matchtp_lxy = sqrt(tmp_matchtp_vx * tmp_matchtp_vx + tmp_matchtp_vy * tmp_matchtp_vy);
 
-        // ----------------------------------------------------------------------------------------------
         // get d0/z0 propagated back to the IP
-
-        float tmp_matchtp_t = 1.0 / tan(2.0 * atan(exp(-tmp_matchtp_eta)));
-
-        float delx = -tmp_matchtp_vx;
-        float dely = -tmp_matchtp_vy;
-
         float b_field = bFieldHandle.product()->inTesla(GlobalPoint(0, 0, 0)).z();
-        float c_converted = CLHEP::c_light / 1.0E5;
-        float r2_inv = my_tp->charge() * c_converted * b_field / tmp_matchtp_pt / 2.0;
-
-        float tmp_matchtp_x0p = delx - (1. / (2. * r2_inv) * sin(tmp_matchtp_phi));
-        float tmp_matchtp_y0p = dely + (1. / (2. * r2_inv) * cos(tmp_matchtp_phi));
-        float tmp_matchtp_rp = sqrt(tmp_matchtp_x0p * tmp_matchtp_x0p + tmp_matchtp_y0p * tmp_matchtp_y0p);
-        tmp_matchtp_d0 = my_tp->charge() * tmp_matchtp_rp - (1. / (2. * r2_inv));
-
-        static double pi = M_PI;
-        float delphi = tmp_matchtp_phi - atan2(-r2_inv * tmp_matchtp_x0p, r2_inv * tmp_matchtp_y0p);
-        if (delphi < -pi)
-          delphi += 2.0 * pi;
-        if (delphi > pi)
-          delphi -= 2.0 * pi;
-        tmp_matchtp_z0 = tmp_matchtp_vz + tmp_matchtp_t * delphi / (2.0 * r2_inv);
-        // ----------------------------------------------------------------------------------------------
+        auto [d0, z0] = propagateToIP(
+            tmp_matchtp_eta, tmp_matchtp_phi, tmp_matchtp_vx, tmp_matchtp_vy, tmp_matchtp_vz, my_tp->charge(), tmp_matchtp_pt, b_field);
+        tmp_matchtp_d0 = d0;
+        tmp_matchtp_z0 = z0;
 
         if (DebugMode) {
           edm::LogVerbatim("Tracklet") << "TP matched to track has pt = " << my_tp->p4().pt()
@@ -1311,15 +1111,15 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
         }
       }
 
-      m_trk_fake->push_back(myFake);
+      m_trk_fake.push_back(myFake);
 
-      m_trk_matchtp_pdgid->push_back(tmp_matchtp_pdgid);
-      m_trk_matchtp_pt->push_back(tmp_matchtp_pt);
-      m_trk_matchtp_eta->push_back(tmp_matchtp_eta);
-      m_trk_matchtp_phi->push_back(tmp_matchtp_phi);
-      m_trk_matchtp_z0->push_back(tmp_matchtp_z0);
-      m_trk_matchtp_lxy->push_back(tmp_matchtp_lxy);
-      m_trk_matchtp_d0->push_back(tmp_matchtp_d0);
+      m_trk_matchtp_pdgid.push_back(tmp_matchtp_pdgid);
+      m_trk_matchtp_pt.push_back(tmp_matchtp_pt);
+      m_trk_matchtp_eta.push_back(tmp_matchtp_eta);
+      m_trk_matchtp_phi.push_back(tmp_matchtp_phi);
+      m_trk_matchtp_z0.push_back(tmp_matchtp_z0);
+      m_trk_matchtp_lxy.push_back(tmp_matchtp_lxy);
+      m_trk_matchtp_d0.push_back(tmp_matchtp_d0);
 
       // ----------------------------------------------------------------------------------------------
       // for tracking in jets
@@ -1351,9 +1151,9 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
           }
         }
 
-        m_trk_injet->push_back(InJet);
-        m_trk_injet_highpt->push_back(InJetHighpt);
-        m_trk_injet_vhighpt->push_back(InJetVeryHighpt);
+        m_trk_injet.push_back(InJet);
+        m_trk_injet_highpt.push_back(InJetHighpt);
+        m_trk_injet_vhighpt.push_back(InJetVeryHighpt);
 
       }  //end tracking in jets
 
@@ -1365,7 +1165,7 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
       layers.reserve(hitPattern.size());
       for (int layer : hitPattern.ids())
         layers.push_back(le[layer]);
-      m_trk_layers->push_back(layers);
+      m_trk_layers.push_back(layers);
 
     }  //end track loop
 
@@ -1407,31 +1207,10 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
     float tmp_tp_z0_prod = tmp_tp_vz;
     float tmp_tp_d0_prod = tmp_tp_vx * sin(tmp_tp_phi) - tmp_tp_vy * cos(tmp_tp_phi);
 
-    // ----------------------------------------------------------------------------------------------
     // get d0/z0 propagated back to the IP
-
-    float tmp_tp_t = 1.0 / tan(2.0 * atan(exp(-tmp_tp_eta)));
-
-    float delx = -tmp_tp_vx;
-    float dely = -tmp_tp_vy;
-
     float b_field = bFieldHandle.product()->inTesla(GlobalPoint(0, 0, 0)).z();
-    float c_converted = CLHEP::c_light / 1.0E5;
-    float r2_inv = tmp_tp_charge * c_converted * b_field / tmp_tp_pt / 2.0;
-
-    float tmp_tp_x0p = delx - (1. / (2. * r2_inv) * sin(tmp_tp_phi));
-    float tmp_tp_y0p = dely + (1. / (2. * r2_inv) * cos(tmp_tp_phi));
-    float tmp_tp_rp = sqrt(tmp_tp_x0p * tmp_tp_x0p + tmp_tp_y0p * tmp_tp_y0p);
-    float tmp_tp_d0 = tmp_tp_charge * tmp_tp_rp - (1. / (2. * r2_inv));
-
-    static double pi = M_PI;
-    float delphi = tmp_tp_phi - atan2(-r2_inv * tmp_tp_x0p, r2_inv * tmp_tp_y0p);
-    if (delphi < -pi)
-      delphi += 2.0 * pi;
-    if (delphi > pi)
-      delphi -= 2.0 * pi;
-    float tmp_tp_z0 = tmp_tp_vz + tmp_tp_t * delphi / (2.0 * r2_inv);
-    // ----------------------------------------------------------------------------------------------
+    auto [tmp_tp_d0, tmp_tp_z0] = propagateToIP(
+        tmp_tp_eta, tmp_tp_phi, tmp_tp_vx, tmp_tp_vy, tmp_tp_vz, tmp_tp_charge, tmp_tp_pt, b_field);
 
     if (MyProcess == 13 && abs(tmp_tp_pdgid) != 13)
       continue;
@@ -1710,39 +1489,39 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
       }
     }
 
-    m_tp_pt->push_back(tmp_tp_pt);
-    m_tp_eta->push_back(tmp_tp_eta);
-    m_tp_phi->push_back(tmp_tp_phi);
-    m_tp_lxy->push_back(tmp_tp_lxy);
-    m_tp_z0->push_back(tmp_tp_z0);
-    m_tp_d0->push_back(tmp_tp_d0);
-    m_tp_z0_prod->push_back(tmp_tp_z0_prod);
-    m_tp_d0_prod->push_back(tmp_tp_d0_prod);
-    m_tp_pdgid->push_back(tmp_tp_pdgid);
-    m_tp_nmatch->push_back(nMatch);
-    m_tp_nstub->push_back(nStubTP);
-    m_tp_eventid->push_back(tmp_eventid);
-    m_tp_charge->push_back(tmp_tp_charge);
+    m_tp_pt.push_back(tmp_tp_pt);
+    m_tp_eta.push_back(tmp_tp_eta);
+    m_tp_phi.push_back(tmp_tp_phi);
+    m_tp_lxy.push_back(tmp_tp_lxy);
+    m_tp_z0.push_back(tmp_tp_z0);
+    m_tp_d0.push_back(tmp_tp_d0);
+    m_tp_z0_prod.push_back(tmp_tp_z0_prod);
+    m_tp_d0_prod.push_back(tmp_tp_d0_prod);
+    m_tp_pdgid.push_back(tmp_tp_pdgid);
+    m_tp_nmatch.push_back(nMatch);
+    m_tp_nstub.push_back(nStubTP);
+    m_tp_eventid.push_back(tmp_eventid);
+    m_tp_charge.push_back(tmp_tp_charge);
 
-    m_matchtrk_pt->push_back(tmp_matchtrk_pt);
-    m_matchtrk_eta->push_back(tmp_matchtrk_eta);
-    m_matchtrk_phi->push_back(tmp_matchtrk_phi);
-    m_matchtrk_z0->push_back(tmp_matchtrk_z0);
-    m_matchtrk_d0->push_back(tmp_matchtrk_d0);
-    m_matchtrk_chi2->push_back(tmp_matchtrk_chi2);
-    m_matchtrk_chi2rphi->push_back(tmp_matchtrk_chi2rphi);
-    m_matchtrk_chi2rz->push_back(tmp_matchtrk_chi2rz);
-    m_matchtrk_bendchi2->push_back(tmp_matchtrk_bendchi2);
-    m_matchtrk_MVA1->push_back(tmp_matchtrk_MVA1);
-    m_matchtrk_nstub->push_back(tmp_matchtrk_nstub);
-    m_matchtrk_dhits->push_back(tmp_matchtrk_dhits);
-    m_matchtrk_lhits->push_back(tmp_matchtrk_lhits);
-    m_matchtrk_seed->push_back(tmp_matchtrk_seed);
-    m_matchtrk_hitpattern->push_back(tmp_matchtrk_hitpattern);
-    m_matchtrk_charge->push_back(tmp_matchtrk_charge);
-    m_matchtrk_chi2_dof->push_back(tmp_matchtrk_chi2_dof);
-    m_matchtrk_chi2rphi_dof->push_back(tmp_matchtrk_chi2rphi_dof);
-    m_matchtrk_chi2rz_dof->push_back(tmp_matchtrk_chi2rz_dof);
+    m_matchtrk_pt.push_back(tmp_matchtrk_pt);
+    m_matchtrk_eta.push_back(tmp_matchtrk_eta);
+    m_matchtrk_phi.push_back(tmp_matchtrk_phi);
+    m_matchtrk_z0.push_back(tmp_matchtrk_z0);
+    m_matchtrk_d0.push_back(tmp_matchtrk_d0);
+    m_matchtrk_chi2.push_back(tmp_matchtrk_chi2);
+    m_matchtrk_chi2rphi.push_back(tmp_matchtrk_chi2rphi);
+    m_matchtrk_chi2rz.push_back(tmp_matchtrk_chi2rz);
+    m_matchtrk_bendchi2.push_back(tmp_matchtrk_bendchi2);
+    m_matchtrk_MVA1.push_back(tmp_matchtrk_MVA1);
+    m_matchtrk_nstub.push_back(tmp_matchtrk_nstub);
+    m_matchtrk_dhits.push_back(tmp_matchtrk_dhits);
+    m_matchtrk_lhits.push_back(tmp_matchtrk_lhits);
+    m_matchtrk_seed.push_back(tmp_matchtrk_seed);
+    m_matchtrk_hitpattern.push_back(tmp_matchtrk_hitpattern);
+    m_matchtrk_charge.push_back(tmp_matchtrk_charge);
+    m_matchtrk_chi2_dof.push_back(tmp_matchtrk_chi2_dof);
+    m_matchtrk_chi2rphi_dof.push_back(tmp_matchtrk_chi2rphi_dof);
+    m_matchtrk_chi2rz_dof.push_back(tmp_matchtrk_chi2rz_dof);
 
     // ----------------------------------------------------------------------------------------------
     // for tracking in jets
@@ -1793,12 +1572,12 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
         }
       }
 
-      m_tp_injet->push_back(tp_InJet);
-      m_tp_injet_highpt->push_back(tp_InJetHighpt);
-      m_tp_injet_vhighpt->push_back(tp_InJetVeryHighpt);
-      m_matchtrk_injet->push_back(matchtrk_InJet);
-      m_matchtrk_injet_highpt->push_back(matchtrk_InJetHighpt);
-      m_matchtrk_injet_vhighpt->push_back(matchtrk_InJetVeryHighpt);
+      m_tp_injet.push_back(tp_InJet);
+      m_tp_injet_highpt.push_back(tp_InJetHighpt);
+      m_tp_injet_vhighpt.push_back(tp_InJetVeryHighpt);
+      m_matchtrk_injet.push_back(matchtrk_InJet);
+      m_matchtrk_injet_highpt.push_back(matchtrk_InJetHighpt);
+      m_matchtrk_injet_vhighpt.push_back(matchtrk_InJetVeryHighpt);
 
     }  //end TrackingInJets
 
@@ -1807,12 +1586,12 @@ void L1TrackNtupleMaker::analyze(const edm::Event& iEvent, const edm::EventSetup
   if (TrackingInJets) {
     for (int ij = 0; ij < (int)v_jets.size(); ij++) {
       if (ij < NJETS) {
-        m_jet_eta->push_back((v_jets.at(ij)).eta());
-        m_jet_phi->push_back((v_jets.at(ij)).phi());
-        m_jet_pt->push_back((v_jets.at(ij)).pt());
-        m_jet_tp_sumpt->push_back(jets_tp_sumpt[ij]);
-        m_jet_trk_sumpt->push_back(jets_trk_sumpt[ij]);
-        m_jet_matchtrk_sumpt->push_back(jets_matchtrk_sumpt[ij]);
+        m_jet_eta.push_back((v_jets.at(ij)).eta());
+        m_jet_phi.push_back((v_jets.at(ij)).phi());
+        m_jet_pt.push_back((v_jets.at(ij)).pt());
+        m_jet_tp_sumpt.push_back(jets_tp_sumpt[ij]);
+        m_jet_trk_sumpt.push_back(jets_trk_sumpt[ij]);
+        m_jet_matchtrk_sumpt.push_back(jets_matchtrk_sumpt[ij]);
       }
     }
   }
